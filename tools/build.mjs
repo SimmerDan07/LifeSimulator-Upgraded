@@ -8,6 +8,7 @@ const dist = path.join(root, "dist");
 fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
 
+await import("./gen-registry.mjs");
 // image manifest: resource name -> file
 const imgs = {};
 for (const f of fs.readdirSync(path.join(root, "assets/images"))) imgs[f.replace(/\.(svg|png)$/, "")] = f;

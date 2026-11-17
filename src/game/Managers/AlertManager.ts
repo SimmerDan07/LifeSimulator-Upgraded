@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Generations } from "./Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Function0, HashMap, Integer, Intrinsics, MapsKt, R, Ref, SpannableStringBuilder, StringBuilder, StringCompanionObject, StringsKt, TuplesKt, TypeCastException } from "../runtime";
 import { UIBridge } from "../ui/bridge";
@@ -189,6 +190,10 @@ export class AlertManager {
         Intrinsics.checkParameterIsNotNull(attribute, "attribute");
         TelemetryManager.INSTANCE.logEvent("Death_Alert", MapsKt.mapOf(TuplesKt.to("Reason", attribute.getTitle())));
         if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) {
+            const heirButtons = new ArrayList<AlertActionViewModel>();
+            if (Generations.eligibleHeirs(GameStateManager.INSTANCE.getPersonState()).length > 0) {
+                heirButtons.add(new AlertActionViewModel("Continue as your child", { invoke: () => Generations.openHeirScreen() }));
+            }
             let alertViewModel: AlertViewModel = new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_DeathTitle), attribute.getDeathMessage(), R.drawable.skull, null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.DeathTombstoneLifeSummary), {
                 invoke: () => {
                 Utils.INSTANCE.navigateTo(GenericListType.gameSummary, Constants.ViewModel.INSTANCE.getTombstoneModeDeath(), false);
@@ -197,7 +202,7 @@ export class AlertManager {
                 invoke: () => {
                 InAppPurchaseManager.INSTANCE.purchaseProduct(GameInAppPurchase.revive);
             }
-            }), null, null, 408, null);
+            }), heirButtons, null, 280, null);
             GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().setHasGameStarted(false);
             GameStateManager.INSTANCE.getGlobalStateManager().getCemetaryState().addLife(GameStateManager.INSTANCE.getPersonState());
             AlertManager.showAlert$default(this, alertViewModel, false, 2, null);

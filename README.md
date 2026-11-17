@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-node test/... (see test/unlocks.ts) # checks every unlock works
+npm run test:features  # checks unlocks, generational play, elixir price
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -52,7 +52,17 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - `unlockProgression` — scenarios, perks, the achievement save slot and countries that were earned through
   achievements, life goals or daily rewards start unlocked.
 
+## Upgrades (new in Life Sim Upgraded)
+- **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you
+  play on as any living child aged 8+. The heir inherits money (after debts), homes, possessions, businesses,
+  investments and pets, keeps their job, gets schooling that fits their age/job, and has the deceased parent
+  (and surviving partner) as parents. The profile shows your generation; the parent stays in the cemetery.
+- **Elixir of Youth** (Health tab) is a flat $20M instead of doubling after every purchase.
+
+## Fixes to the original
+- Exactly $9,999 displayed as $0.
+- Checking for a college degree could freeze the game (decompiler bug in a reduce loop).
+
 ## Other differences from the phone version
 - Ads removed; "watch an ad" rewards are granted directly.
-- Fixed: amounts of exactly $9,999 displayed as $0 in the original.
 - Leaderboards, sharing, Instagram buttons removed.

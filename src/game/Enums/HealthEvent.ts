@@ -133,17 +133,8 @@ export class HealthEvent extends JEnum implements ActionDescriptor {
                 let valueOf6: BigInteger = BigInteger.valueOf(20000);
                 return valueOf6;
             case HealthEvent.elixirOfYouth:
-                let numberOfLifeElixirsBought: number = GameStateManager.INSTANCE.getPersonState().getMiscState().getNumberOfLifeElixirsBought();
-                let i: number = 1;
-                if (numberOfLifeElixirsBought > 0) {
-                    for (let i2 = 0; i2 < numberOfLifeElixirsBought; i2++) {
-                        i *= 2;
-                    }
-                }
-                let valueOf7: BigInteger = BigInteger.valueOf(i);
-                let valueOf8: BigInteger = BigInteger.valueOf(20000000);
-                let multiply: BigInteger = valueOf7.multiply(valueOf8);
-                return multiply;
+                // Upgraded: flat price. The original doubled it after every purchase.
+                return BigInteger.valueOf(20000000);
             case HealthEvent.workOut:
                 let valueOf9: BigInteger = BigInteger.valueOf(0);
                 return valueOf9;

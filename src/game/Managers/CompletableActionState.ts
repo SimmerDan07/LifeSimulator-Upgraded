@@ -66,7 +66,9 @@ export class CompletableActionState {
         }
         let next = it.next();
         while (it.hasNext()) {
-            next = Boolean.valueOf(((next as unknown as boolean)).booleanValue() || ((it.next() as unknown as boolean)).booleanValue());
+            // Fetch first: jadx inlined it.next() into the `||`, so it was skipped once true (infinite loop).
+            const item = it.next();
+            next = Boolean.valueOf(((next as unknown as boolean)).booleanValue() || ((item as unknown as boolean)).booleanValue());
         }
         return ((next as unknown as boolean)).booleanValue();
     }

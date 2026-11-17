@@ -3,7 +3,7 @@
 // Replaces kotlinx.serialization from the Android app. Saves are not compatible with
 // the phone version's save files (they were never accessible anyway).
 import { ArrayList, BigInteger, HashMap, HashSet, JEnum } from "../runtime";
-import { CLASSES } from "../registry";
+import { allClasses } from "../registry";
 
 const VERSION = 1;
 let byCtor: Map<Function, string> | null = null;
@@ -24,7 +24,7 @@ function index() {
             if (typeof v === "function" && v.prototype && /^[A-Z]/.test(k) && !(v.prototype instanceof JEnum && false)) visit(path + "." + k, v);
         }
     };
-    for (const [name, c] of Object.entries(CLASSES)) visit(name, c);
+    for (const [name, c] of Object.entries(allClasses())) visit(name, c);
 }
 
 function isFunctionObject(o: any): boolean {

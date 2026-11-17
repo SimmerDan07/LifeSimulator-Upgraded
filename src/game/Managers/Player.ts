@@ -83,6 +83,10 @@ export class Player {
     crimeState: CrimeState = null;
     diet: Diet = null;
     familyState: FamilyState = null;
+    /** Generational play: 1 for a fresh life, +1 for each heir. */
+    generation: number = 1;
+    /** Names of earlier generations, oldest first. */
+    ancestors: string[] = [];
     firstName: string = null;
     gender: Gender = null;
     housingState: HousingState = null;
@@ -192,6 +196,8 @@ export class Player {
         Intrinsics.checkParameterIsNotNull(str, "<set-?>");
         this.lastName = str;
     }
+    getGeneration(): number { return this.generation ?? 1; }
+    getAncestors(): string[] { return this.ancestors ?? []; }
     getFullName(): string {
         return (this.firstName + " ") + this.lastName;
     }

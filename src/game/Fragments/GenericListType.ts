@@ -29,10 +29,12 @@ export class GenericListType extends JEnum {
     static readonly help: GenericListType = new GenericListType("help", 22);
     static readonly credits: GenericListType = new GenericListType("credits", 23);
     static readonly businessDetails: GenericListType = new GenericListType("businessDetails", 24);
-    static values(): GenericListType[] { return [GenericListType.weeklyModifiers, GenericListType.cashFlow, GenericListType.traits, GenericListType.childDetails, GenericListType.petDetails, GenericListType.choosePet, GenericListType.chooseDiet, GenericListType.sideHustleProjects, GenericListType.settingsMenu, GenericListType.parentDetails, GenericListType.store, GenericListType.scenarioSelection, GenericListType.customizeGame, GenericListType.perkSelection, GenericListType.perkList, GenericListType.traitList, GenericListType.badgeList, GenericListType.achivementList, GenericListType.saveSlots, GenericListType.gameSettings, GenericListType.gameSummary, GenericListType.cemetery, GenericListType.help, GenericListType.credits, GenericListType.businessDetails]; }
+    static readonly chooseHeir: GenericListType = new GenericListType("chooseHeir", 25);
+    static values(): GenericListType[] { return [GenericListType.weeklyModifiers, GenericListType.cashFlow, GenericListType.traits, GenericListType.childDetails, GenericListType.petDetails, GenericListType.choosePet, GenericListType.chooseDiet, GenericListType.sideHustleProjects, GenericListType.settingsMenu, GenericListType.parentDetails, GenericListType.store, GenericListType.scenarioSelection, GenericListType.customizeGame, GenericListType.perkSelection, GenericListType.perkList, GenericListType.traitList, GenericListType.badgeList, GenericListType.achivementList, GenericListType.saveSlots, GenericListType.gameSettings, GenericListType.gameSummary, GenericListType.cemetery, GenericListType.help, GenericListType.credits, GenericListType.businessDetails, GenericListType.chooseHeir]; }
     static valueOf(n: string): GenericListType { return (GenericListType as any)[n]; }
     constructor(name: string, ordinal: number) { super(name, ordinal); }
     getNavBarTitle(): string {
+        if (this === GenericListType.chooseHeir) return "Continue Your Legacy";
         switch (this) {
             case GenericListType.weeklyModifiers:
                 return Utils.INSTANCE.getString(R.string.ProfileSection_WeeklyModifiers);

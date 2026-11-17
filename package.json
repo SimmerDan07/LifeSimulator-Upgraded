@@ -1,6 +1,6 @@
 {
   "name": "lifesim-upgraded",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Life Simulator, ported to Windows from the Android original",
   "main": "dist/main.js",
   "private": true,
@@ -10,7 +10,8 @@
     "start": "node tools/build.mjs && electron dist",
     "test": "bash tools/test.sh 3000",
     "test:sensible": "MODE=sensible bash tools/test.sh 3000",
-    "dist:win": "node tools/build.mjs && electron-builder --win --x64"
+    "dist:win": "node tools/build.mjs && electron-builder --win --x64",
+    "test:features": "node tools/gen-registry.mjs && esbuild test/unlocks.ts --bundle --platform=node --format=esm --outfile=dist-test/unlocks.mjs --loader:.txt=text --log-level=warning && node dist-test/unlocks.mjs && esbuild test/generations.ts --bundle --platform=node --format=esm --outfile=dist-test/gen.mjs --loader:.txt=text --log-level=warning && node dist-test/gen.mjs"
   },
   "devDependencies": {
     "electron": "^33.4.11",

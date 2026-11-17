@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Generations } from "../Managers/Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
 import { ArrayList, Arrays, ArraysKt, BigInteger, Boolean, CollectionsKt, ComparisonsKt, Integer, Intrinsics, Pair, R, Ref, SpannableStringBuilder, StringBuilder, StringsKt, TypeCastException, UUID, Unit } from "../runtime";
 import { Achievement } from "../Enums/Achievement";
@@ -65,6 +66,7 @@ export class GenericListModelGenerator {
 
     }
     genericListViewModels(type: GenericListType, key: string, canNavigationBack: boolean): GenericListFragmentViewModel {
+        if (type === GenericListType.chooseHeir) return Generations.heirListViewModel();
         let hidden: SwitchViewModel;
         let additionalDescription: string;
         let obj: any;
@@ -502,6 +504,11 @@ export class GenericListModelGenerator {
                     Utils.INSTANCE.triggerNewGameStart();
                 }
                 }, 126, null));
+                if (Intrinsics.areEqual(key, Constants.ViewModel.INSTANCE.getTombstoneModeDeath()) && Generations.eligibleHeirs(personState).length > 0) {
+                    arrayList3.add(new SingleButtonViewModel(new ButtonViewModel("Continue as your child", null, false, false, false, false, false, {
+                        invoke: () => Generations.openHeirScreen(),
+                    }, 126, null)));
+                }
                 if (Intrinsics.areEqual(key, Constants.ViewModel.INSTANCE.getTombstoneModeDeath())) {
                     arrayList3.add(singleButtonViewModel);
                     arrayList3.add(singleButtonViewModel3);
