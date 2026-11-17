@@ -1,0 +1,305 @@
+// AUTO-GENERATED: every class the save system may need to rebuild.
+import * as RT from "./runtime";
+import * as M0 from "./Components/GameHUDViewModel";
+import * as M1 from "./Controllers/BankModelGenerator";
+import * as M2 from "./Controllers/EducationModelGenerator";
+import * as M3 from "./Controllers/GenericListModelGenerator";
+import * as M4 from "./Controllers/HealthModelGenerator";
+import * as M5 from "./Controllers/IViewModelGenerator";
+import * as M6 from "./Controllers/LoveModelGenerator";
+import * as M7 from "./Controllers/ProfileModelGenerator";
+import * as M8 from "./Controllers/VacationModelGenerator";
+import * as M9 from "./Controllers/WorkModelGenerator";
+import * as M10 from "./Enums/Achievement";
+import * as M11 from "./Enums/AchievementBadge";
+import * as M12 from "./Enums/ActionDescriptor";
+import * as M13 from "./Enums/AgeGroup";
+import * as M14 from "./Enums/BankAction";
+import * as M15 from "./Enums/BankActionAmount";
+import * as M16 from "./Enums/BenefitLevel";
+import * as M17 from "./Enums/Business";
+import * as M18 from "./Enums/BusinessAction";
+import * as M19 from "./Enums/ChildAgeGroup";
+import * as M20 from "./Enums/ChildEducation";
+import * as M21 from "./Enums/CompletableAction";
+import * as M22 from "./Enums/CompletableActionType";
+import * as M23 from "./Enums/Country";
+import * as M24 from "./Enums/Currency";
+import * as M25 from "./Enums/DebugFlag";
+import * as M26 from "./Enums/Diet";
+import * as M27 from "./Enums/EventChoice";
+import * as M28 from "./Enums/EventFrequency";
+import * as M29 from "./Enums/GameInAppPurchase";
+import * as M30 from "./Enums/Gender";
+import * as M31 from "./Enums/GooglePlayLeaderboard";
+import * as M32 from "./Enums/HealthEvent";
+import * as M33 from "./Enums/HealthStatus";
+import * as M34 from "./Enums/Housing";
+import * as M35 from "./Enums/IProbableEvent";
+import * as M36 from "./Enums/Job";
+import * as M37 from "./Enums/Leisure";
+import * as M38 from "./Enums/LifeScenario";
+import * as M39 from "./Enums/LifeScenarioDifficulty";
+import * as M40 from "./Enums/LotteryOutcome";
+import * as M41 from "./Enums/LoveEvent";
+import * as M42 from "./Enums/LoverPersonality";
+import * as M43 from "./Enums/MainGameTab";
+import * as M44 from "./Enums/MoneyDestination";
+import * as M45 from "./Enums/MoneyUpdateType";
+import * as M46 from "./Enums/ParentInitialState";
+import * as M47 from "./Enums/Perk";
+import * as M48 from "./Enums/PersonAttribute";
+import * as M49 from "./Enums/PersonInteraction";
+import * as M50 from "./Enums/PersonInteractionEventType";
+import * as M51 from "./Enums/Pet";
+import * as M52 from "./Enums/PlayerActionType";
+import * as M53 from "./Enums/Possession";
+import * as M54 from "./Enums/PregnancyOutcome";
+import * as M55 from "./Enums/RandomEvent";
+import * as M56 from "./Enums/Rarity";
+import * as M57 from "./Enums/Relationship";
+import * as M58 from "./Enums/RelationshipProgressStatus";
+import * as M59 from "./Enums/RomanticRelationshipStatus";
+import * as M60 from "./Enums/Sex";
+import * as M61 from "./Enums/Sexuality";
+import * as M62 from "./Enums/SideHustle";
+import * as M63 from "./Enums/Species";
+import * as M64 from "./Enums/Trait";
+import * as M65 from "./Enums/WorkAction";
+import * as M66 from "./Enums/WorkType";
+import * as M67 from "./Fragments/GenericListFragmentViewModel";
+import * as M68 from "./Fragments/GenericListType";
+import * as M69 from "./Managers/AchievementBadgeState";
+import * as M70 from "./Managers/AchievementState";
+import * as M71 from "./Managers/AdManager";
+import * as M72 from "./Managers/AdRewards";
+import * as M73 from "./Managers/AlertActionViewModel";
+import * as M74 from "./Managers/AlertManager";
+import * as M75 from "./Managers/AlertType";
+import * as M76 from "./Managers/AlertViewModel";
+import * as M77 from "./Managers/AttributeState";
+import * as M78 from "./Managers/BackgroundRewardManager";
+import * as M79 from "./Managers/BackgroundRewardState";
+import * as M80 from "./Managers/BusinessState";
+import * as M81 from "./Managers/CemetaryState";
+import * as M82 from "./Managers/CompletableActionState";
+import * as M83 from "./Managers/CrimeState";
+import * as M84 from "./Managers/FamilyState";
+import * as M85 from "./Managers/FontCache";
+import * as M86 from "./Managers/GameInAppPurchaseState";
+import * as M87 from "./Managers/GameSaveSlotState";
+import * as M88 from "./Managers/GameSettings";
+import * as M89 from "./Managers/GameStateManager";
+import * as M90 from "./Managers/GlobalGameState";
+import * as M91 from "./Managers/GlobalStateManager";
+import * as M92 from "./Managers/GoogleLeaderboardManager";
+import * as M93 from "./Managers/HousingState";
+import * as M94 from "./Managers/InAppPurchaseManager";
+import * as M95 from "./Managers/ItemState";
+import * as M96 from "./Managers/JobState";
+import * as M97 from "./Managers/LifeScenarioState";
+import * as M98 from "./Managers/MiscState";
+import * as M99 from "./Managers/Modifiers";
+import * as M100 from "./Managers/MoneyState";
+import * as M101 from "./Managers/NameGenerator";
+import * as M102 from "./Managers/PerkState";
+import * as M103 from "./Managers/Person";
+import * as M104 from "./Managers/Player";
+import * as M105 from "./Managers/PlayerPerkState";
+import * as M106 from "./Managers/SettingRow";
+import * as M107 from "./Managers/SettingsManager";
+import * as M108 from "./Managers/SideHustleState";
+import * as M109 from "./Managers/SocialBarItem";
+import * as M110 from "./Managers/SoundEffect";
+import * as M111 from "./Managers/SoundManager";
+import * as M112 from "./Managers/SoundTrack";
+import * as M113 from "./Managers/StockState";
+import * as M114 from "./Managers/TelemetryManager";
+import * as M115 from "./Managers/TempState";
+import * as M116 from "./Managers/TraitState";
+import * as M117 from "./Models/ActionCellMultipleOptionsViewModel";
+import * as M118 from "./Models/ActionCellSingleViewModel";
+import * as M119 from "./Models/ActionProgressViewModel";
+import * as M120 from "./Models/BaseViewModel";
+import * as M121 from "./Models/ButtonViewModel";
+import * as M122 from "./Models/CellType";
+import * as M123 from "./Models/CustomizeOptionsViewModel";
+import * as M124 from "./Models/CustomizeSingleOptionViewModel";
+import * as M125 from "./Models/CustomizeSliderViewModel";
+import * as M126 from "./Models/CustomizeSwitchViewModel";
+import * as M127 from "./Models/CustomizeTextFieldViewModel";
+import * as M128 from "./Models/EditableTextFieldViewModel";
+import * as M129 from "./Models/HeaderTitleViewModel";
+import * as M130 from "./Models/ImageButtonViewModel";
+import * as M131 from "./Models/ImageCellViewModel";
+import * as M132 from "./Models/LeftRightCellViewModel";
+import * as M133 from "./Models/NavigationBarViewModel";
+import * as M134 from "./Models/OptionsBarViewModel";
+import * as M135 from "./Models/ProgressBarCellViewModel";
+import * as M136 from "./Models/ProgressBarViewModel";
+import * as M137 from "./Models/ProgressCellTappableViewModel";
+import * as M138 from "./Models/SettingsRowViewModel";
+import * as M139 from "./Models/SingleButtonViewModel";
+import * as M140 from "./Models/SingleLabelCellViewModel";
+import * as M141 from "./Models/SliderViewModel";
+import * as M142 from "./Models/SwitchViewModel";
+import * as M143 from "./Models/TextLabelViewModel";
+import * as M144 from "./Models/TombstoneViewModel";
+import * as M145 from "./Models/WorkButtonsViewModel";
+import * as M146 from "./Utils/Constants";
+import * as M147 from "./Utils/ExtensionsKt";
+import * as M148 from "./Utils/Utils";
+import * as M149 from "./Utils/ValueRange";
+export const CLASSES: Record<string, any> = Object.assign({},
+    { ArrayList: RT.ArrayList, HashMap: RT.HashMap, HashSet: RT.HashSet, Pair: RT.Pair, Triple: RT.Triple, BigInteger: RT.BigInteger, SpannableStringBuilder: RT.SpannableStringBuilder },
+    M0,
+    M1,
+    M2,
+    M3,
+    M4,
+    M5,
+    M6,
+    M7,
+    M8,
+    M9,
+    M10,
+    M11,
+    M12,
+    M13,
+    M14,
+    M15,
+    M16,
+    M17,
+    M18,
+    M19,
+    M20,
+    M21,
+    M22,
+    M23,
+    M24,
+    M25,
+    M26,
+    M27,
+    M28,
+    M29,
+    M30,
+    M31,
+    M32,
+    M33,
+    M34,
+    M35,
+    M36,
+    M37,
+    M38,
+    M39,
+    M40,
+    M41,
+    M42,
+    M43,
+    M44,
+    M45,
+    M46,
+    M47,
+    M48,
+    M49,
+    M50,
+    M51,
+    M52,
+    M53,
+    M54,
+    M55,
+    M56,
+    M57,
+    M58,
+    M59,
+    M60,
+    M61,
+    M62,
+    M63,
+    M64,
+    M65,
+    M66,
+    M67,
+    M68,
+    M69,
+    M70,
+    M71,
+    M72,
+    M73,
+    M74,
+    M75,
+    M76,
+    M77,
+    M78,
+    M79,
+    M80,
+    M81,
+    M82,
+    M83,
+    M84,
+    M85,
+    M86,
+    M87,
+    M88,
+    M89,
+    M90,
+    M91,
+    M92,
+    M93,
+    M94,
+    M95,
+    M96,
+    M97,
+    M98,
+    M99,
+    M100,
+    M101,
+    M102,
+    M103,
+    M104,
+    M105,
+    M106,
+    M107,
+    M108,
+    M109,
+    M110,
+    M111,
+    M112,
+    M113,
+    M114,
+    M115,
+    M116,
+    M117,
+    M118,
+    M119,
+    M120,
+    M121,
+    M122,
+    M123,
+    M124,
+    M125,
+    M126,
+    M127,
+    M128,
+    M129,
+    M130,
+    M131,
+    M132,
+    M133,
+    M134,
+    M135,
+    M136,
+    M137,
+    M138,
+    M139,
+    M140,
+    M141,
+    M142,
+    M143,
+    M144,
+    M145,
+    M146,
+    M147,
+    M148,
+    M149,
+);

@@ -1,0 +1,55 @@
+{
+  "name": "lifesim-upgraded",
+  "version": "0.1.0",
+  "description": "Life Simulator, ported to Windows from the Android original",
+  "main": "dist/main.js",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "build": "node tools/build.mjs",
+    "start": "node tools/build.mjs && electron dist",
+    "test": "bash tools/test.sh 3000",
+    "test:sensible": "MODE=sensible bash tools/test.sh 3000",
+    "dist:win": "node tools/build.mjs && electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "com.lifesim.upgraded.desktop",
+    "productName": "Life Simulator",
+    "electronVersion": "33.4.11",
+    "directories": {
+      "app": "dist",
+      "output": "release"
+    },
+    "files": [
+      "**/*",
+      "!**/*.map"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "LifeSimulator-${version}-portable.exe"
+    }
+  }
+}

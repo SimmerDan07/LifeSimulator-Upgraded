@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'">
+<title>Life Simulator</title>
+<link rel="stylesheet" href="renderer.css">
+</head>
+<body>
+<header id="hud">
+    <div class="who">
+        <div id="hud-name"></div>
+        <div class="date"><span id="hud-age"></span><span>·</span><span id="hud-month"></span><span id="hud-week"></span></div>
+    </div>
+    <div class="stats">
+        <div class="stat" title="Health"><span class="fa" style="color:#d65645">&#xf004;</span><div class="bar"><div id="hud-health"></div></div></div>
+        <div class="stat" title="Happiness"><span class="fa" style="color:#f1c40f">&#xf118;</span><div class="bar"><div id="hud-happiness"></div></div></div>
+        <div class="stat" title="Sanity"><span class="fa" style="color:#e685c1">&#xf5dc;</span><div class="bar"><div id="hud-sanity"></div></div></div>
+    </div>
+    <div></div>
+    <div class="money">
+        <div title="Cash"><img id="hud-cash-icon" alt=""><span id="hud-cash"></span></div>
+        <div title="Bank"><img id="hud-bank-icon" alt=""><span id="hud-bank"></span></div>
+    </div>
+    <button id="hud-settings" title="Settings"><img alt=""></button>
+</header>
+<nav id="tabs"></nav>
+<main id="main">
+    <div id="content"></div>
+    <div id="footer" class="empty"></div>
+</main>
+<div id="overlay"></div>
+<div id="modals"></div>
+<div id="toasts"></div>
+<script src="renderer.js"></script>
+</body>
+</html>
