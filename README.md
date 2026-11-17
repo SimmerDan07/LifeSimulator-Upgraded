@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, elixir price, the property system + old-save migration, assisted dying
+npm run test:features  # checks unlocks, generational play, elixir price, the property system + old-save migration, assisted dying, new-game names
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -85,8 +85,10 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   - **Inheritance**: with generational play the heir inherits every property with its mortgage and history; property
     given to the heir comes back to them, and an heir who lived in a family property keeps living there (the surviving
     parent stays on in the old family home).
-  - **The classic Housing list still works** exactly as before (buy, buy max, sell, sell max, move here). It now buys a
-    standard property at the current market price and sells your least important units at market value.
+  - **One place for everything**: the Real Estate screen holds where you live, your properties, *Rent a Place* (the
+    original "Move here" options), *Buy Property* (the market plus standard properties with Buy 1 / Buy max / Sell all,
+    which replace the old Purchase / Purchase Max / Sell / Sell Max buttons) and your sale/gift history. The Profile
+    tab's Housing section is now one card showing where you live, with buttons into Real Estate.
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
 - **Assisted Dying** (Health tab, adults 18+, $10,000 — set in `src/game/Managers/AssistedDying.ts`): after a
@@ -96,6 +98,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - **Net worth** now includes property equity (value minus mortgages).
 
 ## Fixes to the original
+- New-game customization: a typed first/last name was lost — the boxes were redrawn empty, and picking a sex
+  afterwards re-rolled the first name.
 - Exactly $9,999 displayed as $0.
 - Checking for a college degree could freeze the game (decompiler bug in a reduce loop).
 

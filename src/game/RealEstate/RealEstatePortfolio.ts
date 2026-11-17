@@ -145,6 +145,12 @@ export class RealEstatePortfolio {
     /** Current weekly rent collected from properties of one type (for the classic Housing screen). */
     rentForType(type: string): number { return this.all().filter((p) => p.type === type).reduce((s, p) => s + this.weeklyRent(p), 0); }
 
+    /** Weekly rent of a standard (suburbs, condition 85) property of a type, fully let. */
+    standardRent(type: string, country: string): number {
+        const p = new OwnedProperty();
+        p.type = type; p.country = country; p.neighborhood = "suburbs"; p.quality = 1; p.condition = 85; p.renovations = {};
+        return this.rentPotential(p);
+    }
     totalValue(): number { return this.all().reduce((s, p) => s + this.value(p), 0); }
     totalDebt(): number { return this.all().reduce((s, p) => s + (p.mortgage?.balance ?? 0), 0); }
     totalEquity(): number { return this.totalValue() - this.totalDebt(); }

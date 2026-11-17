@@ -194,7 +194,10 @@ const house = pf.all()[0];
             if (!vm.getContentViewModels().size()) { ok = false; msg += t.name() + " empty; "; }
         }
         const prof = ProfileModelGenerator.INSTANCE?.getHousingViewModels?.();
-        if (prof && !buttons(prof).some((b) => /My Properties/.test(b.getTitle()))) { ok = false; msg += "profile has no entry; "; }
+        if (prof && !buttons(prof).some((b) => /Open Real Estate/.test(b.getTitle()))) { ok = false; msg += "profile has no entry; "; }
+        if (prof && buttons(prof).some((b) => /Purchase|Sell/.test(b.getTitle()))) { ok = false; msg += "old buy/sell buttons still on Profile; "; }
+        const ov = buttons(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.realEstate, "", true).getContentViewModels()).map((b) => b.getTitle());
+        if (!ov.includes("Buy 1") || !ov.some((t) => /^Buy max/.test(t)) || !ov.some((t) => /^Sell all/.test(t)) || !ov.some((t) => /Move out & rent here|Move here/.test(t))) { ok = false; msg += "real estate screen missing rent/buy/sell: " + ov.join(","); }
     } catch (e: any) { ok = false; msg = e.stack; }
     check("all property screens render", ok, msg);
     const det = GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.propertyDetails, house.id, true);
@@ -248,6 +251,7 @@ const house = pf.all()[0];
     }
     const death = alerts.find((a) => /died/i.test(a.getTitle()));
     check("parent died", !!death);
+    const valueAtDeath = pf.totalValue();
     (death?.getAdditionalButtons() ?? []).find((b: any) => /child/i.test(b.getTitle()))?.getAction().invoke();
     AlertManager.INSTANCE.alertDismissed(death);
     const heirBtn = buttons(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.chooseHeir, "", false).getContentViewModels()).find((b) => /Ava/.test(b.getTitle()));
@@ -259,7 +263,7 @@ const house = pf.all()[0];
     check("inheritance recorded in property history", hp.all().every((x) => x.history.some((e) => /Inherited by Ava/.test(e.text))));
     check("Ava keeps living in the house she lived in", hp.get(h1.id)?.use === "residence" && h.getHousingState().currentHousing().getType() === Housing.house);
     check("gift to Ben stays Ben's", hp.gifted.length === 1 && !hp.get(h2.id));
-    check("estate value carried over", Math.abs(hp.totalValue() - value) / value < 0.01);
+    check("estate value carried over", Math.abs(hp.totalValue() - valueAtDeath) / valueAtDeath < 0.001);
     alerts.length = 0;
     for (let i = 0; i < 4; i++) { h.applyWeekly(); clearAlerts(); }
     check("heir's weeks run", true);

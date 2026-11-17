@@ -292,20 +292,29 @@ export class GenericListModelGenerator {
                     Intrinsics.throwNpe();
                 }
                 let booleanRef: Ref.BooleanRef = new Ref.BooleanRef();
-                booleanRef.element = false;
+                // Fix: remember a typed name across screen refreshes (the original kept this flag per render, so
+                // picking a sex afterwards re-rolled the first name, and the boxes were redrawn empty).
+                const np: any = newGamePlayerState;
+                booleanRef.element = np.customFirstName === true;
                 arrayList.add(new CustomizeTextFieldViewModel(Utils.INSTANCE.getString(R.string.CustomGame_FirstName), new EditableTextFieldViewModel(Utils.INSTANCE.getString(R.string.CustomGame_TapToCustomize), {
                     invoke: (it: string) => {
                     Intrinsics.checkParameterIsNotNull(it, "it");
-                    newGamePlayerState.setFirstName(it);
+                    const name = it.trim();
+                    if (name.length === 0) { np.customFirstName = false; booleanRef.element = false; return; }
+                    newGamePlayerState.setFirstName(name);
+                    np.customFirstName = true;
                     booleanRef.element = true;
                 }
-                }, false, 4, null)));
+                }, false, 4, null).withInitialText(np.customFirstName ? newGamePlayerState.getFirstName() : null)));
                 arrayList.add(new CustomizeTextFieldViewModel(Utils.INSTANCE.getString(R.string.CustomGame_LastName), new EditableTextFieldViewModel(Utils.INSTANCE.getString(R.string.CustomGame_TapToCustomize), {
                     invoke: (it: string) => {
                     Intrinsics.checkParameterIsNotNull(it, "it");
-                    newGamePlayerState.initializeLastName(it);
+                    const name = it.trim();
+                    if (name.length === 0) { np.customLastName = false; return; }
+                    newGamePlayerState.initializeLastName(name);
+                    np.customLastName = true;
                 }
-                }, false, 4, null)));
+                }, false, 4, null).withInitialText(np.customLastName ? newGamePlayerState.getLastName() : null)));
                 arrayList.add(new CustomizeOptionsViewModel(Utils.INSTANCE.getString(R.string.Common_Sex), newGamePlayerState.getMiscState().getIsSexExplicitlySet() ? newGamePlayerState.getSex().getTitle() : Utils.INSTANCE.getString(R.string.Common_Random), [new CustomizeSingleOptionViewModel(Sex.male.getTitle(), Sex.male.getImageId(), {
                     invoke: () => {
                     newGamePlayerState.initializeSex(Sex.male, !booleanRef.element);

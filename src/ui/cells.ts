@@ -328,6 +328,7 @@ function textField(vm: EditableTextFieldViewModel | null | undefined): HTMLEleme
     const i = el("input", "text-input");
     i.type = "text";
     i.placeholder = vm.getPlaceholderText() ?? "";
+    if ((vm as any).initialText) i.value = (vm as any).initialText;
     i.addEventListener("input", () => { try { vm.getTextChangedHandler().invoke(i.value); } catch (e) { console.error(e); } });
     i.addEventListener("change", () => afterAction());
     return i;

@@ -3,6 +3,9 @@
 import { Function1, Intrinsics } from "../runtime";
 
 export class EditableTextFieldViewModel {
+    /** Text to show in the box when it's (re)drawn, so typed values don't vanish on refresh. */
+    initialText: string | null = null;
+    withInitialText(t: string | null): EditableTextFieldViewModel { this.initialText = t; return this; }
     static INSTANCE: any;
     static hidden: EditableTextFieldViewModel;
     hidden: boolean = false;

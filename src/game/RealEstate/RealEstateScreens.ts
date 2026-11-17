@@ -19,6 +19,9 @@ import { SingleButtonViewModel } from "../Models/SingleButtonViewModel";
 import { ProgressBarCellViewModel } from "../Models/ProgressBarCellViewModel";
 import { ProgressBarViewModel } from "../Models/ProgressBarViewModel";
 import { Relationship } from "../Enums/Relationship";
+import { Housing } from "../Enums/Housing";
+import { HousingState } from "../Managers/HousingState";
+import { BigInteger } from "../runtime";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Utils } from "../Utils/Utils";
 import { RealEstatePortfolio, RealEstateEvent } from "./RealEstatePortfolio";
@@ -124,20 +127,44 @@ export const RealEstateScreens = {
     },
 
     // ---------------------------------------------------------------- Profile tab summary (shown above the classic Housing list)
+    /** The Profile tab's whole Housing section: where you live + entry to Real Estate. */
     profileSummary(content: ArrayList<any>) {
         const pl = player(), pf = portfolio();
         pf.reconcile(pl);
         const n = pf.all().length;
         const rent = pf.all().reduce((s, p) => s + pf.weeklyRent(p), 0);
         const costs = pf.all().reduce((s, p) => s + pf.weeklyCosts(p), 0);
-        const lines: Line[] = n
-            ? [["Properties", String(pf.all().reduce((s, p) => s + p.units, 0))], ["Value", money(pf.totalValue())], ["Equity", money(pf.totalEquity())],
-               ["Net per week", signed(rent - costs), rent - costs >= 0 ? R.color.flatGreen : R.color.flatRed]]
-            : [["", "Buy homes and investment properties, renovate them, rent them out and pass them down to your children."]];
-        content.add(cell(R.drawable.housing_house, "Real Estate", lines, [
-            button("My Properties", true, () => RealEstateScreens.open(GenericListType.realEstate)),
+        const cur = pl.getHousingState().currentHousing().getType();
+        const home = pf.residence();
+        const lines: Line[] = [["Living in", home ? `${home.name} (your home)` : `${cur.getTitle()}${RealEstateScreens.rentText(cur)}`]];
+        if (n) {
+            lines.push(["Properties", String(pf.all().reduce((s, p) => s + p.units, 0))], ["Equity", money(pf.totalEquity())],
+                ["Net per week", signed(rent - costs), rent - costs >= 0 ? R.color.flatGreen : R.color.flatRed]);
+        } else lines.push(["", "Rent a place, or buy homes and investment properties, renovate them, rent them out and pass them down."]);
+        const sb = rich(lines).getStringBuilder();
+        ExtensionsKt.appendNewline(sb);
+        ExtensionsKt.appendAttributesString$default(sb, cur.getModifiers(), null, null, null, 14, null);
+        content.add(new ActionCellMultipleOptionsViewModel(home ? img(home) : cur.getImageId(), "Real Estate", new TextLabelViewModel("", null, false, false, null, sb), text(""), [
+            button("Open Real Estate", true, () => RealEstateScreens.open(GenericListType.realEstate)),
             button("Property Market", true, () => RealEstateScreens.open(GenericListType.propertyMarket)),
-        ]));
+        ], null));
+    },
+
+    rentText(h: any): string {
+        const r = h.getRentalCost?.();
+        if (r == null || r.signum() <= 0) return "";
+        return ` — rent ${ExtensionsKt.numberDisplayString(r, true)}/week`;
+    },
+
+    /** Moves into a rented place (original rules: pets limit, owned homes are lived in rent-free). */
+    rentPlace(h: any) {
+        const pl = player();
+        if (h.getNumberOfPetsAllowed() < pl.getFamilyState().getAlivePets().size()) { AlertManager.INSTANCE.showTooManyPetsAlert(h); return; }
+        pl.getHousingState().moveHere(h);
+        portfolio().reconcile(pl);
+        RealEstateScreens.reload();
+        const f = GameStateManager.INSTANCE.getMainGameFragment();
+        if (f != null) f.updateUI(null);
     },
 
     // ---------------------------------------------------------------- overview
@@ -161,13 +188,28 @@ export const RealEstateScreens = {
             ["Net per week", signed(rent - costs), rent - costs >= 0 ? R.color.flatGreen : R.color.flatRed],
             ["Local market", `${idx.toFixed(2)}× (${pct(idx - 1)} vs. the base prices)`],
         ]));
-        content.add(new SingleButtonViewModel(button("Browse the Property Market", true, () => RealEstateScreens.open(GenericListType.propertyMarket))));
-
         const home = pf.residence();
+        const cur = pl.getHousingState().currentHousing().getType();
+        const atParents = cur === Housing.parentsHouse;
+
+        // Where you live
+        content.add(new HeaderTitleViewModel("Where You Live"));
+        {
+            const sb = rich(home
+                ? [["", `${home.typeLabel()} · ${home.neighborhoodLabel()}${home.city ? ", " + home.city : ""}`], ["", "You own this home."]]
+                : [["", atParents ? "You live with your parents until you're 18." : cur.getRentalCost().signum() > 0 ? `Renting${RealEstateScreens.rentText(cur)}` : "No rent to pay."]]).getStringBuilder();
+            ExtensionsKt.appendNewline(sb);
+            ExtensionsKt.appendAttributesString$default(sb, cur.getModifiers(), null, null, null, 14, null);
+            if (home && home.comfort() > 0) ExtensionsKt.appendNormal$default(sb, `  +${home.comfort().toFixed(2)} happiness from renovations`, R.color.flatGreen, null, null, 12, null);
+            content.add(new ActionCellMultipleOptionsViewModel(home ? img(home) : cur.getImageId(), home ? "🏠 " + home.name : cur.getTitle(),
+                new TextLabelViewModel("", null, false, false, null, sb), text(""),
+                home ? [button("Manage", true, () => RealEstateScreens.open(GenericListType.propertyDetails, home.id))] : [], null));
+        }
+
         const order = (p: OwnedProperty) => (p.use === "residence" ? 0 : p.info().category === "Residential" ? 1 : 2);
-        const sorted = [...props].sort((a, b) => order(a) - order(b) || pf.value(b) - pf.value(a));
-        if (sorted.length) content.add(new HeaderTitleViewModel("Your Properties"));
-        else content.add(label("RENone", [["", "You don't own any property yet. Buy one from the market (with a mortgage if you need it), or through the classic Housing list on your Profile."]]));
+        const sorted = [...props].filter((p) => p !== home).sort((a, b) => order(a) - order(b) || pf.value(b) - pf.value(a));
+        if (sorted.length) content.add(new HeaderTitleViewModel(home ? "Your Other Properties" : "Your Properties"));
+        else if (!home) content.add(label("RENone", [["", "You don't own any property yet. Browse the market below (mortgages available) or buy a standard property instantly."]]));
         for (const p of sorted) {
             const lines: Line[] = [
                 ["", `${p.typeLabel()} · ${p.neighborhoodLabel()}${p.city ? ", " + p.city : ""}`],
@@ -180,6 +222,53 @@ export const RealEstateScreens = {
             if (p.mortgage) lines.push(["Mortgage", money(p.mortgage.balance)]);
             content.add(cell(img(p), (p === home ? "🏠 " : "") + p.displayName(), lines, [button("Manage", true, () => RealEstateScreens.open(GenericListType.propertyDetails, p.id))]));
         }
+        // Rent a place (the original "Move here" options)
+        if (!atParents) {
+            const hs = pl.getHousingState();
+            const rentable = Housing.INSTANCE.housingOptions(pl).filter((h: any) => h.getLivable() && h !== cur && h !== Housing.parentsHouse
+                && !(h.getPurchasable() && hs.getState(h).getNumberOwned().signum() > 0));
+            if (rentable.length) content.add(new HeaderTitleViewModel("Rent a Place"));
+            for (const h of rentable) {
+                const req = h.getRequiredItem();
+                const locked = req != null && !pl.getItemState().isOwned(req);
+                const sb = rich([["Rent", h.getRentalCost().signum() > 0 ? `${ExtensionsKt.numberDisplayString(h.getRentalCost(), true)}/week` : "Free"]]).getStringBuilder();
+                if (locked) { ExtensionsKt.appendNewline(sb); ExtensionsKt.appendNormal$default(sb, Utils.Strings.INSTANCE.getRequiresString(req.getTitle()), R.color.flatRed, null, null, 12, null); }
+                ExtensionsKt.appendNewline(sb);
+                ExtensionsKt.appendAttributesString$default(sb, h.getModifiers(), null, null, null, 14, null);
+                content.add(new ActionCellMultipleOptionsViewModel(h.getImageId(), h.getTitle(), new TextLabelViewModel("", null, false, false, null, sb), text(""),
+                    [button(home ? "Move out & rent here" : "Move here", !locked, () => RealEstateScreens.rentPlace(h))], null));
+            }
+
+            // Buy: unique listings, plus standard properties at market price (bulk buying lives here)
+            content.add(new HeaderTitleViewModel("Buy Property"));
+            content.add(label("REBuyIntro", [["", "The market has individual homes and buildings (fixer-uppers to pristine, mortgages available). Standard properties below are bought instantly at the market price, in any quantity, and rented out for you."]]));
+            content.add(new SingleButtonViewModel(button("Browse the Property Market", true, () => RealEstateScreens.open(GenericListType.propertyMarket))));
+            const country = RealEstatePortfolio.countryKey(pl);
+            const cash = pl.getMoneyState().getCash();
+            for (const h of Housing.INSTANCE.housingOptions(pl).filter((x: any) => x.getPurchasable())) {
+                const type = h.name();
+                const req = h.getRequiredItem();
+                const locked = req != null && !pl.getItemState().isOwned(req);
+                const price = pf.quickPriceBig(pl, h);
+                const canBuy = !locked && cash.compareTo(price) >= 0;
+                const maxN = canBuy ? cash.divide(price) : BigInteger.ZERO;
+                const owned = hs.getState(h).getNumberOwned();
+                const lines: Line[] = [["Price", ExtensionsKt.numberDisplayString(price, true)],
+                    ["Rent when let", `about ${money(pf.standardRent(type, country))}/week`],
+                    ["Type", PROPERTY_TYPES[type]?.category === "Investment" ? "Investment (can't live here)" : "Residential"]];
+                if (owned.signum() > 0) lines.push(["You own", ExtensionsKt.numberDisplayString(owned, false)]);
+                if (locked) lines.push(["", Utils.Strings.INSTANCE.getRequiresString(req.getTitle()), R.color.flatRed]);
+                const btns = [
+                    button("Buy 1", canBuy, () => { HousingState.purchase$default(pl.getHousingState(), h, null, 2, null); RealEstateScreens.reload(); }),
+                    button(maxN.compareTo(BigInteger.ONE) > 0 ? `Buy max (${ExtensionsKt.numberDisplayString(maxN, false)})` : "Buy max", canBuy, () => { pl.getHousingState().purchaseMax(h); RealEstateScreens.reload(); }),
+                ];
+                if (owned.signum() > 0) btns.push(button(`Sell all (${ExtensionsKt.numberDisplayString(owned, false)})`, true, () => RealEstateScreens.confirm("Sell All",
+                    `Sell all ${ExtensionsKt.numberDisplayString(owned, false)} ${h.getTitle()} propert${owned.compareTo(BigInteger.ONE) === 0 ? "y" : "ies"} at market value (minus ${Math.round(RE.sellingFees * 100)}% fees)?${hs.getState(h).getCurrentlyLivingHere() ? " One is your home — you'd stay on as a renter." : ""}`,
+                    h.getImageId(), "Sell all", () => { pl.getHousingState().sellMax(h); RealEstateScreens.reload(); })));
+                content.add(new ActionCellMultipleOptionsViewModel(h.getImageId(), `Standard ${h.getTitle()}`, rich(lines), text(""), btns, null));
+            }
+        }
+
         if (pf.gifted?.length) {
             content.add(new HeaderTitleViewModel("Given to Family"));
             content.add(label("REGifted", pf.gifted.slice(-10).reverse().map((g) => [g.property.displayName(), `given to ${g.recipientName}, ${when(pf.clock() - g.clock).toLowerCase()}`] as Line)));
