@@ -191,14 +191,14 @@ export class AlertManager {
         this.showDeathAlertWithMessage(attribute.getDeathMessage(), attribute.getTitle());
     }
     /** Death pop-up with any message (used for attribute deaths and Assisted Dying). */
-    showDeathAlertWithMessage(message: string, reason: string): void {
+    showDeathAlertWithMessage(message: string, reason: string, image: any = R.drawable.skull): void {
         TelemetryManager.INSTANCE.logEvent("Death_Alert", MapsKt.mapOf(TuplesKt.to("Reason", reason)));
         if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) {
             const heirButtons = new ArrayList<AlertActionViewModel>();
             if (Generations.eligibleHeirs(GameStateManager.INSTANCE.getPersonState()).length > 0) {
                 heirButtons.add(new AlertActionViewModel("Continue as your child", { invoke: () => Generations.openHeirScreen() }));
             }
-            let alertViewModel: AlertViewModel = new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_DeathTitle), message, R.drawable.skull, null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.DeathTombstoneLifeSummary), {
+            let alertViewModel: AlertViewModel = new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_DeathTitle), message, image, null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.DeathTombstoneLifeSummary), {
                 invoke: () => {
                 Utils.INSTANCE.navigateTo(GenericListType.gameSummary, Constants.ViewModel.INSTANCE.getTombstoneModeDeath(), false);
             }
