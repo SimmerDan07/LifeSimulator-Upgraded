@@ -407,7 +407,7 @@ export class Business extends JEnum {
             }
             i = 1500;
         }
-        return GameStateManager.INSTANCE.getPersonState().getMiscState().isAdDoubleIncomeRewardActive() ? (i * 2) : i;
+        return i;
     }
     getMoraleActionCostPerEmployee(): number {
         let i: Business = this;

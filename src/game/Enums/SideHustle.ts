@@ -426,7 +426,6 @@ export namespace SideHustle {
             if (boostTrait != null && player.hasTrait(boostTrait)) {
                 income = JMath.toInt(income * Trait.INSTANCE.getChooseCareerIncomeBoost());
             }
-            if (player.getMiscState().isAdDoubleIncomeRewardActive()) income *= 2;
             const item = player.getItemState().getState(hustle.getRequiredItem());
             return JMath.toInt(income * (1 + (item.getLevel() - 1) * item.getType().getItemBoostModifier()));
         }

@@ -48,8 +48,10 @@ reconstructed by hand from bytecode (e.g. job salaries, side-hustle income, mone
 
 ## Free edition (made with the developers' permission)
 All content is unlocked. Switches live in `src/game/Unlocks.ts`:
-- `removePaywall` — sandbox mode, all perks, all destinations, extra save slots and "unlock all content" are owned;
-  the store's money packs, youth potions and revive are free to claim (Settings → Store).
+- `removePaywall` — sandbox mode, all perks, all destinations, extra save slots and "unlock all content" are owned.
+- **No store (v0.5.0):** the store screen is gone. What it sold as unlocks is simply unlocked; its money packs and
+  Elixir of Youth packs no longer exist (the Elixir is still in the Health tab at its in-game price of $20M).
+  Revive on the death / bankruptcy pop-ups is kept and free (`InAppPurchaseManager` now only handles that).
 - `unlockProgression` — scenarios, perks, the achievement save slot and countries that were earned through
   achievements, life goals or daily rewards start unlocked.
 
@@ -107,5 +109,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - Checking for a college degree could freeze the game (decompiler bug in a reduce loop).
 
 ## Other differences from the phone version
-- Ads removed; "watch an ad" rewards are granted directly.
-- Leaderboards, sharing, Instagram buttons removed.
+- **No ads (v0.5.0):** the ad system is removed — no "Watch Ad for Bonus" row, no "watch an ad for double income"
+  pop-up and no double-income reward; the "You made money while away" real-time bonus is gone too.
+- **No social / online services (v0.5.0):** the Settings social bar (Instagram, Twitter, Reddit, Discord, rate, share),
+  the "rate this game" prompt, the life-summary Share button, Google leaderboard and bug-reporter rows are removed.
+- Life summary gravestone restyled (light stone) so its text is readable.

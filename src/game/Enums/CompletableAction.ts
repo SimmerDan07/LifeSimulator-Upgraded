@@ -687,7 +687,6 @@ export class CompletableAction extends JEnum {
         } else {
             AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(this.getProjectCompleteAlertTitle(), this.getProjectCompletedAlertMessage(), this.getImageId(), {
                 invoke: () => {
-                AlertManager.INSTANCE.rateGamePrompt();
             }
             }), false, 2, null);
         }

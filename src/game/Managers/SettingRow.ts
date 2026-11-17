@@ -1,7 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { JEnum, NoWhenBranchMatchedException, R } from "../runtime";
-import { AdManager } from "./AdManager";
 import { GameStateManager } from "./GameStateManager";
 import { Utils } from "../Utils/Utils";
 
@@ -83,7 +82,7 @@ export class SettingRow extends JEnum {
     }
     isEnabled(): boolean {
         if (this === SettingRow.watchAd) {
-            return AdManager.INSTANCE.isReadyToShow() && !GameStateManager.INSTANCE.getPersonState().getMiscState().isAdDoubleIncomeRewardActive();
+            return false;
         }
         return true;
     }

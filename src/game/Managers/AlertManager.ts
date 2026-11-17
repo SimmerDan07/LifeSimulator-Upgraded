@@ -6,8 +6,6 @@ import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Function0, Hash
 import { UIBridge } from "../ui/bridge";
 import { Achievement } from "../Enums/Achievement";
 import { AchievementBadge } from "../Enums/AchievementBadge";
-import { AdManager } from "./AdManager";
-import { AdRewards } from "./AdRewards";
 import { AgeGroup } from "../Enums/AgeGroup";
 import { AlertActionViewModel } from "./AlertActionViewModel";
 import { AlertType } from "./AlertType";
@@ -47,7 +45,6 @@ import { RandomEvent } from "../Enums/RandomEvent";
 import { Relationship } from "../Enums/Relationship";
 import { RelationshipProgressStatus } from "../Enums/RelationshipProgressStatus";
 import { SideHustleState } from "./SideHustleState";
-import { SocialBarItem } from "./SocialBarItem";
 import { SoundEffect } from "./SoundEffect";
 import { SoundManager } from "./SoundManager";
 import { TelemetryManager } from "./TelemetryManager";
@@ -211,33 +208,6 @@ export class AlertManager {
             GameStateManager.INSTANCE.getGlobalStateManager().getCemetaryState().addLife(GameStateManager.INSTANCE.getPersonState());
             AlertManager.showAlert$default(this, alertViewModel, false, 2, null);
         }
-    }
-    showDoubleIncomeAlert(): void {
-        AlertManager.showAlert$default(this, new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_AdTitle), Utils.INSTANCE.getString(R.string.Alert_AdMessageDoubleIncome), R.drawable.iap_money1, null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Common_Sure), {
-            invoke: () => {
-            AdManager.INSTANCE.showAd(AdRewards.doubleIncomeForAYear, "Double Income Alert");
-        }
-        }), new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Common_NoThanks), {
-            invoke: () => {
-        }
-        }), null, null, 408, null), false, 2, null);
-    }
-    rateGamePrompt(): void {
-        if (GameStateManager.INSTANCE.getGlobalStateManager().getGlobalGameState().getHasPromptedForAppRating()) {
-            return;
-        }
-        GameStateManager.INSTANCE.getGlobalStateManager().getGlobalGameState().setHasPromptedForAppRating(true);
-        AlertManager.showAlert$default(this, new AlertViewModel(Utils.INSTANCE.getString(R.string.RateGameTitle), Utils.INSTANCE.getString(R.string.RateGameDescription), R.drawable.menu_rate, null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Common_Sure), {
-            invoke: () => {
-            let mainGameActivity: MainGameActivity = GameStateManager.INSTANCE.getMainGameActivity();
-            if (mainGameActivity != null) {
-                mainGameActivity.startActivity(SocialBarItem.rateGame.getIntent());
-            }
-        }
-        }), new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Common_NoThanks), {
-            invoke: () => {
-        }
-        }), null, null, 408, null), false, 2, null);
     }
     showRelationshipBreakUp(partner: Person): void {
         Intrinsics.checkParameterIsNotNull(partner, "partner");

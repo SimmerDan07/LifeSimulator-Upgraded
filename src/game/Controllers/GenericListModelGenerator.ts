@@ -254,8 +254,6 @@ export class GenericListModelGenerator {
                     arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, personInteraction3, null, 2, null));
                 }
                 break;
-            case GenericListType.store:
-                return InAppPurchaseManager.INSTANCE.getInAppPurchaseViewModel();
             case GenericListType.scenarioSelection:
                 arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.NewGame_HeaderTitle)));
                 let states: ArrayList<LifeScenarioState.SingleLifeScenarioState> = GameStateManager.INSTANCE.getGlobalStateManager().getLifeScenarioState().getStates();
@@ -524,12 +522,12 @@ export class GenericListModelGenerator {
                         invoke: () => Generations.openHeirScreen(),
                     }, 126, null)));
                 }
+                // The "Share" (social media) button is removed in this edition.
+                void singleButtonViewModel;
                 if (Intrinsics.areEqual(key, Constants.ViewModel.INSTANCE.getTombstoneModeDeath())) {
-                    arrayList3.add(singleButtonViewModel);
                     arrayList3.add(singleButtonViewModel3);
                     break;
                 } else {
-                    arrayList3.add(singleButtonViewModel);
                     arrayList3.add(singleButtonViewModel2);
                     break;
                 }

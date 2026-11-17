@@ -231,9 +231,6 @@ export class Job extends JEnum {
             const b = Trait.INSTANCE.getChooseCareerIncomeBoost();
             vr = new ValueRange(vr.getMin() * b, vr.getMax() * b);
         }
-        if (personState.getMiscState().isAdDoubleIncomeRewardActive()) {
-            vr = new ValueRange(vr.getMin() * 2, vr.getMax() * 2);
-        }
         if (personState.getPerkState().hasPerk(Perk.diligent)) {
             const b = Perk.INSTANCE.getDiligentEarningBoost();
             vr = new ValueRange(vr.getMin() * b, vr.getMax() * b);

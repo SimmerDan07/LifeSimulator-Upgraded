@@ -4,7 +4,6 @@ import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Double, Integer
 import { AchievementBadge } from "../Enums/AchievementBadge";
 import { AchievementState } from "./AchievementState";
 import { ActionDescriptor } from "../Enums/ActionDescriptor";
-import { AdManager } from "./AdManager";
 import { AgeGroup } from "../Enums/AgeGroup";
 import { AlertManager } from "./AlertManager";
 import { AlertViewModel } from "./AlertViewModel";
@@ -828,7 +827,6 @@ export class Player {
         }
         this.updateAchievementAndBadge();
         this.showWarningAlerts();
-        this.showAdAlerts();
         let miscState: MiscState = this.miscState;
         let currentAverageHappiness: number = miscState.getCurrentAverageHappiness();
         let d: number = this.ageInWeeks - 1;
@@ -862,11 +860,6 @@ export class Player {
     }
     showDeathAlertsIfRequired(): boolean {
         return this.showAttributeDeathAlertIfRequired() || this.showBankruptcyAlertIfRequired();
-    }
-    showAdAlerts(): void {
-        if (((this.miscState.getTotalWeekInLife() % Constants.Ad.INSTANCE.getFrequencyToPromptIncomeReward()) === 0) && AdManager.INSTANCE.isReadyToShow()) {
-            AlertManager.INSTANCE.showDoubleIncomeAlert();
-        }
     }
     showWarningAlerts(): void {
         AlertManager.INSTANCE.showAttributeLowAlertIfRequired(PersonAttribute.happiness, this.attributeState.getLowAttributeCountdown_happiness());

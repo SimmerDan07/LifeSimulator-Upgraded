@@ -7,7 +7,6 @@ import { AlertType } from "../game/Managers/AlertType";
 import type { AlertViewModel } from "../game/Managers/AlertViewModel";
 import { SoundManager } from "../game/Managers/SoundManager";
 import { SoundEffect } from "../game/Managers/SoundEffect";
-import { BackgroundRewardManager } from "../game/Managers/BackgroundRewardManager";
 import { MainGameTab } from "../game/Enums/MainGameTab";
 import { GenericListType } from "../game/Fragments/GenericListType";
 import { GenericListModelGenerator } from "../game/Controllers/GenericListModelGenerator";
@@ -337,7 +336,7 @@ function boot() {
     if (!GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) {
         Utils.INSTANCE.triggerNewGameStart();
     } else {
-        try { BackgroundRewardManager.INSTANCE.showBackgroundRewardIfRequired(); } catch (e) { console.warn(e); }
+        // "You made money while away" (free real-time income, originally paired with an ad) is removed.
     }
     render();
     document.body.classList.add("ready");

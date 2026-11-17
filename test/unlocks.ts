@@ -10,6 +10,8 @@ import { GenericListModelGenerator } from "../src/game/Controllers/GenericListMo
 import { InAppPurchaseManager } from "../src/game/Managers/InAppPurchaseManager";
 import { ButtonViewModel } from "../src/game/Models/ButtonViewModel";
 import { PersonAttribute } from "../src/game/Enums/PersonAttribute";
+import { SettingsManager } from "../src/game/Managers/SettingsManager";
+import { OptionsBarViewModel } from "../src/game/Models/OptionsBarViewModel";
 const alerts: any[] = [];
 UIBridge.install({ broadcast() {}, reloadGenericList() {}, navigateTo() {}, backToMainGame() {}, showAlert(vm) { alerts.push(vm); }, readFile: () => null, writeFile() {} });
 class M extends MainGameFragment { updateUI() {} updateHUD() {} reloadTab() {} getSelectedTab() { return MainGameTab.Profile; } }
@@ -38,17 +40,18 @@ const cust = GenericListModelGenerator.INSTANCE.genericListViewModels(GenericLis
 check("sandbox customize screen", cust.getContentViewModels().length > 0, cust.getContentViewModels().map((c: any) => c.constructor.name).join(","));
 GameStateManager.INSTANCE.startNewGame(GameStateManager.INSTANCE.getNewGamePlayerState()!);
 const p = GameStateManager.INSTANCE.getPersonState();
-// store consumables
+// store removed: no free money or free elixir, no store screen, no social/ads in Settings
 const cash0 = p.getMoneyState().getCash();
-InAppPurchaseManager.INSTANCE.purchaseProduct(GameInAppPurchase.moneyPack1);
-check("money pack claimed free", p.getMoneyState().getCash().compareTo(cash0) > 0, `${cash0} -> ${p.getMoneyState().getCash()}`);
+for (const item of GameInAppPurchase.values()) if (item !== GameInAppPurchase.revive) InAppPurchaseManager.INSTANCE.purchaseProduct(item);
+check("money packs give nothing", p.getMoneyState().getCash().compareTo(cash0) === 0, `${cash0} -> ${p.getMoneyState().getCash()}`);
 const age0 = p.getAgeInYears();
-p.setAgeInWeeks(p.getAgeInWeeks() + 48 * 20);
-InAppPurchaseManager.INSTANCE.purchaseProduct(GameInAppPurchase.youthPotion1);
-check("youth potion works", p.getAgeInYears() === age0 + 10, `age ${age0 + 20} -> ${p.getAgeInYears()}`);
-const store = InAppPurchaseManager.INSTANCE.getInAppPurchaseViewModel();
-const stb = buttons(store.getContentViewModels());
-check("store renders", stb.length > 0, stb.map((b) => b.getTitle()).join(" | "));
+check("elixir packs give nothing", p.getAgeInYears() === age0);
+check("no store screen", typeof (InAppPurchaseManager.INSTANCE as any).getInAppPurchaseViewModel !== "function");
+const settings = SettingsManager.INSTANCE.getSettingsViewModel();
+const rowTitles = Array.from(settings.getContentViewModels()).map((r: any) => r.getTitle?.() ?? "");
+check("settings: no Store / Watch Ad / Leaderboard / Report Bug", !rowTitles.some((t) => /Store|Watch Ad|Leaderboard|Report Bug/i.test(t)), rowTitles.join(", "));
+check("settings: no social media bar", !Array.from(settings.getHeaderViewModels()).some((h: any) => h instanceof OptionsBarViewModel));
+check("no ad income doubling", !p.getMiscState().isAdDoubleIncomeRewardActive());
 // revive after death
 p.getAttributeState().setHealth(0); void PersonAttribute;
 let death: any = null;

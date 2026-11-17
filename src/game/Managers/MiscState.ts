@@ -64,7 +64,7 @@ export class MiscState {
         this.adRewardDoubleIncomeWeeksLeft = Math.max(i, 0);
     }
     isAdDoubleIncomeRewardActive(): boolean {
-        return this.adRewardDoubleIncomeWeeksLeft > 0;
+        return false; // ads removed: the "watch an ad for double income" reward no longer exists
     }
     getIsSexExplicitlySet(): boolean {
         return this.isSexExplicitlySet;

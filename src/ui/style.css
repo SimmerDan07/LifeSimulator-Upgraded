@@ -142,8 +142,7 @@ body.no-life #hud .who, body.no-life #hud .stats, body.no-life #hud .money { vis
 .settings-row { display: flex; align-items: center; gap: 12px; }
 .settings-img img { width: 28px; height: 28px; }
 .settings-title { flex: 1; font-size: 16px; }
-.tombstone { background: #6b7378; color: #fff; border-radius: 80px 80px 12px 12px; padding: 40px 30px 30px; text-align: center; line-height: 1.6; margin-bottom: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
-.tombstone span[style*="color"] { filter: brightness(1.6); }
+.tombstone { background: linear-gradient(#e4e8eb, #cfd5d9); color: #2b2b2b; border: 2px solid #b8c0c5; border-radius: 80px 80px 12px 12px; padding: 40px 30px 30px; text-align: center; line-height: 1.6; margin-bottom: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
 
 .customize .customize-title { font-weight: 700; margin-bottom: 8px; }
 .text-input { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 8px; border: 2px solid #d5dcdf; outline: none; }
