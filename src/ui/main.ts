@@ -197,6 +197,17 @@ const nav = {
     },
 };
 
+/** Sidebar tabs (and keys 1-7): close any open menus (Settings, Real Estate, lists...) and show the tab.
+ *  Screens you can't back out of (new-life setup, choosing an heir) stay open. */
+function goToTab(tab: MainGameTab) {
+    if (nav.stack.length) {
+        if (!nav.stack.every((s) => s.canGoBack)) return;
+        nav.clear();
+        render();
+    }
+    main.selectTab(tab);
+}
+
 // ------------------------------------------------------------------ dialogs
 function showAlert(vm: AlertViewModel) {
     if (vm.getType() === AlertType.Banner) return showBanner(vm);
@@ -307,7 +318,7 @@ function boot() {
         b.dataset.tab = t.tab.name();
         b.title = t.label;
         b.innerHTML = `<img src="${imageUrl(t.icon)}" alt=""><span>${t.label}</span>`;
-        b.addEventListener("click", () => main.selectTab(t.tab));
+        b.addEventListener("click", () => goToTab(t.tab));
         tabs.appendChild(b);
     }
     $("#hud-settings").addEventListener("click", () => Utils.INSTANCE.navigateTo(GenericListType.settingsMenu, "", true));
@@ -321,7 +332,7 @@ function boot() {
             return;
         }
         if (e.key === "Escape" && nav.top()?.canGoBack) nav.pop();
-        if (!nav.stack.length && /^[1-7]$/.test(e.key) && !(e.target instanceof HTMLInputElement)) main.selectTab(TABS[+e.key - 1].tab);
+        if (/^[1-7]$/.test(e.key) && !(e.target instanceof HTMLInputElement)) goToTab(TABS[+e.key - 1].tab);
     });
     window.addEventListener("beforeunload", () => { try { GameStateManager.INSTANCE.saveData(); } catch {} });
     const saveNow = () => { try { if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) GameStateManager.INSTANCE.saveData(); } catch {} };
