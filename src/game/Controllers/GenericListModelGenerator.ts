@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
 import { Generations } from "../Managers/Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
 import { ArrayList, Arrays, ArraysKt, BigInteger, Boolean, CollectionsKt, ComparisonsKt, Integer, Intrinsics, Pair, R, Ref, SpannableStringBuilder, StringBuilder, StringsKt, TypeCastException, UUID, Unit } from "../runtime";
@@ -67,6 +68,11 @@ export class GenericListModelGenerator {
     }
     genericListViewModels(type: GenericListType, key: string, canNavigationBack: boolean): GenericListFragmentViewModel {
         if (type === GenericListType.chooseHeir) return Generations.heirListViewModel();
+        if (type === GenericListType.realEstate) return RealEstateScreens.overview();
+        if (type === GenericListType.propertyDetails) return RealEstateScreens.details(key);
+        if (type === GenericListType.propertyMarket) return RealEstateScreens.market();
+        if (type === GenericListType.propertyRenovations) return RealEstateScreens.renovations(key);
+        if (type === GenericListType.propertyFamily) return RealEstateScreens.family(key);
         let hidden: SwitchViewModel;
         let additionalDescription: string;
         let obj: any;

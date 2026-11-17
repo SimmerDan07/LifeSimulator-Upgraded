@@ -147,11 +147,15 @@ import * as M143 from "./Models/SwitchViewModel";
 import * as M144 from "./Models/TextLabelViewModel";
 import * as M145 from "./Models/TombstoneViewModel";
 import * as M146 from "./Models/WorkButtonsViewModel";
-import * as M147 from "./Unlocks";
-import * as M148 from "./Utils/Constants";
-import * as M149 from "./Utils/ExtensionsKt";
-import * as M150 from "./Utils/Utils";
-import * as M151 from "./Utils/ValueRange";
+import * as M147 from "./RealEstate/OwnedProperty";
+import * as M148 from "./RealEstate/RealEstateConfig";
+import * as M149 from "./RealEstate/RealEstatePortfolio";
+import * as M150 from "./RealEstate/RealEstateScreens";
+import * as M151 from "./Unlocks";
+import * as M152 from "./Utils/Constants";
+import * as M153 from "./Utils/ExtensionsKt";
+import * as M154 from "./Utils/Utils";
+import * as M155 from "./Utils/ValueRange";
 /** Built on first use (not at import time) so import cycles can't leave entries undefined. */
 export function allClasses(): Record<string, any> {
     return Object.assign({},
@@ -308,5 +312,9 @@ export function allClasses(): Record<string, any> {
         M149,
         M150,
         M151,
+        M152,
+        M153,
+        M154,
+        M155,
     );
 }

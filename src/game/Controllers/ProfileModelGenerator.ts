@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
 import { Generations } from "../Managers/Generations";
 import { ArrayList, BigInteger, Integer, Pair, R, SpannableStringBuilder } from "../runtime";
 import { HousingState } from "../Managers/HousingState";
@@ -88,6 +89,11 @@ export class ProfileModelGenerator implements IViewModelGenerator {
         const out = new ArrayList<BaseViewModel>();
         out.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.section_header_housing)));
         const player = GameStateManager.INSTANCE.getPersonState();
+        // Property System Overhaul: summary + entry to the real-estate screens; classic list below stays as it was.
+        const realEstate = player.getRealEstate();
+        RealEstateScreens.profileSummary(out);
+        const quickPrice = (h: Housing) => realEstate.quickPriceBig(player, h);
+        const rentFor = (h: Housing) => BigInteger.valueOf(Math.round(realEstate.rentForType(h.name())));
         const refresh = () => { const f = GameStateManager.INSTANCE.getMainGameFragment(); if (f != null) f.updateUI(this.getGameTab()); };
         for (const housingType of Housing.INSTANCE.housingOptions(player)) {
             const housingState = player.getHousingState().getState(housingType);
@@ -98,7 +104,7 @@ export class ProfileModelGenerator implements IViewModelGenerator {
                 ExtensionsKt.appendNormal$default(desc, Utils.Strings.INSTANCE.getRequiresString(req.getTitle()), null, null, null, 14, null);
             } else {
                 if (housingState.getType().getPurchasable()) {
-                    ExtensionsKt.appendNormal$default(desc, Utils.INSTANCE.getString(R.string.Common_Buy) + ": " + ExtensionsKt.numberDisplayString$default(housingState.getType().getPurchasePrice(), false, 1, null), null, null, null, 14, null);
+                    ExtensionsKt.appendNormal$default(desc, Utils.INSTANCE.getString(R.string.Common_Buy) + ": " + ExtensionsKt.numberDisplayString$default(quickPrice(housingState.getType()), false, 1, null), null, null, null, 14, null);
                 }
                 const rentLine = Utils.INSTANCE.getString(R.string.Bank_CashFlow_Rent) + ": " + ExtensionsKt.numberDisplayString$default(housingState.getType().getRentalCost(), false, 1, null);
                 if (housingState.getType().getRentalEarning().compareTo(BigInteger.ZERO) > 0) {
@@ -110,10 +116,10 @@ export class ProfileModelGenerator implements IViewModelGenerator {
                 } else if (desc.length > 0) {
                     ExtensionsKt.appendNewline(desc);
                 }
-                if (housingState.getTotalRentalIncome().compareTo(BigInteger.ZERO) > 0) {
+                if (rentFor(housingState.getType()).compareTo(BigInteger.ZERO) > 0) {
                     ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(
                         ExtensionsKt.appendNormal$default(desc, Utils.INSTANCE.getString(R.string.Bank_CashFlow_RentalIncome) + ": ", null, null, null, 14, null),
-                        String(ExtensionsKt.numberDisplayString$default(housingState.getTotalRentalIncome(), false, 1, null)), R.color.flatGreen, null, null, 12, null));
+                        String(ExtensionsKt.numberDisplayString$default(rentFor(housingState.getType()), false, 1, null)), R.color.flatGreen, null, null, 12, null));
                 }
                 ExtensionsKt.appendAttributesString$default(desc, housingState.getType().getModifiers(), null, null, null, 14, null);
             }
@@ -139,7 +145,7 @@ export class ProfileModelGenerator implements IViewModelGenerator {
                 }, 104, null));
             }
             if (housingState.getType().getPurchasable()) {
-                const canAfford = player.getMoneyState().getCash().compareTo(housingState.getType().getPurchasePrice()) >= 0;
+                const canAfford = player.getMoneyState().getCash().compareTo(quickPrice(housingState.getType())) >= 0;
                 const ownsOne = housingState.getNumberOwned().compareTo(BigInteger.ONE) >= 0;
                 const buy = Utils.INSTANCE.getString(R.string.Housing_Action_Purchase);
                 const sell = Utils.INSTANCE.getString(R.string.Common_Sell);

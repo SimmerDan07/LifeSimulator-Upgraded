@@ -139,6 +139,14 @@ export class Generations {
         for (const pet of parent.getFamilyState().getPets()) if (pet.getIsAlive()) fam.getFamilyMembers().add(pet);
         heir.familyState = fam;
 
+        // Real estate: every property (with its mortgage) passes to the heir; gifts they received come back,
+        // and if they were living in one of the family's properties they stay there.
+        const realEstate = parent.getRealEstate();
+        realEstate.markHeirHome(child);
+        heir.realEstate = realEstate;
+        realEstate.inherit(parent, heir, child);
+        const propCount = realEstate.all().length;
+
         // Hand over control.
         gsm.getSaveState().currentSlot().setPersonState(heir);
         gsm.getSaveState().setHasGameStarted(true);
@@ -150,7 +158,8 @@ export class Generations {
         AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(
             `Generation ${heir.getGeneration()}`,
             `You are now ${heir.getFullName()}, ${age}, child of ${parent.getFullName()}. ` +
-            `You inherited ${ExtensionsKt.numberDisplayString(estate, true)} and everything your parent owned.`,
+            `You inherited ${ExtensionsKt.numberDisplayString(estate, true)} and everything your parent owned` +
+            (propCount ? `, including ${propCount} propert${propCount === 1 ? "y" : "ies"} (see Real Estate on your Profile).` : "."),
             "will", null, null, null, null, null, null, 504, null), false, 2, null);
     }
 

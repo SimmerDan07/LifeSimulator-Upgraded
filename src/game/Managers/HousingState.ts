@@ -59,15 +59,13 @@ export class HousingState {
         }
         housingState.purchase(housing, bigInteger);
     }
+    // Property System Overhaul: buying and selling go through the real-estate portfolio, which charges the
+    // current market price, keeps per-property records and updates numberOwned.
     purchase(housing: Housing, number: BigInteger): void {
         Intrinsics.checkParameterIsNotNull(housing, "housing");
         Intrinsics.checkParameterIsNotNull(number, "number");
-        let moneyState: MoneyState = GameStateManager.INSTANCE.getPersonState().getMoneyState();
-        let multiply: BigInteger = housing.getPurchasePrice().multiply(number);
-        moneyState.updateMoney(multiply, MoneyUpdateType.directSpend, null, MoneyDestination.cash);
-        let state: HousingState.HousingStateSingle = this.getState(housing);
-        let add: BigInteger = state.getNumberOwned().add(number);
-        state.setNumberOwned(add);
+        const player = GameStateManager.INSTANCE.getPersonState();
+        player.getRealEstate().quickBuy(player, housing, number.doubleValue());
     }
     static sell$default(housingState: HousingState, housing: Housing, bigInteger: BigInteger, i: number, obj: any): void {
         if ((i & 2) !== 0) {
@@ -78,17 +76,18 @@ export class HousingState {
     sell(housing: Housing, number: BigInteger): void {
         Intrinsics.checkParameterIsNotNull(housing, "housing");
         Intrinsics.checkParameterIsNotNull(number, "number");
-        let moneyState: MoneyState = GameStateManager.INSTANCE.getPersonState().getMoneyState();
-        let multiply: BigInteger = housing.getPurchasePrice().multiply(number);
-        moneyState.updateMoney(multiply, MoneyUpdateType.sell, null, MoneyDestination.cash);
-        let state: HousingState.HousingStateSingle = this.getState(housing);
-        let subtract: BigInteger = state.getNumberOwned().subtract(number);
-        state.setNumberOwned(subtract);
+        const player = GameStateManager.INSTANCE.getPersonState();
+        const owned = this.getState(housing).getNumberOwned();
+        const n = number.compareTo(owned) > 0 ? owned : number;
+        player.getRealEstate().quickSell(player, housing, n.doubleValue());
     }
     purchaseMax(housing: Housing): void {
         Intrinsics.checkParameterIsNotNull(housing, "housing");
-        let divide: BigInteger = GameStateManager.INSTANCE.getPersonState().getMoneyState().getCash().divide(housing.getPurchasePrice());
-        this.purchase(housing, divide);
+        const player = GameStateManager.INSTANCE.getPersonState();
+        const price = player.getRealEstate().quickPriceBig(player, housing);
+        if (price.signum() <= 0) return;
+        const n: BigInteger = player.getMoneyState().getCash().divide(price);
+        if (n.signum() > 0) this.purchase(housing, n);
     }
     sellMax(housing: Housing): void {
         Intrinsics.checkParameterIsNotNull(housing, "housing");

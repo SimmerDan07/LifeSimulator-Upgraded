@@ -30,6 +30,8 @@ import { GenericListType } from "../Fragments/GenericListType";
 import { HealthEvent } from "../Enums/HealthEvent";
 import { HealthStatus } from "../Enums/HealthStatus";
 import { Housing } from "../Enums/Housing";
+import { RealEstatePortfolio } from "../RealEstate/RealEstatePortfolio";
+import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
 import { HousingState } from "./HousingState";
 import { IProbableEvent } from "../Enums/IProbableEvent";
 import { ItemState } from "./ItemState";
@@ -90,6 +92,8 @@ export class Player {
     firstName: string = null;
     gender: Gender = null;
     housingState: HousingState = null;
+    /** Property System Overhaul: every property owned, with condition, renovations, tenants, mortgages and history. */
+    realEstate: RealEstatePortfolio = null;
     id: string = null;
     itemState: ItemState = null;
     jobState: JobState = null;
@@ -280,6 +284,14 @@ export class Player {
     getHousingState(): HousingState {
         return this.housingState;
     }
+    /** Created on first use, so saves from before the overhaul pick it up automatically (see RealEstatePortfolio.reconcile). */
+    getRealEstate(): RealEstatePortfolio {
+        if (this.realEstate == null) {
+            this.realEstate = new RealEstatePortfolio();
+            if (this.housingState != null) this.realEstate.reconcile(this);
+        }
+        return this.realEstate;
+    }
     getCompletableActionState(): CompletableActionState {
         return this.completableActionState;
     }
@@ -340,7 +352,8 @@ export class Player {
         this.businessState = businessState;
     }
     getNetWorth(): BigInteger {
-        return this.moneyState.getTotalAsset();
+        // Cash + savings, plus property equity (value minus mortgages).
+        return this.moneyState.getTotalAsset().add(BigInteger.valueOf(Math.round(this.getRealEstate().totalEquity())));
     }
     getHealthStatus(): HealthStatus {
         return HealthStatus.INSTANCE.getStatus(this.getAgeInYears());
@@ -955,14 +968,11 @@ export class Player {
                 if ((rentalCost.compareTo(valueOf) > 0) && !housingStateSingle.getOwned()) {
                     MoneyState.updateMoney$default(this.moneyState, housingStateSingle.getType().getRentalCost(), MoneyUpdateType.expense, Utils.Strings.INSTANCE.formatWithDash(Utils.INSTANCE.getString(R.string.Bank_CashFlow_Rent), housingStateSingle.getType().getTitle()), null, 8, null);
                 }
-            } else {
-                let totalRentalIncome: BigInteger = housingStateSingle.getTotalRentalIncome();
-                let valueOf2: BigInteger = BigInteger.valueOf(0);
-                if (totalRentalIncome.compareTo(valueOf2) > 0) {
-                    MoneyState.updateMoney$default(this.moneyState, housingStateSingle.getTotalRentalIncome(), MoneyUpdateType.passiveIncome, (((Utils.INSTANCE.getString(R.string.Bank_CashFlow_RentalIncome) + " - ") + housingStateSingle.getType().getTitle()) + " x") + ExtensionsKt.numberDisplayString(housingStateSingle.getTotalRentableUnits(), false), null, 8, null);
-                }
             }
         }
+        // Rental income, property tax, upkeep, utilities, mortgages and how your home feels (replaces the
+        // original flat "rental income per unit not lived in").
+        this.getRealEstate().collectWeeklyValues(this);
         this.attributeState.setDeltaValue(PersonAttribute.health, Utils.INSTANCE.getString(R.string.identity_name_age), this.getHealthStatus().getHealthModifier());
         let effectiveInterestRate: number = this.moneyState.getEffectiveInterestRate();
         let weeksPerYear: number = Constants.Time.INSTANCE.getWeeksPerYear();
@@ -1085,6 +1095,7 @@ export class Player {
     applyWeeklyValues(): void {
         this.attributeState.applyThisWeeksValues();
         this.moneyState.applyThisWeekValues();
+        RealEstateScreens.notify(this.getRealEstate().advanceWeek(this));
         this.stockState.incrementWeek();
         FamilyState.advanceWeek$default(this.familyState, 0, 1, null);
         this.sideHustleState.advanceWeek();
