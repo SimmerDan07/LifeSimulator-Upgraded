@@ -106,6 +106,15 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   Store Manager $1,500 → District Manager $2,500 → VP of Retail $4,000. The first two levels need no diploma, the next
   three need high school, the top two need a Business degree. Mostly a happiness cost (difficult customers), rising
   with rank. Old saves get the career automatically.
+- **Years in a career (v0.8.0)**: every job card on the Work tab shows how long it has been your job ("3 years in
+  this career", "Less than a year in this career"). Each career keeps its own count (`JobStateSingle.weeksInCareer`,
+  counted every week it's your current job); switching away pauses it.
+- **Retirement (v0.8.0)** (`src/game/Managers/Retirement.ts`): from age **60 physical age** (the age the Elixir of
+  Youth rolls back, not true age) you can retire from the Work tab; on the birthday you turn 60 with a job, a pop-up
+  offers *Retire* or *Keep working*. Retiring ends your job and pays a weekly **pension** for life: 2% of your pay for
+  each year in that career, up to 70%, never less than $100/week. Retired life also gives +1 happiness and +1 sanity a
+  week. Applying for a job asks first and brings you out of retirement (pension stops while you work; retiring again
+  never pays less than before). The life summary shows "Retired".
 - **Assisted Dying** (Health tab, adults 18+, $10,000 — set in `src/game/Managers/AssistedDying.ts`): after a
   confirmation, the life ends like any other death (death pop-up, life summary, cemetery, "Continue as your child").
 - **Come Out** (Love tab, age 13+, `src/game/Managers/ComingOut.ts`): choose straight, gay or bisexual. Gives a
@@ -118,6 +127,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - **Net worth** now includes property equity (value minus mortgages).
 
 ## Fixes to the original
+- **Perks can be switched off (v0.8.0):** the new-game perk screen switched every unlocked perk back on whenever it
+  redrew, so turning one off never stuck. Fixed, and the screen now has **Enable all** / **Disable all** buttons.
 - New-game customization: a typed first/last name was lost — the boxes were redrawn empty, and picking a sex
   afterwards re-rolled the first name.
 - Exactly $9,999 displayed as $0.

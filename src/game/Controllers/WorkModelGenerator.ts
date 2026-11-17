@@ -26,6 +26,7 @@ import { Utils } from "../Utils/Utils";
 import { WorkAction } from "../Enums/WorkAction";
 import { WorkButtonsViewModel } from "../Models/WorkButtonsViewModel";
 import { WorkType } from "../Enums/WorkType";
+import { Retirement } from "../Managers/Retirement";
 
 export class WorkModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
@@ -44,6 +45,8 @@ export class WorkModelGenerator implements IViewModelGenerator {
         for (const jobStateSingle of personState.getJobState().statesForPlayer(personState)) {
             arrayList.add(jobStateSingle.getViewModel());
         }
+        const retirement = Retirement.cell();
+        if (retirement != null) arrayList.add(retirement);
         return arrayList;
     }
     /** Ported from Vineflower output (jadx could not decompile it). */

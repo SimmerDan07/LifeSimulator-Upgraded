@@ -61,6 +61,9 @@ import { TombstoneViewModel } from "../Models/TombstoneViewModel";
 import { Trait } from "../Enums/Trait";
 import { Utils } from "../Utils/Utils";
 
+/** New characters whose perks have been switched on by default already (see perkSelection). */
+const perksDefaulted = new WeakSet<object>();
+
 export class GenericListModelGenerator {
     static INSTANCE: GenericListModelGenerator = new GenericListModelGenerator();
     constructor() {
@@ -403,24 +406,46 @@ export class GenericListModelGenerator {
                     Intrinsics.throwNpe();
                 }
                 arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.Perk_HeaderTitle)));
-                let it = GameStateManager.INSTANCE.getGlobalStateManager().getPerkState().getStates().iterator();
+                const perkGlobal = GameStateManager.INSTANCE.getGlobalStateManager().getPerkState();
+                const unlockedPerks: Perk[] = [];
+                for (const st of perkGlobal.getStates()) if (perkGlobal.isPerkUnlocked(st.getType())) unlockedPerks.push(st.getType());
+                const chosen = newGamePlayerState2.getPerkState();
+                // Unlocked perks start switched on, but only the first time this screen is shown for this new
+                // character. (Before, they were re-added on every redraw, so a perk could never be switched off.)
+                if (!perksDefaulted.has(newGamePlayerState2)) {
+                    perksDefaulted.add(newGamePlayerState2);
+                    for (const perk of unlockedPerks) chosen.addPerk(perk);
+                }
+                const reloadPerks = () => { try { Utils.INSTANCE.reloadGenericList(GenericListType.perkSelection); } catch { /* not open */ } };
+                if (unlockedPerks.length > 0) {
+                    const onCount = unlockedPerks.filter((perk) => chosen.hasPerk(perk)).length;
+                    arrayList.add(new ActionCellMultipleOptionsViewModel(null, "All Perks",
+                        new TextLabelViewModel(`${onCount} of ${unlockedPerks.length} perks on`, null, false, false, null, null, 62, null),
+                        TextLabelViewModel.INSTANCE.getHidden(), [
+                            new ButtonViewModel("Enable all", null, onCount < unlockedPerks.length, false, false, false, false, {
+                                invoke: () => { for (const perk of unlockedPerks) chosen.addPerk(perk); reloadPerks(); },
+                            }, 120, null),
+                            new ButtonViewModel("Disable all", null, onCount > 0, false, false, false, false, {
+                                invoke: () => { for (const perk of unlockedPerks) chosen.getPerks().remove(perk); reloadPerks(); },
+                            }, 120, null),
+                        ], null, 32, null));
+                }
+                let it = perkGlobal.getStates().iterator();
                 while (it.hasNext()) {
                     let type3: Perk = it.next().getType();
-                    let isPerkUnlocked: boolean = GameStateManager.INSTANCE.getGlobalStateManager().getPerkState().isPerkUnlocked(type3);
-                    if (isPerkUnlocked) {
-                        newGamePlayerState2.getPerkState().addPerk(type3);
-                    }
+                    let isPerkUnlocked: boolean = perkGlobal.isPerkUnlocked(type3);
                     let description: string = isPerkUnlocked ? type3.getDescription() : type3.getLockedString();
                     let companion = ButtonViewModel.INSTANCE;
                     let hidden2: ButtonViewModel = isPerkUnlocked ? companion.getHidden() : companion.getLocked();
                     if (isPerkUnlocked) {
-                        hidden = new SwitchViewModel(true, false, {
+                        hidden = new SwitchViewModel(chosen.hasPerk(type3), false, {
                             invoke: (z3: boolean) => {
                             if (z3) {
-                                newGamePlayerState2.getPerkState().addPerk(type3);
+                                chosen.addPerk(type3);
                             } else {
-                                newGamePlayerState2.getPerkState().getPerks().remove(type3);
+                                chosen.getPerks().remove(type3);
                             }
+                            reloadPerks();
                         }
                         });
                     } else {

@@ -24,6 +24,7 @@ import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
 import { ValueRange } from "../Utils/ValueRange";
 import { WorkAction } from "../Enums/WorkAction";
+import { Retirement } from "./Retirement";
 
 export class JobState {
     static INSTANCE: any;
@@ -153,6 +154,8 @@ export namespace JobState {
         level: number = 0;
         progress: number = 0;
         type: Job = null;
+        /** Weeks this career has been your job (undefined in older saves: read via Retirement.weeksIn). */
+        weeksInCareer: number = 0;
         constructor(type: Job, i: number, i2: number) {
             Intrinsics.checkParameterIsNotNull(type, "type");
         this.type = type;
@@ -258,13 +261,20 @@ export namespace JobState {
         if (!z3) {
             ExtensionsKt.appendAttributesString$default(ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, this.type.pay(this.level).displayString(true), R.color.flatGreen, null, null, 12, null)), this.type.modifiers(this.level), null, null, null, 14, null);
         }
+        const careerText = Retirement.careerText(this);
+        if (careerText != null) {
+            if (spannableStringBuilder.length > 0 && !spannableStringBuilder.toString().endsWith("\n")) ExtensionsKt.appendNewline(spannableStringBuilder);
+            ExtensionsKt.appendNormal$default(spannableStringBuilder, careerText, null, null, null, 14, null);
+        }
         return new ActionProgressViewModel(imageId, jobTitle, new TextLabelViewModel("", null, false, false, null, spannableStringBuilder, 30, null), z2 ? Utils.INSTANCE.getString(R.string.Housing_Label_Current) : null, progressBarViewModel, null, new ButtonViewModel(Utils.INSTANCE.getString(R.string.Job_Action_Apply), null, !z2, false, z3, false, false, {
             invoke: () => {
-            GameStateManager.INSTANCE.getPersonState().getJobState().switchJob(this.getType());
-            let mainGameFragment: MainGameFragment = GameStateManager.INSTANCE.getMainGameFragment();
-            if (mainGameFragment != null) {
-                mainGameFragment.updateUI(MainGameTab.Work);
-            }
+            Retirement.beforeApplying(() => {
+                GameStateManager.INSTANCE.getPersonState().getJobState().switchJob(this.getType());
+                let mainGameFragment: MainGameFragment = GameStateManager.INSTANCE.getMainGameFragment();
+                if (mainGameFragment != null) {
+                    mainGameFragment.updateUI(MainGameTab.Work);
+                }
+            });
         }
         }, 96, null), 32, null);
     }

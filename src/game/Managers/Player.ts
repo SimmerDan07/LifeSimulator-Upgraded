@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Double, Integer, Intrinsics, JMath, Layout, MapsKt, Pair, R, Random, SpannableStringBuilder, StringCompanionObject, StringsKt, TuplesKt, TypeCastException, TypeIntrinsics, UUID, Unit } from "../runtime";
+import { Retirement } from "./Retirement";
 import { AchievementBadge } from "../Enums/AchievementBadge";
 import { AchievementState } from "./AchievementState";
 import { ActionDescriptor } from "../Enums/ActionDescriptor";
@@ -77,6 +78,12 @@ import { WorkType } from "../Enums/WorkType";
 export class Player {
     static INSTANCE: any;
     ageInWeeks: number = 0;
+    // Retirement (src/game/Managers/Retirement.ts). Undefined in older saves.
+    retired: boolean = false;
+    pensionWeekly: number = 0;
+    retiredFrom: string = null;
+    retiredAtAge: number = null;
+    retirementOffered: boolean = false;
     attributeState: AttributeState = null;
     businessState: BusinessState = null;
     completableActionState: CompletableActionState = null;
@@ -404,7 +411,7 @@ export class Player {
             }
         }
         pairArr[3] = new Pair(string, String.valueOf(arrayList2.size()));
-        pairArr[4] = new Pair(Utils.INSTANCE.getString(R.string.SectionHeader_Work), this.jobState.getCurrentJobDisplayString());
+        pairArr[4] = new Pair(Utils.INSTANCE.getString(R.string.SectionHeader_Work), (this.retired && this.jobState.getCurrentJob() == null) ? "Retired" : this.jobState.getCurrentJobDisplayString());
         pairArr[5] = new Pair(Utils.INSTANCE.getString(R.string.Family_RelationshipLabel), this.familyState.getCombinedParentRelationshipProgressStatus().title(Relationship.parent));
         pairArr[6] = new Pair((Utils.INSTANCE.getString(R.string.Common_NumberOf) + " ") + Utils.INSTANCE.getString(R.string.Common_Children), String.valueOf(this.familyState.getChildren().size()));
         pairArr[7] = new Pair((Utils.INSTANCE.getString(R.string.Common_NumberOf) + " ") + Utils.INSTANCE.getString(R.string.Common_Pets), String.valueOf(this.familyState.getPets().size()));
@@ -807,6 +814,7 @@ export class Player {
         this.collectWeeklyValues();
         this.applyWeeklyValues();
         this.setAgeInWeeks(this.ageInWeeks + 1);
+        Retirement.countWeek(this);
         let miscState: MiscState = this.miscState;
         miscState.setTotalWeekInLife(miscState.getTotalWeekInLife() + 1);
         let miscState2: MiscState = this.miscState;
@@ -939,6 +947,7 @@ export class Player {
         }
     }
     newYearReached(): void {
+        Retirement.onNewYear(this);
         if (((this.getAgeInYears() >= 18) && this.familyState.getParentsStillLiving()) && (this.housingState.currentHousing().getType() === Housing.parentsHouse)) {
             AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(Utils.INSTANCE.getString(R.string.AlertYouAreAdultNowTitle), Utils.INSTANCE.getString(R.string.AlertYouAreAdultNowMessage), R.drawable.waving_hand, Utils.INSTANCE.getString(R.string.Common_Jeez), {
                 invoke: () => {
@@ -970,6 +979,7 @@ export class Player {
         }
         // Rent you pay or earn, property tax, upkeep, utilities, mortgages and how your home feels.
         realEstate.collectWeeklyValues(this);
+        Retirement.collectWeeklyValues(this);
         this.attributeState.setDeltaValue(PersonAttribute.health, Utils.INSTANCE.getString(R.string.identity_name_age), this.getHealthStatus().getHealthModifier());
         let effectiveInterestRate: number = this.moneyState.getEffectiveInterestRate();
         let weeksPerYear: number = Constants.Time.INSTANCE.getWeeksPerYear();
