@@ -95,9 +95,10 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   - **Home comfort** replaces the old fixed "+1 happiness" tags: each home type has its own happiness/sanity, scaled
     by condition, plus renovations.
   - **Six new homes (v0.6.0)** — mid-range: Townhouse (~$350K), Ranch House (~$650K), Family Home (~$850K);
-    high-end: Penthouse (~$3M), Beachfront Villa (~$6M), Hilltop Mansion (~$25M). Icons are placeholders
-    (`assets/images/housing_townhouse.svg`, `housing_ranch_house`, `housing_family_home`, `housing_penthouse`,
-    `housing_beach_villa`, `housing_hilltop_mansion`) — replace them with same-named files.
+    high-end: Penthouse (~$3M), Beachfront Villa (~$6M), Hilltop Mansion (~$25M). Townhouse, Ranch House and Family
+    Home use the user's own icons (v0.6.1, `assets/images/housing_townhouse.png` etc.); Penthouse, Beachfront Villa
+    and Hilltop Mansion still use placeholders (`housing_penthouse.svg`, `housing_beach_villa.svg`,
+    `housing_hilltop_mansion.svg`) — replace them with same-named .png files and delete the .svg.
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
 - **Assisted Dying** (Health tab, adults 18+, $10,000 — set in `src/game/Managers/AssistedDying.ts`): after a
