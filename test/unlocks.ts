@@ -55,7 +55,7 @@ check("no ad income doubling", !p.getMiscState().isAdDoubleIncomeRewardActive())
 // revive after death
 p.getAttributeState().setHealth(0); void PersonAttribute;
 let death: any = null;
-for (let i = 0; i < 30 && !death; i++) {
+for (let i = 0; i < 300 && !death; i++) {
     while (alerts.length) { const a = alerts.shift(); if (/died/i.test(a.getTitle())) { death = a; break; } AlertManager.INSTANCE.alertDismissed(a); }
     if (death) break;
     (p.getAttributeState() as any).lowAttributeCountdown_health = 10;

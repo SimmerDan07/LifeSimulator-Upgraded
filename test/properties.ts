@@ -209,10 +209,10 @@ const house = pf.all()[0];
 // selling
 {
     const target = pf.all().find((x) => x.use !== "residence" && !x.mortgage)!;
-    const n0 = pf.all().length, owned0 = p.getHousingState().getState(Housing[target.type as "house"]).getNumberOwned().intValue(), c0 = cash(p);
+    const n0 = pf.all().length, owned0 = p.getHousingState().getState(RealEstatePortfolio.housingOf(target.type)).getNumberOwned().intValue(), c0 = cash(p);
     const expect = pf.saleProceeds(target);
     check("sell property", pf.sellProperty(p, target.id) == null && pf.all().length === n0 - 1);
-    check("sale pays market value minus fees", Math.abs(cash(p) - c0 - expect) < 2 && p.getHousingState().getState(Housing[target.type as "house"]).getNumberOwned().intValue() === owned0 - 1);
+    check("sale pays market value minus fees", Math.abs(cash(p) - c0 - expect) < 2 && p.getHousingState().getState(RealEstatePortfolio.housingOf(target.type)).getNumberOwned().intValue() === owned0 - 1);
     check("sale recorded in history", pf.sold.length >= 1);
     HousingState.purchase$default(p.getHousingState(), Housing.small_apartment, BigInteger.valueOf(30), 0, null);
     const block = pf.all().find((x) => x.type === "small_apartment" && x.units === 30);

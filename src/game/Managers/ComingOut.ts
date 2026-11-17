@@ -13,7 +13,8 @@ import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { ButtonViewModel } from "../Models/ButtonViewModel";
 import { RelationshipProgressStatus } from "../Enums/RelationshipProgressStatus";
 
-const ICON = R.drawable.love_comingout;
+// No custom picture: Love tab actions in the original game have none.
+const ICON: any = null;
 
 export const ComingOut = {
     minAge: 13,

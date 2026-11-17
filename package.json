@@ -1,6 +1,6 @@
 {
   "name": "lifesim-upgraded",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Life Simulator, ported to Windows from the Android original",
   "main": "dist/main.js",
   "private": true,
@@ -11,7 +11,7 @@
     "test": "bash tools/test.sh 3000",
     "test:sensible": "MODE=sensible bash tools/test.sh 3000",
     "dist:win": "node tools/build.mjs && electron-builder --win --x64",
-    "test:features": "node tools/gen-registry.mjs && esbuild test/unlocks.ts --bundle --platform=node --format=esm --outfile=dist-test/unlocks.mjs --loader:.txt=text --log-level=warning && node dist-test/unlocks.mjs && esbuild test/generations.ts --bundle --platform=node --format=esm --outfile=dist-test/gen.mjs --loader:.txt=text --log-level=warning && node dist-test/gen.mjs && esbuild test/properties.ts --bundle --platform=node --format=esm --outfile=dist-test/props.mjs --loader:.txt=text --log-level=warning && node dist-test/props.mjs && esbuild test/assisted.ts --bundle --platform=node --format=esm --outfile=dist-test/assisted.mjs --loader:.txt=text --log-level=warning && node dist-test/assisted.mjs && esbuild test/newgame-name.ts --bundle --platform=node --format=esm --outfile=dist-test/name.mjs --loader:.txt=text --log-level=warning && node dist-test/name.mjs && esbuild test/comingout.ts --bundle --platform=node --format=esm --outfile=dist-test/comingout.mjs --loader:.txt=text --log-level=warning && node dist-test/comingout.mjs && esbuild test/homes.ts --bundle --platform=node --format=esm --outfile=dist-test/homes.mjs --loader:.txt=text --log-level=warning && node dist-test/homes.mjs"
+    "test:features": "node tools/gen-registry.mjs && esbuild test/unlocks.ts --bundle --platform=node --format=esm --outfile=dist-test/unlocks.mjs --loader:.txt=text --log-level=warning && node dist-test/unlocks.mjs && esbuild test/generations.ts --bundle --platform=node --format=esm --outfile=dist-test/gen.mjs --loader:.txt=text --log-level=warning && node dist-test/gen.mjs && esbuild test/properties.ts --bundle --platform=node --format=esm --outfile=dist-test/props.mjs --loader:.txt=text --log-level=warning && node dist-test/props.mjs && esbuild test/assisted.ts --bundle --platform=node --format=esm --outfile=dist-test/assisted.mjs --loader:.txt=text --log-level=warning && node dist-test/assisted.mjs && esbuild test/newgame-name.ts --bundle --platform=node --format=esm --outfile=dist-test/name.mjs --loader:.txt=text --log-level=warning && node dist-test/name.mjs && esbuild test/comingout.ts --bundle --platform=node --format=esm --outfile=dist-test/comingout.mjs --loader:.txt=text --log-level=warning && node dist-test/comingout.mjs && esbuild test/homes.ts --bundle --platform=node --format=esm --outfile=dist-test/homes.mjs --loader:.txt=text --log-level=warning && node dist-test/homes.mjs && esbuild test/retail.ts --bundle --platform=node --format=esm --outfile=dist-test/retail.mjs --loader:.txt=text --log-level=warning && node dist-test/retail.mjs"
   },
   "devDependencies": {
     "electron": "^33.4.11",

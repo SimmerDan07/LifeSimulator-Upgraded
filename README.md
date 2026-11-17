@@ -101,11 +101,18 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `housing_hilltop_mansion.svg`) — replace them with same-named .png files and delete the .svg.
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Retail career (v0.7.0)** (Work tab, `Job.retail` in `src/game/Enums/Job.ts`, icon `assets/images/work_retail.png`
+  from the user): Cashier $400/wk → Senior Cashier $500 → Shift Supervisor $700 → Assistant Store Manager $1,000 →
+  Store Manager $1,500 → District Manager $2,500 → VP of Retail $4,000. The first two levels need no diploma, the next
+  three need high school, the top two need a Business degree. Mostly a happiness cost (difficult customers), rising
+  with rank. Old saves get the career automatically.
 - **Assisted Dying** (Health tab, adults 18+, $10,000 — set in `src/game/Managers/AssistedDying.ts`): after a
   confirmation, the life ends like any other death (death pop-up, life summary, cemetery, "Continue as your child").
 - **Come Out** (Love tab, age 13+, `src/game/Managers/ComingOut.ts`): choose straight, gay or bisexual. Gives a
   happiness/sanity lift; each parent is usually supportive (relationship up) but sometimes needs time (relationship
   down). Anyone you meet afterwards matches your new sexuality. Can be changed again later.
+- **No row icons on Love/Health actions (v0.7.0)**: like the original game, only careers and education have pictures,
+  so Come Out and Assisted Dying are text rows (their icons were deleted).
 - **Elixir of Youth** (Health tab) is a flat $20M instead of doubling after every purchase.
 
 - **Net worth** now includes property equity (value minus mortgages).

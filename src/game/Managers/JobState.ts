@@ -87,6 +87,12 @@ export class JobState {
                 arrayList.add(jobStateSingle);
             }
         }
+        if (arrayList.isEmpty()) {
+            // Careers added after a save was made (e.g. Retail) have no record yet in older saves.
+            const created = new JobState.JobStateSingle(job, 0, 1);
+            this.states = [...this.states, created];
+            return created;
+        }
         return (CollectionsKt.first((arrayList as unknown as ArrayList)) as unknown as JobState.JobStateSingle);
     }
     work(job: Job, workAction: WorkAction): void {

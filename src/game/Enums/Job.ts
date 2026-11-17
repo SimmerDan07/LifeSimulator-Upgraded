@@ -37,7 +37,9 @@ export class Job extends JEnum {
     static readonly sommelier: Job = new Job("sommelier", 21);
     static readonly royalGuard: Job = new Job("royalGuard", 22);
     static readonly constructionWorker: Job = new Job("constructionWorker", 23);
-    static values(): Job[] { return [Job.panHandler, Job.burgerFlipper, Job.dataEntry, Job.uber, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.police, Job.army, Job.lawyer, Job.artist, Job.actor, Job.barista, Job.sushiChef, Job.animeArtist, Job.pastryChef, Job.tourGuide, Job.sommelier, Job.royalGuard, Job.constructionWorker]; }
+    /** New in Life Sim Upgraded: a full retail career, starting as a cashier. */
+    static readonly retail: Job = new Job("retail", 24);
+    static values(): Job[] { return [Job.panHandler, Job.burgerFlipper, Job.dataEntry, Job.uber, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.police, Job.army, Job.lawyer, Job.artist, Job.actor, Job.barista, Job.sushiChef, Job.animeArtist, Job.pastryChef, Job.tourGuide, Job.sommelier, Job.royalGuard, Job.constructionWorker, Job.retail]; }
     static valueOf(n: string): Job { return (Job as any)[n]; }
     static INSTANCE: any;
     constructor(name: string, ordinal: number) { super(name, ordinal); }
@@ -89,6 +91,8 @@ export class Job extends JEnum {
                 return R.drawable.work_constructionworker;
             case Job.artist:
                 return R.drawable.work_artist;
+            case Job.retail:
+                return R.drawable.work_retail;
             case Job.actor:
                 return CompletableAction.college_theater.getImageId();
             default:
@@ -143,6 +147,8 @@ export class Job extends JEnum {
                 return [Utils.INSTANCE.getString(R.string.Job_Title_ConstructionWorker)];
             case Job.artist:
                 return [Utils.INSTANCE.getString(R.string.Title_Artist_1), Utils.INSTANCE.getString(R.string.Title_Artist_2), Utils.INSTANCE.getString(R.string.Title_Artist_3), Utils.INSTANCE.getString(R.string.Title_Artist_4), Utils.INSTANCE.getString(R.string.Title_Artist_5), Utils.INSTANCE.getString(R.string.Title_Artist_6), Utils.INSTANCE.getString(R.string.Title_Artist_7)];
+            case Job.retail:
+                return [1, 2, 3, 4, 5, 6, 7].map((i) => Utils.INSTANCE.getString((R.string as any)[`Job_Title_Retail_${i}`]));
             case Job.actor:
                 return [Utils.INSTANCE.getString(R.string.Title_Actor_1), Utils.INSTANCE.getString(R.string.Title_Actor_2), Utils.INSTANCE.getString(R.string.Title_Actor_3), Utils.INSTANCE.getString(R.string.Title_Actor_4), Utils.INSTANCE.getString(R.string.Title_Actor_5), Utils.INSTANCE.getString(R.string.Title_Actor_6), Utils.INSTANCE.getString(R.string.Title_Actor_7), Utils.INSTANCE.getString(R.string.Title_Actor_8), Utils.INSTANCE.getString(R.string.Title_Actor_9)];
             default:
@@ -218,6 +224,8 @@ export class Job extends JEnum {
             case Job.sommelier: table = [W(450), W(1000)]; break;
             case Job.royalGuard: table = [W(500), W(800)]; break;
             case Job.constructionWorker: table = [W(600)]; break;
+            // Retail: Cashier → Senior Cashier → Shift Supervisor → Assistant Store Manager → Store Manager → District Manager → VP of Retail
+            case Job.retail: table = [W(400), W(500), W(700), W(1000), W(1500), W(2500), W(4000)]; break;
             case Job.artist: table = [W(350), W(600), W(1000), W(1500), W(2500), W(4000), W(7000)]; break;
             case Job.actor:
                 table = [ValueRange.INSTANCE.getWithIntRange(0, 1000), W(400), W(800), W(1200), W(2000), W(2500), W(5000),
@@ -305,6 +313,9 @@ export class Job extends JEnum {
                 break;
             case Job.constructionWorker:
                 modifiersArr = [new Modifiers(0.0, -1.0, 0.0)];
+                break;
+            case Job.retail:
+                modifiersArr = [new Modifiers(0.0, -1.0, 0.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 0.0, -2.0), new Modifiers(0.0, 0.0, -2.0), new Modifiers(0.0, 0.0, -3.0)];
                 break;
             case Job.artist:
                 modifiersArr = [new Modifiers(0.0, -1.0, -1.0), new Modifiers(0.0, -2.0, -1.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 0.0, -2.0)];
@@ -408,6 +419,10 @@ export class Job extends JEnum {
                 return CompletableAction.middleSchool;
             case Job.constructionWorker:
                 return CompletableAction.middleSchool;
+            case Job.retail:
+                if (level <= 2) return CompletableAction.middleSchool;
+                if (level <= 5) return CompletableAction.highSchool;
+                return CompletableAction.college_business;
             case Job.artist:
                 return CompletableAction.college_art;
             case Job.actor:
@@ -442,7 +457,7 @@ export namespace Job {
         arrayList.add(Job.panHandler);
         let arrayList2: ArrayList = arrayList;
         CollectionsKt.addAll(arrayList2, player.getCountry().getUnskilledJobOptions());
-        CollectionsKt.addAll(arrayList2, [Job.dataEntry, Job.uber, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.artist, Job.actor, Job.police, Job.army, Job.lawyer]);
+        CollectionsKt.addAll(arrayList2, [Job.dataEntry, Job.uber, Job.retail, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.artist, Job.actor, Job.police, Job.army, Job.lawyer]);
         CollectionsKt.addAll(arrayList2, player.getCountry().getAdditionalJobOptions());
         let array = arrayList2.toArray(new Array(0).fill(null));
         if (array != null) {

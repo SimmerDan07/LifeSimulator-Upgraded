@@ -2475,6 +2475,9 @@ export namespace RandomEvent {
             case Job.constructionWorker:
                 CollectionsKt.addAll(mutableList, [RandomEvent.workFreeDonuts, RandomEvent.anyTerribleTraffic]);
                 break;
+            case Job.retail:
+                CollectionsKt.addAll(mutableList, [RandomEvent.workAwardedBonus, RandomEvent.workNapping, RandomEvent.workFreeDonuts, RandomEvent.anyTerribleTraffic, RandomEvent.workDifficultCustomer]);
+                break;
         }
         let arrayList: ArrayList = new ArrayList();
         for (const obj of mutableList) {
