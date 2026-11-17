@@ -324,6 +324,16 @@ function boot() {
         if (!nav.stack.length && /^[1-7]$/.test(e.key) && !(e.target instanceof HTMLInputElement)) main.selectTab(TABS[+e.key - 1].tab);
     });
     window.addEventListener("beforeunload", () => { try { GameStateManager.INSTANCE.saveData(); } catch {} });
+    // Android app (android/): the system back button calls __lifesimBack (true = handled here, false = leave the
+    // app), and the app calls __lifesimSave when it goes to the background.
+    const saveNow = () => { try { if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) GameStateManager.INSTANCE.saveData(); } catch {} };
+    (window as any).__lifesimSave = saveNow;
+    (window as any).__lifesimBack = (): boolean => {
+        if (document.querySelector(".modal-backdrop")) return true;
+        if (nav.top()?.canGoBack) { nav.pop(); return true; }
+        return false;
+    };
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveNow(); });
     setInterval(() => { try { if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) GameStateManager.INSTANCE.saveData(); } catch {} }, 30000);
 
     GameStateManager.INSTANCE.init();

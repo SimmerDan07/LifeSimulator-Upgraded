@@ -207,3 +207,45 @@ body.no-life #hud .who, body.no-life #hud .stats, body.no-life #hud .money { vis
 
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-thumb { background: #c4ccd0; border-radius: 10px; border: 2px solid var(--bg); }
+
+/* ---------------- narrow screens (small tablets in portrait, phones) — used by the Android app */
+@media (max-width: 760px) {
+    :root { --hud: 112px; --rail: 70px; }
+    #hud {
+        grid-template-columns: 1fr auto auto; grid-template-rows: auto auto; row-gap: 8px; column-gap: 14px;
+        padding: 10px 14px; align-content: center;
+    }
+    #hud .who { grid-column: 1; grid-row: 1; min-width: 0; }
+    #hud .money { grid-column: 2; grid-row: 1; }
+    #hud-settings { grid-column: 3; grid-row: 1; }
+    #hud .stats { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    #hud > div:empty { display: none; }
+    .money div { font-size: 16px; }
+    .tab { padding: 8px 2px; font-size: 11px; }
+    .tab img { width: 28px; height: 28px; }
+    #content { padding: 12px 12px 32px; }
+    #footer { padding: 8px 12px 10px; }
+}
+@media (max-width: 560px) {
+    :root { --hud: 104px; --rail: 58px; }
+    #hud-name { font-size: 16px; }
+    #hud .date { font-size: 12px; gap: 5px; }
+    .money div { font-size: 14px; gap: 5px; }
+    .money img { width: 18px; height: 18px; }
+    #hud-settings img { width: 24px; height: 24px; }
+    .tab { font-size: 10px; }
+    .tab img { width: 26px; height: 26px; }
+    .card { padding: 12px; }
+    .cell-row { grid-template-columns: 48px 1fr; gap: 10px; }
+    .cell-row.no-img { grid-template-columns: 1fr; }
+    .cell-img { width: 48px; height: 48px; }
+    .cell-row > .cell-actions { grid-column: 1 / -1; }
+    .cell-actions.single { min-width: 0; flex-direction: row; }
+    .cell-actions.single > * { flex: 1; }
+    .cell-title { font-size: 16px; }
+    .cell-subtitle { font-size: 13px; }
+    .btn { min-height: 42px; padding: 9px 10px; }
+    .btn.work { min-height: 52px; font-size: 15px; }
+    .work-buttons { gap: 6px; }
+    .button-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+}
