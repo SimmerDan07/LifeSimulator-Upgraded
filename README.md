@@ -101,6 +101,7 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `housing_hilltop_mansion.svg`) — replace them with same-named .png files and delete the .svg.
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **New school icons (v0.9.2)**: Middle School and High School use the user's own icons (`assets/images/education_middleschool.png`, `education_highschool.png`).
 - **Retail career (v0.7.0)** (Work tab, `Job.retail` in `src/game/Enums/Job.ts`, icon `assets/images/work_retail.png`
   from the user): Cashier $400/wk → Senior Cashier $500 → Shift Supervisor $700 → Assistant Store Manager $1,000 →
   Store Manager $1,500 → District Manager $2,500 → VP of Retail $4,000. The first two levels need no diploma, the next
