@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Unlocks } from "../Unlocks";
 import { JEnum } from "../runtime";
 
 export class DebugFlag extends JEnum {
@@ -13,6 +14,9 @@ export class DebugFlag extends JEnum {
     static valueOf(n: string): DebugFlag { return (DebugFlag as any)[n]; }
     constructor(name: string, ordinal: number) { super(name, ordinal); }
     getEnabled(): boolean {
+        if (Unlocks.unlockProgression && (this === DebugFlag.unlockAllScenarios || this === DebugFlag.unlockAllPerks || this === DebugFlag.unlockAllCountries)) {
+            return true;
+        }
         return false;
     }
 }

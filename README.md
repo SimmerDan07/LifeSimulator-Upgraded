@@ -12,6 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
+node test/... (see test/unlocks.ts) # checks every unlock works
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -44,8 +45,14 @@ to names), then machine-translated Java → TypeScript (`porting/j2ts.py`) with 
 replacements for Android-only parts. ~20 methods the decompilers failed on were
 reconstructed by hand from bytecode (e.g. job salaries, side-hustle income, money formatting).
 
-## Known differences from the phone version
-- In-app purchases don't exist: store items, paid perks and the paid "revive" stay locked.
+## Free edition (made with the developers' permission)
+All content is unlocked. Switches live in `src/game/Unlocks.ts`:
+- `removePaywall` — sandbox mode, all perks, all destinations, extra save slots and "unlock all content" are owned;
+  the store's money packs, youth potions and revive are free to claim (Settings → Store).
+- `unlockProgression` — scenarios, perks, the achievement save slot and countries that were earned through
+  achievements, life goals or daily rewards start unlocked.
+
+## Other differences from the phone version
 - Ads removed; "watch an ad" rewards are granted directly.
 - Fixed: amounts of exactly $9,999 displayed as $0 in the original.
 - Leaderboards, sharing, Instagram buttons removed.

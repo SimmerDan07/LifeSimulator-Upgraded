@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Unlocks } from "../Unlocks";
 import { ArrayList, Arrays, Integer, Intrinsics, JEnum, MapsKt, NoWhenBranchMatchedException, R, SpannableStringBuilder, StringCompanionObject, TuplesKt, TypeCastException } from "../runtime";
 import { Achievement } from "../Enums/Achievement";
 import { ActionCellMultipleOptionsViewModel } from "../Models/ActionCellMultipleOptionsViewModel";
@@ -119,6 +120,9 @@ export namespace GameSaveSlotState {
         isUnlocked(): boolean {
         let i: GameSaveSlotState.SaveSlotUnlockType = this.unlockType;
         if (i === GameSaveSlotState.SaveSlotUnlockType.initiallyUnlocked) {
+            return true;
+        }
+        if (i === GameSaveSlotState.SaveSlotUnlockType.achievement_highAchiever && Unlocks.unlockProgression) {
             return true;
         }
         if (i === GameSaveSlotState.SaveSlotUnlockType.achievement_highAchiever) {

@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Unlocks } from "../Unlocks";
 import { ArrayList, Intrinsics } from "../runtime";
 import { DebugFlag } from "../Enums/DebugFlag";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
@@ -65,6 +66,7 @@ export namespace LifeScenarioState {
         return this.completed;
     }
         getUnlocked(): boolean {
+        if (Unlocks.unlockProgression) return true;
         return this.unlocked;
     }
         copy(type: LifeScenario, completed: boolean, unlocked: boolean): LifeScenarioState.SingleLifeScenarioState {

@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Function0, HashMap, Integer, Intrinsics, MapsKt, R, Ref, SpannableStringBuilder, StringBuilder, StringCompanionObject, StringsKt, TuplesKt, TypeCastException } from "../runtime";
 import { UIBridge } from "../ui/bridge";
 import { Achievement } from "../Enums/Achievement";
@@ -177,7 +178,7 @@ export class AlertManager {
         }
         }), new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Alert_BankruptRevive), {
             invoke: () => {
-            InAppPurchaseManager.INSTANCE.purchasesUnavailable();
+            InAppPurchaseManager.INSTANCE.purchaseProduct(GameInAppPurchase.revive);
         }
         }), null, null, 408, null);
         GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().setHasGameStarted(false);
@@ -194,7 +195,7 @@ export class AlertManager {
             }
             }), new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Alert_DeathAction_SecondChance), {
                 invoke: () => {
-                InAppPurchaseManager.INSTANCE.purchasesUnavailable();
+                InAppPurchaseManager.INSTANCE.purchaseProduct(GameInAppPurchase.revive);
             }
             }), null, null, 408, null);
             GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().setHasGameStarted(false);

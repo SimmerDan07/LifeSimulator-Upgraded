@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
 import { ArrayList, Arrays, ArraysKt, BigInteger, Boolean, CollectionsKt, ComparisonsKt, Integer, Intrinsics, Pair, R, Ref, SpannableStringBuilder, StringBuilder, StringsKt, TypeCastException, UUID, Unit } from "../runtime";
 import { Achievement } from "../Enums/Achievement";
 import { AchievementBadge } from "../Enums/AchievementBadge";
@@ -491,7 +492,7 @@ export class GenericListModelGenerator {
                     invoke: () => {
                     AlertManager.INSTANCE.showConfirmationAlert(new AlertViewModel(Utils.INSTANCE.getString(R.string.Common_AreYouSure), Utils.INSTANCE.getString(R.string.Revive_Confirmation_Text), R.drawable.iap_revive, null, null, null, null, null, null, 504, null), {
                         invoke: () => {
-                        InAppPurchaseManager.INSTANCE.purchasesUnavailable();
+                        InAppPurchaseManager.INSTANCE.purchaseProduct(GameInAppPurchase.revive);
                     }
                     });
                 }

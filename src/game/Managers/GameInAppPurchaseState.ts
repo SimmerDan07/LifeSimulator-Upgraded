@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Unlocks } from "../Unlocks";
 import { ArrayList, CollectionsKt, Intrinsics } from "../runtime";
 import { DebugFlag } from "../Enums/DebugFlag";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
@@ -46,6 +47,9 @@ export class GameInAppPurchaseState {
     }
     isPurchased(item: GameInAppPurchase): boolean {
         Intrinsics.checkParameterIsNotNull(item, "item");
+        if (Unlocks.removePaywall && !item.getConsumable()) {
+            return true;
+        }
         if (DebugFlag.unlockAllCountries.getEnabled() && (item === GameInAppPurchase.unlockAllDestinations)) {
             return true;
         }
