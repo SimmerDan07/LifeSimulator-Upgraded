@@ -197,7 +197,8 @@ const house = pf.all()[0];
         if (prof && !buttons(prof).some((b) => /Open Real Estate/.test(b.getTitle()))) { ok = false; msg += "profile has no entry; "; }
         if (prof && buttons(prof).some((b) => /Purchase|Sell/.test(b.getTitle()))) { ok = false; msg += "old buy/sell buttons still on Profile; "; }
         const ov = buttons(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.realEstate, "", true).getContentViewModels()).map((b) => b.getTitle());
-        if (!ov.includes("Buy 1") || !ov.some((t) => /^Buy max/.test(t)) || !ov.some((t) => /^Sell all/.test(t)) || !ov.some((t) => /Move out & rent here|Move here/.test(t))) { ok = false; msg += "real estate screen missing rent/buy/sell: " + ov.join(","); }
+        if (!ov.includes("Homes for Sale") || !ov.includes("Homes for Rent")) { ok = false; msg += "real estate screen missing Find a Home: " + ov.join(","); }
+        if (ov.some((t) => /^Buy 1$|^Buy max|^Sell all/.test(t))) { ok = false; msg += "old bulk buy/sell buttons still there: " + ov.join(","); }
     } catch (e: any) { ok = false; msg = e.stack; }
     check("all property screens render", ok, msg);
     const det = GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.propertyDetails, house.id, true);

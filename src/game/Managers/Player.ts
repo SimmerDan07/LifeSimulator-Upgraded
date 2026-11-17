@@ -953,8 +953,13 @@ export class Player {
         }
     }
     collectWeeklyValues(): void {
+        // Real homes (owned or rented) are handled by the property system; only basic places (park bench,
+        // shared room, parents' house, jail) keep the original fixed effects and rent.
+        const realEstate = this.getRealEstate();
+        realEstate.reconcile(this);
+        const realHome = realEstate.managesHome();
         for (const housingStateSingle of this.housingState.getStates()) {
-            if (housingStateSingle.getCurrentlyLivingHere()) {
+            if (housingStateSingle.getCurrentlyLivingHere() && !realHome) {
                 this.attributeState.setDeltaValue(housingStateSingle.getType().getModifiers(), Utils.Strings.INSTANCE.formatWithDash(Utils.INSTANCE.getString(R.string.section_header_housing), housingStateSingle.getType().getTitle()));
                 let rentalCost: BigInteger = housingStateSingle.getType().getRentalCost();
                 let valueOf: BigInteger = BigInteger.valueOf(0);
@@ -963,9 +968,8 @@ export class Player {
                 }
             }
         }
-        // Rental income, property tax, upkeep, utilities, mortgages and how your home feels (replaces the
-        // original flat "rental income per unit not lived in").
-        this.getRealEstate().collectWeeklyValues(this);
+        // Rent you pay or earn, property tax, upkeep, utilities, mortgages and how your home feels.
+        realEstate.collectWeeklyValues(this);
         this.attributeState.setDeltaValue(PersonAttribute.health, Utils.INSTANCE.getString(R.string.identity_name_age), this.getHealthStatus().getHealthModifier());
         let effectiveInterestRate: number = this.moneyState.getEffectiveInterestRate();
         let weeksPerYear: number = Constants.Time.INSTANCE.getWeeksPerYear();

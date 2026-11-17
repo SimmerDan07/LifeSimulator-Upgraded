@@ -87,10 +87,17 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   - **Inheritance**: with generational play the heir inherits every property with its mortgage and history; property
     given to the heir comes back to them, and an heir who lived in a family property keeps living there (the surviving
     parent stays on in the old family home).
-  - **One place for everything**: the Real Estate screen holds where you live, your properties, *Rent a Place* (the
-    original "Move here" options), *Buy Property* (the market plus standard properties with Buy 1 / Buy max / Sell all,
-    which replace the old Purchase / Purchase Max / Sell / Sell Max buttons) and your sale/gift history. The Profile
-    tab's Housing section is now one card showing where you live, with buttons into Real Estate.
+  - **One system for every home (v0.6.0)**: every place you live is a real property record — one you **own** (bought
+    from *Homes for Sale*) or one you **rent** (a lease from *Homes for Rent*, with its own address, landlord and
+    weekly rent; the landlord handles repairs). The old fixed housing list, fixed rents and "Buy 1 / Buy max / Sell all"
+    standard properties are gone. Only the basic places (park bench, shared room, parents' house) keep the original
+    fixed rules. Scenario starts and old saves that rented a house/condo/estate become real leases automatically.
+  - **Home comfort** replaces the old fixed "+1 happiness" tags: each home type has its own happiness/sanity, scaled
+    by condition, plus renovations.
+  - **Six new homes (v0.6.0)** — mid-range: Townhouse (~$350K), Ranch House (~$650K), Family Home (~$850K);
+    high-end: Penthouse (~$3M), Beachfront Villa (~$6M), Hilltop Mansion (~$25M). Icons are placeholders
+    (`assets/images/housing_townhouse.svg`, `housing_ranch_house`, `housing_family_home`, `housing_penthouse`,
+    `housing_beach_villa`, `housing_hilltop_mansion`) — replace them with same-named files.
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
 - **Assisted Dying** (Health tab, adults 18+, $10,000 — set in `src/game/Managers/AssistedDying.ts`): after a

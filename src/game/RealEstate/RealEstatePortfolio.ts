@@ -59,6 +59,10 @@ export class RealEstatePortfolio {
     /** Weeks this family estate has existed (keeps counting across generations). */
     weeks = 0;
     listingsWeek = -9999;
+    /** Homes for rent on the market (refreshed with the sale listings). */
+    rentals: OwnedProperty[] = [];
+    /** The home you rent, if you rent one (a property record you don't own; rent in leaseRent). */
+    lease: OwnedProperty | null = null;
     nextId = 1;
 
     // ------------------------------------------------------------------ basics
@@ -73,7 +77,9 @@ export class RealEstatePortfolio {
         const c = player?.getCountry?.()?.name?.();
         return c && COUNTRIES[c] ? c : DEFAULT_COUNTRY;
     }
-    static housingOf(type: string): Housing { return (Housing as any)[type] as Housing; }
+    /** The original Housing type a property behaves as (pets allowed, livable, ownership counts). New home types map onto a base. */
+    static housingOf(type: string): Housing { return (Housing as any)[PROPERTY_TYPES[type]?.housing ?? type] as Housing; }
+    static baseOf(type: string): string { return PROPERTY_TYPES[type]?.housing ?? type; }
 
     marketIndex(country: string): number {
         if (!this.market) this.market = {};
@@ -94,12 +100,21 @@ export class RealEstatePortfolio {
     saleProceeds(p: OwnedProperty): number { return this.value(p) * (1 - RE.sellingFees) - (p.mortgage?.balance ?? 0); }
 
     /** Weekly rent if fully let (includes the Real Estate Mogul perk through Housing.getRentalEarning). */
-    rentPotential(p: OwnedProperty): number {
-        let perUnit = p.info().baseRent;
-        try { perUnit = num(RealEstatePortfolio.housingOf(p.type).getRentalEarning()); } catch { /* no player yet */ }
+    rentPotential(p: OwnedProperty): number { return this.marketRent(p) * RealEstatePortfolio.mogulBoost(); }
+    /** What this home rents for on the market (what a renter pays). */
+    marketRent(p: OwnedProperty): number {
         const condRent = (0.5 + 0.5 * p.condition / 100) / 0.925;
-        return perUnit * p.units * (NEIGHBORHOODS[p.neighborhood]?.rent ?? 1) * p.countryInfo().value * this.marketIndex(p.country)
+        return p.info().baseRent * p.units * (NEIGHBORHOODS[p.neighborhood]?.rent ?? 1) * p.countryInfo().value * this.marketIndex(p.country)
             * (p.quality ?? 1) * condRent * (1 + 0.5 * p.renovationBonus());
+    }
+    /** Real Estate Mogul perk (+50% rent), read through the original Housing.getRentalEarning. */
+    static mogulBoost(): number {
+        try { return num(Housing.house.getRentalEarning()) / PROPERTY_TYPES.house.baseRent || 1; } catch { return 1; }
+    }
+    /** Weekly happiness / sanity of living in this home (type comfort scaled by condition, plus renovations). */
+    homeComfort(p: OwnedProperty): { happiness: number; sanity: number } {
+        const scale = (0.4 + 0.6 * p.condition / 100) / 0.91;
+        return { happiness: p.info().comfort * scale + p.comfort(), sanity: p.info().calm * scale };
     }
     occupancyShare(p: OwnedProperty): number {
         if (p.use !== "rental") return 0;
@@ -186,6 +201,12 @@ export class RealEstatePortfolio {
             case "apartmentComplex": return `${street} ${pick(BUILDING_NAMES)} Apartments`;
             case "skyscraper": return `${street} ${pick(["Tower", "Center", "Plaza"])}`;
             case "spaceHotel": return `${pick(GREEK)} Orbital Hotel`;
+            case "townhouse": return `${n} ${street} Mews`;
+            case "ranch_house": return `${street} ${pick(["Ranch", "Creek Ranch", "Valley Ranch"])}`;
+            case "family_home": return `${n} ${street} ${suffix}`;
+            case "penthouse": return `${street} ${pick(["Tower", "Heights", "One"])} Penthouse`;
+            case "beach_villa": return `Villa ${pick(["Azure", "Marina", "Coral", "Solana", "Del Mar", "Seabreeze"])}`;
+            case "hilltop_mansion": return `${pick(["Summit", "Crest", "Ridge", "Highcliff"])} House on ${street} Hill`;
             default: return `${n} ${street} ${suffix}`;
         }
     }
@@ -236,9 +257,9 @@ export class RealEstatePortfolio {
     }
 
     /** Removes units without money changing hands (save repair). Least important first. */
-    private removeUnits(type: string, units: number) {
+    private removeUnits(base: string, units: number) {
         const order: Record<string, number> = { vacant: 0, rental: 1, family: 2, residence: 3 };
-        const recs = this.all().filter((p) => p.type === type).sort((a, b) => (b.isBlock() ? 1 : 0) - (a.isBlock() ? 1 : 0) || order[a.use] - order[b.use]);
+        const recs = this.all().filter((p) => p.info().housing === base).sort((a, b) => (b.isBlock() ? 1 : 0) - (a.isBlock() ? 1 : 0) || order[a.use] - order[b.use]);
         for (const p of recs) {
             if (units <= 0) break;
             const take = Math.min(units, p.units);
@@ -259,29 +280,38 @@ export class RealEstatePortfolio {
         if (!hs) return;
         if (!this.properties) this.properties = [];
         if (!this.market) this.market = {};
-        for (const type of Object.keys(PROPERTY_TYPES)) {
-            const housing = RealEstatePortfolio.housingOf(type);
+        if (this.rentals == null) this.rentals = [];
+        if (this.lease === undefined) this.lease = null;
+        // Ownership: HousingState counts per original type == units recorded here for that base type.
+        for (const base of new Set(Object.values(PROPERTY_TYPES).map((t) => t.housing))) {
+            const housing = (Housing as any)[base] as Housing;
             if (!housing) continue;
             const owned = num(hs.getState(housing).getNumberOwned());
-            const have = this.all().filter((p) => p.type === type).reduce((s, p) => s + p.units, 0);
-            if (have < owned) this.addUnits(player, type, owned - have, () => `Owned by ${this.ownerLabel(player)} (recorded when the property system was upgraded)`, null);
-            else if (have > owned) this.removeUnits(type, have - owned);
+            const have = this.all().filter((p) => p.info().housing === base).reduce((s, p) => s + p.units, 0);
+            if (have < owned) this.addUnits(player, base, owned - have, () => `Owned by ${this.ownerLabel(player)} (recorded when the property system was upgraded)`, null);
+            else if (have > owned) this.removeUnits(base, have - owned);
         }
-        // Residence follows where the original game says you live.
+        // Where you live follows the original game's current housing (scenario starts, moving out at 18, bankruptcy…).
         const cur = hs.currentHousing()?.getType()?.name?.() as string;
+        if (this.lease && this.lease.info().housing !== cur) {
+            this.lease.log(this.clock(), "Lease ended");
+            this.lease = null;
+        }
         let res = this.residence();
-        if (res && res.type !== cur) {
-            res.use = "rental";
+        if (res && res.info().housing !== cur) {
+            res.use = "vacant";
             res.tenant = null;
-            res.log(this.clock(), "Owner moved out; listed for rent");
+            res.log(this.clock(), "Owner moved out");
             res = undefined;
         }
-        if (!res && PROPERTY_TYPES[cur] && num(hs.getState(RealEstatePortfolio.housingOf(cur)).getNumberOwned()) > 0) {
+        if (!res && !this.lease && PROPERTY_TYPES[cur]?.category === "Residential") {
             const order: Record<string, number> = { vacant: 0, rental: 1, family: 2, residence: 3 };
-            const cands = this.all().filter((p) => p.type === cur).sort((a, b) => (a.isBlock() ? 1 : 0) - (b.isBlock() ? 1 : 0) || order[a.use] - order[b.use]);
+            const cands = this.all().filter((p) => p.info().housing === cur)
+                .sort((a, b) => (a.isBlock() ? 1 : 0) - (b.isBlock() ? 1 : 0) || order[a.use] - order[b.use]);
             let home = cands[0];
             if (home && home.isBlock()) home = this.splitOne(home);
             if (home) this.setResidence(home, player);
+            else this.lease = this.makeLease(player, cur, { neighborhood: "suburbs", quality: 1, condition: 80 });
         }
         // Occupants must still be alive family members.
         const fam = player.getFamilyState?.();
@@ -363,12 +393,19 @@ export class RealEstatePortfolio {
             try { label = `${Utils.INSTANCE.getString(R.string.Bank_CashFlow_RentalIncome)} - ${title} x${r.units}`; } catch { /* default */ }
             MoneyState.updateMoney$default(ms, big(r.amount), MoneyUpdateType.passiveIncome, label, null, 8, null);
         }
-        // How your own home feels.
-        const home = this.residence();
+        // Renting: rent + utilities.
+        if (this.lease) {
+            expense(this.lease.leaseRent ?? 0, `Rent - ${this.lease.name}`);
+            expense(this.lease.info().utilities * this.lease.countryInfo().value, "Home Utilities (rented home)");
+        }
+        // How your home feels (replaces the original fixed housing modifiers for real homes).
+        const home = this.residence() ?? this.lease ?? undefined;
         if (home) {
             const as = player.getAttributeState();
-            const comfort = home.comfort();
-            if (comfort > 0) as.setDeltaValue(PersonAttribute.happiness, "Home - Renovations", comfort);
+            const c = this.homeComfort(home);
+            const label = `Home - ${home.typeLabel()}`;
+            if (Math.abs(c.happiness) >= 0.01) as.setDeltaValue(PersonAttribute.happiness, label, c.happiness);
+            if (Math.abs(c.sanity) >= 0.01) as.setDeltaValue(PersonAttribute.sanity, label, c.sanity);
             if (home.condition < 50) as.setDeltaValue(PersonAttribute.happiness, "Home - Run-down", -(50 - home.condition) / 20);
             for (const pr of home.problems ?? []) {
                 const label = "Home - " + (PROBLEMS[pr.type]?.label ?? pr.type);
@@ -393,7 +430,7 @@ export class RealEstatePortfolio {
                     : `Housing market slump. Property prices fell about ${Math.round(-shock * 100)}%.` });
             }
         }
-        if (this.clock() - (this.listingsWeek ?? -9999) >= RE.listingRefreshWeeks || !this.listings?.length) this.refreshListings(player);
+        if (this.clock() - (this.listingsWeek ?? -9999) >= RE.listingRefreshWeeks || !this.listings?.length || !this.rentals?.length) this.refreshListings(player);
 
         for (const p of [...this.all()]) {
             const info = p.info();
@@ -509,13 +546,15 @@ export class RealEstatePortfolio {
         }).sort((a, b) => PROPERTY_TYPES[a].basePrice - PROPERTY_TYPES[b].basePrice);
         const affordable = types.filter((t) => PROPERTY_TYPES[t].basePrice * cv <= budget);
         const tier = affordable.length ? affordable : [types[0]];
+        const homes = tier.filter((t) => PROPERTY_TYPES[t].category === "Residential");
         const nextUp = types.find((t) => !tier.includes(t));
         const out: OwnedProperty[] = [];
         for (let i = 0; i < RE.listingCount; i++) {
             let type: string;
-            if (i === RE.listingCount - 1 && nextUp) type = nextUp; // something to aim for
-            else if (i < 2) type = tier[0];                            // always some starter homes
-            else type = tier[Math.max(0, tier.length - 1 - Math.floor(Math.random() * Math.min(3, tier.length)))];
+            if (i === RE.listingCount - 1 && nextUp) type = nextUp;                                     // something to aim for
+            else if (i === 0) type = pick(homes.slice(0, 2).length ? homes.slice(0, 2) : tier);       // a starter home
+            else if (i <= 4 && homes.length) type = pick(homes);                                        // a spread of homes you can afford
+            else type = tier[Math.max(0, tier.length - 1 - Math.floor(Math.random() * Math.min(3, tier.length)))]; // the top of your range
             const roll = Math.random();
             const condition = roll < 0.18 ? rand(25, 50) : roll < 0.78 ? rand(55, 88) : rand(88, 100);
             const p = this.makeProperty(type, country, { quality: rand(0.88, 1.12), condition });
@@ -529,6 +568,78 @@ export class RealEstatePortfolio {
         }
         this.listings = out;
         this.listingsWeek = this.clock();
+        this.refreshRentals(player);
+    }
+
+    /** Homes for rent. Rent is affordable-ish for you, with a couple of starter places and one to aim for. */
+    refreshRentals(player: any) {
+        const country = RealEstatePortfolio.countryKey(player);
+        const cv = COUNTRIES[country].value * this.marketIndex(country);
+        const cash = Math.max(0, num(player.getMoneyState().getCash()));
+        const budget = Math.max(cash / 12, this.weeklyIncome(player) * 0.5, 450 * cv);
+        const types = Object.keys(PROPERTY_TYPES).filter((t) => PROPERTY_TYPES[t].category === "Residential")
+            .sort((a, b) => PROPERTY_TYPES[a].baseRent - PROPERTY_TYPES[b].baseRent);
+        const affordable = types.filter((t) => PROPERTY_TYPES[t].baseRent * cv <= budget);
+        const tier = affordable.length ? affordable : [types[0]];
+        const nextUp = types.find((t) => !tier.includes(t));
+        const out: OwnedProperty[] = [];
+        for (let i = 0; i < RE.rentalListingCount; i++) {
+            const type = i === RE.rentalListingCount - 1 && nextUp ? nextUp : i < 2 ? tier[Math.floor(Math.random() * Math.min(2, tier.length))]
+                : tier[Math.max(0, tier.length - 1 - Math.floor(Math.random() * Math.min(4, tier.length)))];
+            const l = this.makeLease(player, type, { quality: rand(0.9, 1.1), condition: rand(55, 98) });
+            l.id = this.newId("R");
+            out.push(l);
+        }
+        this.rentals = out;
+    }
+
+    /** A home for rent (not owned). Landlords keep rented homes in decent shape; rent is fixed when you sign. */
+    makeLease(player: any, type: string, opts: { neighborhood?: string; quality?: number; condition?: number } = {}): OwnedProperty {
+        const l = this.makeProperty(type, RealEstatePortfolio.countryKey(player), opts);
+        if (l.condition > 85) for (const cat of Object.keys(RENOVATIONS)) if (Math.random() < 0.3) l.renovations[cat] = 1;
+        l.use = "residence";
+        l.leaseRent = Math.round(this.marketRent(l) * rand(0.95, 1.08));
+        l.landlord = RealEstatePortfolio.tenantName();
+        return l;
+    }
+
+    /** True when you live in a real home (owned or rented) rather than a basic place (park bench, shared room…). */
+    managesHome(): boolean { return !!this.residence() || !!this.lease; }
+    /** The home you live in, owned or rented. */
+    home(): OwnedProperty | undefined { return this.residence() ?? this.lease ?? undefined; }
+
+    /** Sign a lease and move in. */
+    signLease(player: any, id: string): string | null {
+        const l = (this.rentals ?? []).find((x) => x.id === id);
+        if (!l) return "That home is no longer for rent.";
+        const housing = RealEstatePortfolio.housingOf(l.type);
+        if (housing.getNumberOfPetsAllowed() < player.getFamilyState().getAlivePets().size()) return `Too many pets for this ${l.typeLabel().toLowerCase()}.`;
+        if (num(player.getMoneyState().getCash()) < (l.leaseRent ?? 0) * 2) return `You need ${this.fmt((l.leaseRent ?? 0) * 2)} in cash (first week plus deposit).`;
+        this.leaveHome(player);
+        this.rentals = this.rentals.filter((x) => x !== l);
+        l.id = this.newId("H");
+        l.history = [];
+        l.log(this.clock(), `${player.getFullName()} signed a lease at ${this.fmt(l.leaseRent ?? 0)}/week (landlord: ${l.landlord})`);
+        this.lease = l;
+        player.getHousingState().moveHere(housing);
+        this.reconcile(player);
+        return null;
+    }
+
+    /** Move to a basic place (park bench, shared room, parents' house). */
+    moveToBasic(player: any, housing: Housing): string | null {
+        if (housing.getNumberOfPetsAllowed() < player.getFamilyState().getAlivePets().size()) return "Too many pets to live there.";
+        this.leaveHome(player);
+        player.getHousingState().moveHere(housing);
+        this.reconcile(player);
+        return null;
+    }
+
+    /** Ends your lease / leaves the home you own (it stays yours, vacant). */
+    private leaveHome(player: any) {
+        if (this.lease) { this.lease.log(this.clock(), "Moved out"); this.lease = null; }
+        const res = this.residence();
+        if (res) { res.use = "vacant"; res.log(this.clock(), `${player.getFullName()} moved out`); }
     }
 
     // ------------------------------------------------------------------ mortgages
@@ -574,7 +685,7 @@ export class RealEstatePortfolio {
     }
     private cash(player: any): number { return num(player.getMoneyState().getCash()); }
     private bumpOwned(player: any, type: string, delta: number) {
-        const st = player.getHousingState().getState(RealEstatePortfolio.housingOf(type));
+        const st = player.getHousingState().getState(RealEstatePortfolio.housingOf(type)); // counts are per base type
         st.setNumberOwned(st.getNumberOwned().add(big(delta)));
     }
 
@@ -674,8 +785,7 @@ export class RealEstatePortfolio {
         if (!housing.getLivable()) return `You can't live in a${/^[AEIOU]/.test(p.typeLabel()) ? "n" : ""} ${p.typeLabel()}.`;
         if (housing.getNumberOfPetsAllowed() < player.getFamilyState().getAlivePets().size()) return `Too many pets for a${/^[AEIOU]/.test(p.typeLabel()) ? "n" : ""} ${p.typeLabel()}.`;
         if (p.isBlock()) p = this.splitOne(p);
-        const old = this.residence();
-        if (old && old !== p) { old.use = "vacant"; old.log(this.clock(), "Owner moved out"); }
+        if (this.residence() !== p) this.leaveHome(player);
         player.getHousingState().moveHere(housing);
         this.setResidence(p, player);
         this.reconcile(player);
@@ -865,6 +975,7 @@ export class RealEstatePortfolio {
                 parentHome.occupants = partner ? [partner.getId()] : [];
                 parentHome.log(this.clock(), partner ? `${partner.getFullName()} stays on in the family home` : "Left vacant after the owner's death");
             }
+            if (this.lease) { this.lease.log(this.clock(), "Lease ended"); this.lease = null; }
             heir.getHousingState().moveHere(RealEstatePortfolio.housingOf(heirHome.type));
             heirHome.use = "residence";
             heirHome.tenant = null;

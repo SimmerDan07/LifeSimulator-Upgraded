@@ -73,6 +73,7 @@ export class GenericListModelGenerator {
         if (type === GenericListType.propertyMarket) return RealEstateScreens.market();
         if (type === GenericListType.propertyRenovations) return RealEstateScreens.renovations(key);
         if (type === GenericListType.propertyFamily) return RealEstateScreens.family(key);
+        if (type === GenericListType.rentalMarket) return RealEstateScreens.rentalMarket();
         let hidden: SwitchViewModel;
         let additionalDescription: string;
         let obj: any;

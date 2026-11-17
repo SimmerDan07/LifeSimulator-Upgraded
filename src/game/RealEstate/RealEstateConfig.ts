@@ -18,20 +18,40 @@ export interface TypeInfo {
     /** Many tenants (occupancy %) instead of a single tenant. */
     multiUnit: boolean;
     neighborhoods: string[];
+    /** Weekly happiness / sanity for whoever lives here (at ~85% condition; scales with condition). Replaces the
+     *  original fixed housing modifiers for real homes. */
+    comfort: number;
+    calm: number;
+    /** Image name (assets/images/<image>.svg|png). */
+    image: string;
+    /** Group shown in the market. */
+    tier: "Starter" | "Mid-range" | "Luxury" | "Investment";
 }
 
 const RES = ["downtown", "waterfront", "suburbs", "oldTown", "rural"];
 const BIG = ["downtown", "waterfront", "suburbs", "oldTown", "industrial"];
 
 export const PROPERTY_TYPES: Record<string, TypeInfo> = {
-    small_apartment: { housing: "small_apartment", label: "Apartment", category: "Residential", basePrice: 200000, baseRent: 200, utilities: 35, decay: 1.0, multiUnit: false, neighborhoods: RES },
-    house: { housing: "house", label: "House", category: "Residential", basePrice: 500000, baseRent: 600, utilities: 70, decay: 1.0, multiUnit: false, neighborhoods: RES },
-    luxury_condo: { housing: "luxury_condo", label: "Luxury Condo", category: "Residential", basePrice: 1250000, baseRent: 1600, utilities: 110, decay: 0.9, multiUnit: false, neighborhoods: ["downtown", "waterfront", "suburbs"] },
-    grand_estate: { housing: "grand_estate", label: "Grand Estate", category: "Residential", basePrice: 10000000, baseRent: 12000, utilities: 450, decay: 0.9, multiUnit: false, neighborhoods: ["waterfront", "suburbs", "rural"] },
-    apartmentComplex: { housing: "apartmentComplex", label: "Apartment Complex", category: "Investment", basePrice: 100000000, baseRent: 125000, utilities: 0, decay: 0.8, multiUnit: true, neighborhoods: BIG },
-    skyscraper: { housing: "skyscraper", label: "Skyscraper", category: "Investment", basePrice: 10000000000, baseRent: 15000000, utilities: 0, decay: 0.6, multiUnit: true, neighborhoods: ["downtown", "waterfront"] },
-    spaceHotel: { housing: "spaceHotel", label: "Space Hotel", category: "Investment", basePrice: 10000000000000, baseRent: 16000000000, utilities: 0, decay: 0.7, multiUnit: true, neighborhoods: ["orbit"] },
+    // Original 1.05 types (prices and rents unchanged)
+    small_apartment: { housing: "small_apartment", label: "Apartment", category: "Residential", tier: "Starter", basePrice: 200000, baseRent: 200, utilities: 35, decay: 1.0, multiUnit: false, neighborhoods: RES, comfort: 0.2, calm: 0, image: "housing_small_apartment" },
+    house: { housing: "house", label: "House", category: "Residential", tier: "Mid-range", basePrice: 500000, baseRent: 600, utilities: 70, decay: 1.0, multiUnit: false, neighborhoods: RES, comfort: 1.0, calm: 0, image: "housing_house" },
+    luxury_condo: { housing: "luxury_condo", label: "Luxury Condo", category: "Residential", tier: "Luxury", basePrice: 1250000, baseRent: 1600, utilities: 110, decay: 0.9, multiUnit: false, neighborhoods: ["downtown", "waterfront", "suburbs"], comfort: 1.0, calm: 1.0, image: "housing_luxury_condo" },
+    grand_estate: { housing: "grand_estate", label: "Grand Estate", category: "Residential", tier: "Luxury", basePrice: 10000000, baseRent: 12000, utilities: 450, decay: 0.9, multiUnit: false, neighborhoods: ["waterfront", "suburbs", "rural"], comfort: 2.0, calm: 1.0, image: "housing_grand_estate" },
+    // New in v0.6.0 — mid-range homes
+    townhouse: { housing: "house", label: "Townhouse", category: "Residential", tier: "Mid-range", basePrice: 350000, baseRent: 420, utilities: 50, decay: 1.0, multiUnit: false, neighborhoods: ["downtown", "suburbs", "oldTown"], comfort: 0.7, calm: 0, image: "housing_townhouse" },
+    ranch_house: { housing: "house", label: "Ranch House", category: "Residential", tier: "Mid-range", basePrice: 650000, baseRent: 780, utilities: 80, decay: 1.05, multiUnit: false, neighborhoods: ["rural", "suburbs"], comfort: 1.1, calm: 0.3, image: "housing_ranch_house" },
+    family_home: { housing: "house", label: "Family Home", category: "Residential", tier: "Mid-range", basePrice: 850000, baseRent: 1020, utilities: 100, decay: 1.0, multiUnit: false, neighborhoods: ["suburbs", "oldTown", "waterfront"], comfort: 1.3, calm: 0.3, image: "housing_family_home" },
+    // New in v0.6.0 — high-end homes
+    penthouse: { housing: "luxury_condo", label: "Penthouse", category: "Residential", tier: "Luxury", basePrice: 3000000, baseRent: 3600, utilities: 300, decay: 0.85, multiUnit: false, neighborhoods: ["downtown", "waterfront"], comfort: 1.6, calm: 1.2, image: "housing_penthouse" },
+    beach_villa: { housing: "grand_estate", label: "Beachfront Villa", category: "Residential", tier: "Luxury", basePrice: 6000000, baseRent: 7200, utilities: 500, decay: 1.1, multiUnit: false, neighborhoods: ["waterfront"], comfort: 2.2, calm: 1.5, image: "housing_beach_villa" },
+    hilltop_mansion: { housing: "grand_estate", label: "Hilltop Mansion", category: "Residential", tier: "Luxury", basePrice: 25000000, baseRent: 30000, utilities: 1500, decay: 0.9, multiUnit: false, neighborhoods: ["suburbs", "rural", "waterfront"], comfort: 3.0, calm: 1.6, image: "housing_hilltop_mansion" },
+    // Investment buildings (can't live in them)
+    apartmentComplex: { housing: "apartmentComplex", label: "Apartment Complex", category: "Investment", tier: "Investment", basePrice: 100000000, baseRent: 125000, utilities: 0, decay: 0.8, multiUnit: true, neighborhoods: BIG, comfort: 0, calm: 0, image: "housing_apartmentcomplex" },
+    skyscraper: { housing: "skyscraper", label: "Skyscraper", category: "Investment", tier: "Investment", basePrice: 10000000000, baseRent: 15000000, utilities: 0, decay: 0.6, multiUnit: true, neighborhoods: ["downtown", "waterfront"], comfort: 0, calm: 0, image: "housing_skyscraper" },
+    spaceHotel: { housing: "spaceHotel", label: "Space Hotel", category: "Investment", tier: "Investment", basePrice: 10000000000000, baseRent: 16000000000, utilities: 0, decay: 0.7, multiUnit: true, neighborhoods: ["orbit"], comfort: 0, calm: 0, image: "housing_spacehotel" },
 };
+/** Basic places to live that aren't properties (keep the original game's fixed effects and rent). */
+export const BASIC_HOUSING = ["homeless", "shared_room", "parentsHouse", "jail"];
 
 export const NEIGHBORHOODS: Record<string, { label: string; value: number; rent: number }> = {
     downtown: { label: "Downtown", value: 1.3, rent: 1.25 },
@@ -121,7 +141,8 @@ export const RE = {
     maxDebtToIncome: 0.45,
     /** Market listings refresh this often. */
     listingRefreshWeeks: 4,
-    listingCount: 6,
+    listingCount: 8,
+    rentalListingCount: 6,
     /** Professional maintenance visit: cost (fraction of value) and condition gained. */
     serviceCost: 0.004,
     serviceGain: 10,

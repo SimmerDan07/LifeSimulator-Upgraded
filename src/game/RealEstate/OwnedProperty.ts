@@ -40,6 +40,9 @@ export class OwnedProperty {
     /** Market listings only: asking price. */
     askingPrice = 0;
     history: HistoryEntry[] = [];
+    /** Rented homes only: weekly rent you pay, and who you rent from. */
+    leaseRent?: number;
+    landlord?: string;
 
     info(): TypeInfo { return PROPERTY_TYPES[this.type]; }
     typeLabel(): string { return this.info()?.label ?? this.type; }
