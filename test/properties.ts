@@ -91,7 +91,6 @@ const pf = p.getRealEstate();
     const ms = p.getMoneyState();
     p.collectWeeklyValues();
     const deltas = ms.getWeeklyDelta().map((x: any) => x.getFirst()).join(" | ");
-    console.log("   cash flow:", deltas);
     check("weekly cash flow has rent, tax and upkeep", /Rental income/i.test(deltas) && /Property Tax/.test(deltas) && /Property Upkeep/.test(deltas));
 }
 
