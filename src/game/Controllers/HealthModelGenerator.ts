@@ -8,6 +8,7 @@ import { GameStateManager } from "../Managers/GameStateManager";
 import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentViewModel";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { HealthEvent } from "../Enums/HealthEvent";
+import { AssistedDying } from "../Managers/AssistedDying";
 import { HealthStatus } from "../Enums/HealthStatus";
 import { Housing } from "../Enums/Housing";
 import { IViewModelGenerator } from "./IViewModelGenerator";
@@ -38,6 +39,8 @@ export class HealthModelGenerator implements IViewModelGenerator {
         for (const healthEvent of HealthEvent.INSTANCE.eventsForPlayer(personState)) {
             arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, healthEvent, null, 2, null));
         }
+        const assisted = AssistedDying.cell();
+        if (assisted != null) arrayList.add(assisted);
         return arrayList;
     }
     getDietViewModels(): ArrayList<BaseViewModel> {
