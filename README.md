@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, elixir price, the property system + old-save migration, assisted dying, new-game names
+npm run test:features  # checks unlocks, generational play, elixir price, the property system + old-save migration, assisted dying, new-game names, coming out
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -93,6 +93,9 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
 - **Assisted Dying** (Health tab, adults 18+, $10,000 — set in `src/game/Managers/AssistedDying.ts`): after a
   confirmation, the life ends like any other death (death pop-up, life summary, cemetery, "Continue as your child").
+- **Come Out** (Love tab, age 13+, `src/game/Managers/ComingOut.ts`): choose straight, gay or bisexual. Gives a
+  happiness/sanity lift; each parent is usually supportive (relationship up) but sometimes needs time (relationship
+  down). Anyone you meet afterwards matches your new sexuality. Can be changed again later.
 - **Elixir of Youth** (Health tab) is a flat $20M instead of doubling after every purchase.
 
 - **Net worth** now includes property equity (value minus mortgages).

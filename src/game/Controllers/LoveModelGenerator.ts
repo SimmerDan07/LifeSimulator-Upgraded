@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { ComingOut } from "../Managers/ComingOut";
 import { ArrayList, BigInteger, CollectionsKt, ComparisonsKt, Integer, Intrinsics, R, SpannableStringBuilder } from "../runtime";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { BaseViewModel } from "../Models/BaseViewModel";
@@ -128,6 +129,8 @@ export class LoveModelGenerator implements IViewModelGenerator {
             let companion = ActionCellSingleViewModel.INSTANCE;
             arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(companion, loveEvent, null, 2, null));
         }
+        const comingOut = ComingOut.cell();
+        if (comingOut != null) arrayList.add(comingOut);
         return arrayList;
     }
     getParentsViewModels(): ArrayList<BaseViewModel> {
