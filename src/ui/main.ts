@@ -10,6 +10,7 @@ import { SoundEffect } from "../game/Managers/SoundEffect";
 import { MainGameTab } from "../game/Enums/MainGameTab";
 import { LifepathsModelGenerator } from "../game/Controllers/LifepathsModelGenerator";
 import { Vampire } from "../game/Lifepaths/Vampire";
+import { Celebrity } from "../game/Lifepaths/Celebrity";
 import { GenericListType } from "../game/Fragments/GenericListType";
 import { GenericListModelGenerator } from "../game/Controllers/GenericListModelGenerator";
 import { ProfileModelGenerator } from "../game/Controllers/ProfileModelGenerator";
@@ -81,6 +82,13 @@ class MainScreen extends MainGameFragment {
         const vamp = Vampire.isVampire(p) && (p as any).vampire?.cureWeeks === 0;
         document.body.classList.toggle("vampire", vamp);
         if (vamp) { const t = $("#hud-thirst") as HTMLElement; t.style.width = `${(p as any).vampire.thirst}%`; t.style.background = "#b3262e"; }
+        // v0.20.0: fame chip (Celebrity Life)
+        const fame = $("#hud-fame") as HTMLButtonElement;
+        if (fame) {
+            const show = Celebrity.fans(p) >= 1000 || Celebrity.career(p) != null;
+            fame.hidden = !show;
+            if (show) fame.innerHTML = `<img src="${imageUrl(Celebrity.image) ?? ""}" alt=""><span>${Celebrity.fansText(Celebrity.fans(p))}</span><span class="tier">${Celebrity.tierName(p)}</span>`;
+        }
         $("#hud-cash").textContent = ExtensionsKt.numberDisplayString(m.getCashAmount(), true);
         $("#hud-bank").textContent = ExtensionsKt.numberDisplayString(m.getBankAmount(), true);
         $("#hud-name").textContent = p.getFullName();
@@ -331,6 +339,7 @@ function boot() {
         tabs.appendChild(b);
     }
     $("#hud-settings").addEventListener("click", () => Utils.INSTANCE.navigateTo(GenericListType.settingsMenu, "", true));
+    $("#hud-fame")?.addEventListener("click", () => { if (nav.stack.length && !nav.stack.every((x) => x.canGoBack)) return; Utils.INSTANCE.navigateTo(GenericListType.lifepath, "celebrity", true); });
     $("#hud-settings").querySelector("img")!.setAttribute("src", imageUrl("hud_settings")!);
     $("#hud-cash-icon").setAttribute("src", imageUrl("hud_cash")!);
     $("#hud-bank-icon").setAttribute("src", imageUrl("hud_bank")!);

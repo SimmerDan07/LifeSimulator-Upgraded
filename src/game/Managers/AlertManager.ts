@@ -119,11 +119,12 @@ export class AlertManager {
         }
     }
     showNextAlertIfNeeded(): void {
-        if (AlertManager.currentlyShowing || (AlertManager.alertQueue.size() <= 0)) {
-            return;
+        // v0.20.0 fix: banners don't block the screen, so keep going until a real alert is showing (before, a banner
+        // queued behind an alert left the alerts after it stuck in the queue until something else popped up).
+        while (!AlertManager.currentlyShowing && AlertManager.alertQueue.size() > 0) {
+            let alert: AlertViewModel = AlertManager.alertQueue.removeFirst();
+            this.show(alert);
         }
-        let alert: AlertViewModel = AlertManager.alertQueue.removeFirst();
-        this.show(alert);
     }
     showConfirmationAlert(alert: AlertViewModel, action: Function0<any>): void {
         Intrinsics.checkParameterIsNotNull(alert, "alert");

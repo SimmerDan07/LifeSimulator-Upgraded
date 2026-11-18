@@ -40,4 +40,45 @@ export class CelebrityState {
     blockShown: string = null;
     /** Fans that came with a famous family name (heirs). */
     inherited: number = 0;
+
+    // ---- v0.20.0 "The Fame Update" (all undefined in v0.19 saves: Celebrity.state() fills them in)
+    /** Tabloid headlines about you, newest last. */
+    news: CelebHeadline[] = [];
+    /** Everything you've made: songs, albums, movies, series, shows, videos, challenges, books, merch. */
+    works: CelebWork[] = [];
+    /** One rival per career (acting / music / dance). */
+    rivals: Record<string, CelebRival> = {};
+    /** Celebrity friends (from parties, collabs and feuds that ended well). */
+    friends: CelebFriend[] = [];
+    /** Milestones reached (ids). */
+    milestones: string[] = [];
+    /** Your music sound (pop, hiphop, rock, rnb, country, electronic) or null. */
+    sound: string = null;
+    /** A TV series you're on (weeks left), or null. */
+    series: { title: string; weeksLeft: number; season: number } = null;
+    /** Business: last merch drop week, fan club, foundation. */
+    merchWeek: number = -999;
+    fanClub: boolean = false;
+    foundation: string = null;
+    memoir: string = null;
+    /** Legacy: a farewell tour makes you a Legend (fans never fade); the Hall of Fame. */
+    legend: boolean = false;
+    hallOfFame: boolean = false;
+    /** You were a child star (1K fans before 14); you came back from being cancelled. */
+    childStar: boolean = false;
+    wasCancelled: boolean = false;
+    comeback: boolean = false;
+    /** Awards won by show (for the Grand Slam). */
+    awardShows: string[] = [];
+    /** Your celebrity partner (Person id), and whether the wedding made the news. */
+    partnerId: string = null;
+    weddingNews: boolean = false;
+    /** Feud results. */
+    feudWins: number = 0;
+    feudLosses: number = 0;
 }
+
+export interface CelebHeadline { age: number; week: number; text: string }
+export interface CelebWork { kind: string; title: string; age: number; result: string; score: number; extra?: string }
+export interface CelebRival { first: string; last: string; female: boolean; fans: number; wins: number; losses: number; made: number }
+export interface CelebFriend { name: string; career: string; fans: number; female: boolean }

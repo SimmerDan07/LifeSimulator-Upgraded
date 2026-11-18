@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, Celebrity Life, old-save loading (618 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, Celebrity Life & the Fame Update, old-save loading (674 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -146,6 +146,36 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   suspicion a week), and you get Hunt Together, Dance Through the Night and Eternal Vows (once every 10 years).
   Other loved ones you turn add 2 suspicion a year each.
 - Fixed the "Renowed Actor" typo (now "Renowned Actor").
+- **Celebrity Life: The Fame Update (v0.20.0)** (`src/game/Lifepaths/CelebrityWorld.ts`, `CelebNames.ts`):
+  - **Headlines**: a tabloid feed of everything you do and everything that happens to you (hits, flops, awards, scandals,
+    dating, weddings, feuds, foundations…). The latest three are on the Celebrity Life screen; *All Headlines* lists them
+    all by age; the Lifepaths menu shows the latest one.
+  - **Discography & Filmography**: every single, album, movie, TV season, stage show, music video, dance challenge, tour,
+    commercial, memoir and merch drop gets a generated name and a result (#1, Top 10, Platinum, Blockbuster, Hit show…).
+    Your best work becomes what you're **known for** (status card, obituary, Life Summary).
+  - **Rivals**: one per career, with their own fans that grow every week; a *You vs* meter and head-to-head record.
+    **Feuds** (Clap back / Take the high road / Offer a collab — a collab can end the feud and make them a friend),
+    **Drop a Diss Track** (music), **Dance-Off vs Your Rival** (dance), **Premiere Showdown** (acting).
+  - **Celebrity Circle**: A-List Parties make celebrity friends; **Collaborate** with your most famous friend (a "feat."
+    single, a co-starring movie or a joint show); **Date a Celebrity** (Famous+, single): a famous partner with a
+    *Celebrity* badge on the Love tab, shared fans every week, paparazzi photos of you both, a **Wedding of the Year**,
+    and breakups that make the news.
+  - **Awards Night**: nominations become a red-carpet choice (Classic & elegant / Bold statement / Daring look — best or
+    worst dressed), sometimes up against your rival.
+  - **Movies** now have genres (Action pays most, Drama and Indie are awards bait, Comedy pleases crowds, Horror is a
+    gamble). **TV series** (Supporting Actor+): 20-week seasons with weekly pay and fans; hit shows get renewed.
+    **Your Sound** for musicians: Pop (+10% fans), Hip-Hop (charts and diss tracks), Rock (+25% tours), R&B (Music
+    Awards), Country (loyal fans, softer scandals), Electronic (more viral hits).
+  - **Business**: Drop Merch (every 8 weeks), Official Fan Club (weekly dues, fans fade half as fast), Launch Your Own
+    Brand (moved here), Start a Foundation ($1M; +1 reputation a week, softer scandals), Write Your Memoir (30+).
+  - **Legacy**: Star on the Walk of Fame, **Farewell Tour** (50+): you become a **Legend** and your fans never fade;
+    **Hall of Fame** (45+, Icon or 5 awards).
+  - **Young Talent** (ages 6–17): talent shows and TV commercial auditions (6–13) — be a child star before 14.
+  - **29 milestones** (Local Talent … Icon, Child Star, Born Famous, Number One, Diamond, Blockbuster, TV Star, Gone Viral,
+    World Champion, Grand Slam, Trophy Cabinet, Triple Threat, Bigger Than Your Rival, Feud Winner, Power Couple, The
+    Comeback, Mogul, Philanthropist, Bestselling Author, Walk of Fame, Hall of Fame, Legend…) with their own screen.
+  - **Fame chip on the top bar** (fans + tier) that opens Celebrity Life from anywhere.
+  - 18 more art slots (`icon_celeb_*`).
 - **Celebrity Life (v0.19.0)** (`src/game/Lifepaths/Celebrity.ts`, `CelebrityScreen.ts`, state `CelebrityState.ts`):
   - The **Lifepaths tab is now a menu**: Celebrity Life (a gold star, `assets/images/lifepath_celebrity.svg`) and Vampire,
     each with a status line and an Open button (`GenericListType.lifepath`, key `celebrity` / `vampire`).
@@ -342,6 +372,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - **Net worth** now includes property equity (value minus mortgages).
 
 ## Fixes to the original
+- **Stuck alerts (v0.20.0):** when a small banner was queued behind a pop-up, the pop-ups after it waited until something
+  else happened (e.g. an award result only showed after your next action). The queue now keeps going past banners.
 - **Pets (v0.12.0):** "Pet" and "Abandon" cost $5,000 and Abandon showed "+undefined relationship" (port bugs); petting
   and abandoning are free again.
 - **Perks can be switched off (v0.8.0):** the new-game perk screen switched every unlocked perk back on whenever it

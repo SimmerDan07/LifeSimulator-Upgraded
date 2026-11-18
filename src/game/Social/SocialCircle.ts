@@ -21,6 +21,7 @@ export interface PersonMeta {
     vampire?: boolean;      // a vampire (you turned them, or met them in your coven)
     collegePaid?: boolean;
     eternalVowsWeek?: number; // v0.17.0 Eternal Bond vows
+    celeb?: { career: string; fans: number }; // v0.20.0: a celebrity you dated through Celebrity Life
   // v0.17.0: you paid a grandchild's / niece's college
 }
 

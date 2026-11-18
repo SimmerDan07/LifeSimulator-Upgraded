@@ -24,7 +24,8 @@ import { SaveCodec } from "../src/game/save/SaveCodec";
 import { BigInteger } from "../src/game/runtime";
 import { LifeActions } from "../src/game/Lifepaths/Vampire";
 import { Vampire } from "../src/game/Lifepaths/Vampire";
-import { Celebrity, ACTING, MUSIC, DANCE, FAME, TEAM, TIERS } from "../src/game/Lifepaths/Celebrity";
+import { Celebrity, ACTING, MUSIC, DANCE, FAME, TEAM, TIERS, WALK_OF_FAME } from "../src/game/Lifepaths/Celebrity";
+import { BUSINESS } from "../src/game/Lifepaths/CelebrityWorld";
 import { ART_SLOTS } from "../src/game/data/ArtSlots";
 
 const alerts: any[] = [];
@@ -52,6 +53,16 @@ const start = (sc: any, tweak?: (np: any) => void) => {
     tweak?.(np);
     GameStateManager.INSTANCE.startNewGame(np); clear();
     return GameStateManager.INSTANCE.getPersonState() as any;
+};
+/** Press the button labelled `label` on the newest alert titled `title`. */
+const press = (title: string, label: string) => {
+    const a = [...alerts].reverse().find((x) => x.getTitle() === title);
+    if (!a) return false;
+    const bs = [a.getPositiveButton(), a.getNegativeButton(), ...(Array.from((a.getAdditionalButtons() ?? []) as any) as any[])].filter(Boolean);
+    const b = bs.find((x: any) => x.getTitle() === label);
+    if (!b) return false;
+    alerts.splice(alerts.indexOf(a), 1); b.getAction().invoke(); AlertManager.INSTANCE.alertDismissed(a);
+    return true;
 };
 const work = (p: any, n = 1) => { for (let i = 0; i < n; i++) { keep(p); p.getJobState().work(p.getJobState().getCurrentJob(), WorkAction.values()[1]); clear(); } };
 
@@ -117,7 +128,7 @@ check("Profile shows Fame", /Fame/.test(text(rows(new ProfileModelGenerator().ge
 
 // ---------------------------------------------------------------- activities
 const s = Celebrity.state(p);
-const perf = (list: any[], id: string, r = 0.01) => withRandom(r, () => { keep(p); const ok = LifeActions.perform(def(list, id), p); clear(); return ok; });
+const perf = (list: any[], id: string, r = 0.01, then?: () => void) => withRandom(r, () => { keep(p); const ok = LifeActions.perform(def(list, id), p); then?.(); clear(); return ok; });
 check("Dance Practice raises dance skill", (() => { const d = s.dance; perf(DANCE, "dancePractice"); return s.dance === Math.min(100, d + 4); })());
 check("Dance Battle can be won (fans + $1,000)", (() => { const b = s.battlesWon; perf(DANCE, "battle"); return s.battlesWon === b + 1; })());
 check("Choreograph a Show unlocked at Dance Captain", perf(DANCE, "choreograph"));
@@ -142,13 +153,14 @@ check("On the Music screen the Music section comes first", (() => { const r = ce
 p.getJobState().switchJob(Job.actor);
 p.getJobState().getState(Job.actor).setLevel(7);
 check("Audition (success gives a role)", (() => { const r0 = s.roles; perf(ACTING, "audition", 0.01); return s.roles === r0 + 1; })());
-check("Star in a Movie at Lead Actor (blockbuster with a great roll)", (() => { const m = s.movies; perf(ACTING, "movie", 0.999); return s.movies === m + 1; })());
+s.acting = 90;
+check("Star in a Movie at Lead Actor: pick a genre (blockbuster with a great roll)", (() => { const m = s.movies; perf(ACTING, "movie", 0.999, () => press("Choose a Role", "Action")); return s.movies === m + 1 && s.works.some((w: any) => w.kind === "movie" && w.result === "Blockbuster" && w.extra === "Action"); })());
 
 // fame and team
 s.fans = 2_000_000; s.tierShown = 4;
-check("Red Carpet / Talk Show / Gala / Brand available as a Star", ["redCarpet", "talkShow", "gala"].every((id) => perf(FAME, id, 0.5)) && perf(FAME, "brand") && !!s.brand);
+check("Red Carpet / Talk Show / Gala / Brand available as a Star", ["redCarpet", "talkShow", "gala"].every((id) => perf(FAME, id, 0.5)) && perf(BUSINESS, "brand") && !!s.brand);
 check("Brand earns money every week", Celebrity.brandIncome(p) === Math.round(s.fans * 0.001));
-check("Walk of Fame locked below Icon (or Superstar with 3 awards)", !perf(FAME, "walkOfFame"));
+check("Walk of Fame locked below Icon (or Superstar with 3 awards)", !perf(WALK_OF_FAME, "walkOfFame"));
 LifeActions.perform(def(TEAM, "agent"), p); LifeActions.perform(def(TEAM, "publicist"), p); LifeActions.perform(def(TEAM, "bodyguard"), p);
 check("Hire agent, publicist and bodyguard", s.agent && s.publicist && s.bodyguard);
 check("Team costs $5,000 a week", Celebrity.weeklyCosts(p).reduce((a, x) => a + x.amount, 0) === 5000);
@@ -166,7 +178,7 @@ clear();
 s.reputation = 60; const f0 = s.fans;
 Celebrity.scandal(p);
 const sc = alerts.find((a) => a.getTitle() === "Tabloid Scandal");
-check("Scandal: three choices (Apologize / Deny it / Lean into it)", sc != null && sc.getPositiveButton().getTitle() === "Apologize" && sc.getNegativeButton().getTitle() === "Deny it" && Array.from(sc.getAdditionalButtons() as any).length === 1);
+check("Scandal: three choices (Apologize / Deny it / Lean into it)", sc != null && sc.getPositiveButton().getTitle() === "Apologize" && sc.getNegativeButton().getTitle() === "Lean into it" && Array.from(sc.getAdditionalButtons() as any).length === 1);
 sc.getPositiveButton().getAction().invoke(); clear();
 check("Apologizing costs a little reputation and a few fans", s.reputation === 56 && s.fans < f0);
 
@@ -179,8 +191,8 @@ check("Fans fade when you go quiet (0.5% with a publicist)", s.fans < f1 && s.fa
 // awards
 s.yearWork = 5; s.awardYear = Math.floor(p.calendarWeeks() / 48) - 1;
 const a0 = s.awards.length;
-withRandom(0.01, () => { keep(p); p.applyWeekly(); }); clear();
-check("Yearly awards: a busy year wins one", s.awards.length === a0 + 1 && /Golden Star Awards/.test(s.awards[s.awards.length - 1]), s.awards.join(" | "));
+withRandom(0.01, () => { keep(p); p.applyWeekly(); press("Awards Night", "Classic & elegant"); }); clear();
+check("Yearly awards: a busy year wins one (after the red carpet)", s.awards.length === a0 + 1 && /Golden Star Awards/.test(s.awards[s.awards.length - 1]), s.awards.join(" | "));
 check("Awards & Records lists it", /Golden Star Awards/.test(text(celeb())));
 
 // dating

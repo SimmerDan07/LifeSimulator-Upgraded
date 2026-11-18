@@ -108,7 +108,8 @@ export const Obituary = {
         const famous = Celebrity.describe(p);
         if (famous) {
             const cs = Celebrity.peek(p);
-            t += ` ${he} was ${famous}, with ${Celebrity.fansText(cs.peakFans)} fans at the height of ${his} fame` +
+            const known = Celebrity.knownFor(p);
+            t += ` ${he} was ${famous}${known ? `, best known for ${known}` : ""}, with ${Celebrity.fansText(cs.peakFans)} fans at the height of ${his} fame` +
                 (cs.awards.length ? ` and ${plural(cs.awards.length, "award")} to ${his} name` : "") + (cs.walkOfFame ? `, and has a star on the Walk of Fame` : "") + ".";
         }
         const job = Obituary.career(p);
@@ -134,6 +135,8 @@ export const Obituary = {
         if (fame) rows.push(["Fame", fame]);
         const cs = Celebrity.peek(p);
         if (cs != null && cs.awards.length) rows.push(["Awards", String(cs.awards.length)]);
+        const known = Celebrity.knownFor(p);
+        if (known) rows.push(["Known for", known.replace(/^the /, "")]);
         const c = Obituary.family(p).counts;
         for (const k of ["Children", "Grandchildren", "Great-grandchildren", "Siblings", "Nieces & nephews"]) if (c[k]) rows.push([k + " (living)", String(c[k])]);
         if ((p.getGeneration?.() ?? 1) > 1) rows.push(["Generation", String(p.getGeneration())]);

@@ -55,7 +55,8 @@ export class LifepathsModelGenerator {
         if ((s == null || s.peakFans === 0) && c == null)
             return "Act, sing or dance your way to fame. Three careers you'll only find here, fans to win, scandals to survive, awards, and a star on the Walk of Fame.";
         const job = c ? `${c.title}: ${p.getJobState().getCurrentJobState().getJobTitle()}` : "No celebrity career right now";
-        return `${Celebrity.tierName(p)} · ${Celebrity.fansText(Celebrity.fans(p))} fans${s?.cancelled ? " · Cancelled" : ""}\n${job}`;
+        const latest = s?.news?.[s.news.length - 1];
+        return `${Celebrity.tierName(p)} · ${Celebrity.fansText(Celebrity.fans(p))} fans${s?.cancelled ? " · Cancelled" : ""}${s?.legend ? " · Legend" : ""}\n${job}${latest ? `\nLatest: ${latest.text}` : ""}`;
     }
 
     vampireStatus(p: any): string {
@@ -78,6 +79,13 @@ export class LifepathsModelGenerator {
         if (key === "vampire") {
             header.add(new NavigationBarViewModel("Vampire", false, 2, null));
             this.vampireContent(p, out);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key === "celebrity-news" || key === "celebrity-works" || key === "celebrity-milestones") {
+            header.add(new NavigationBarViewModel(key === "celebrity-news" ? "Headlines" : key === "celebrity-works" ? "Discography & Filmography" : "Milestones", false, 2, null));
+            if (key === "celebrity-news") CelebrityScreen.news(p, out, header);
+            else if (key === "celebrity-works") CelebrityScreen.works(p, out);
+            else CelebrityScreen.milestones(p, out);
             return new GenericListFragmentViewModel(out, header, null);
         }
         header.add(new NavigationBarViewModel("Celebrity Life", false, 2, null));

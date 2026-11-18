@@ -180,6 +180,7 @@ export const Relationships = {
         if (!person.getIsAlive()) return out;
         if (Relationships.kindOf(person) === "partner" && Vampire.bonded()) out.push("Eternal Bond");
         else if (Relationships.circle().metaFor(person.getId()).vampire) out.push("Vampire");
+        if (Relationships.circle().metaFor(person.getId()).celeb) out.push("Celebrity");
         if (ExtendedFamily.isNewborn(person)) out.push("Newborn");
         if (Relationships.isBirthdayWeek(person)) out.push("Birthday this week");
         if (Relationships.kindOf(person) === "partner" && Relationships.anniversaryYears(person) != null) out.push("Anniversary this week");
