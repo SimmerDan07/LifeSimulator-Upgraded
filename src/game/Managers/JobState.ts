@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, ArraysKt, BigInteger, CollectionsKt, Intrinsics, JMath, MapsKt, R, SpannableStringBuilder, TuplesKt, TypeCastException } from "../runtime";
+import { AgeLimits } from "./Schooling";
 import { ActionProgressViewModel } from "../Models/ActionProgressViewModel";
 import { AlertManager } from "./AlertManager";
 import { AttributeState } from "./AttributeState";
@@ -244,8 +245,12 @@ export namespace JobState {
             z = !personState.getItemState().isOwned(requiredItem);
             str = requiredItem.getTitle();
         }
-        let z3: boolean = z;
-        if (z3) {
+        // Too young to work (the game can start at age 0)
+        const tooYoung: string | null = z2 ? null : AgeLimits.tooYoung(AgeLimits.work, personState);
+        let z3: boolean = z || tooYoung != null;
+        if (tooYoung != null) {
+            ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, tooYoung, null, null, null, 14, null));
+        } else if (z3) {
             ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, Utils.Strings.INSTANCE.getRequiresString(str), null, null, null, 14, null));
         }
         let hidden: ProgressBarViewModel = ProgressBarViewModel.INSTANCE.getHidden();
@@ -268,6 +273,7 @@ export namespace JobState {
         }
         return new ActionProgressViewModel(imageId, jobTitle, new TextLabelViewModel("", null, false, false, null, spannableStringBuilder, 30, null), z2 ? Utils.INSTANCE.getString(R.string.Housing_Label_Current) : null, progressBarViewModel, null, new ButtonViewModel(Utils.INSTANCE.getString(R.string.Job_Action_Apply), null, !z2, false, z3, false, false, {
             invoke: () => {
+            if (AgeLimits.tooYoung(AgeLimits.work) != null) return;
             Retirement.beforeApplying(() => {
                 GameStateManager.INSTANCE.getPersonState().getJobState().switchJob(this.getType());
                 let mainGameFragment: MainGameFragment = GameStateManager.INSTANCE.getMainGameFragment();

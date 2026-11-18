@@ -1,6 +1,7 @@
 // Property System Overhaul — screens and notifications.
 // Built from the game's own view models so they render with the existing list UI.
 import { ArrayList, SpannableStringBuilder } from "../runtime";
+import { AgeLimits } from "../Managers/Schooling";
 import { R } from "../runtime";
 import { GameStateManager } from "../Managers/GameStateManager";
 import { AlertManager } from "../Managers/AlertManager";
@@ -447,6 +448,8 @@ export const RealEstateScreens = {
         const idx = pf.marketIndex(country);
         const next = Math.max(0, RE.listingRefreshWeeks - (pf.clock() - pf.listingsWeek));
         const cash = pl.getMoneyState().getCash().doubleValue();
+        const adult = pl.getAgeInYears() >= AgeLimits.adultStuff;
+        if (!adult) content.add(label("TooYoungToBuy", [["", `You must be ${AgeLimits.adultStuff} to buy a home.`, R.color.flatRed]]));
         content.add(label("MarketIntro", [
             ["Market", `${idx.toFixed(2)}× base prices (${pct(idx - 1)})`],
             ["New listings", next ? `in ${next} week${next === 1 ? "" : "s"}` : "next week"],
@@ -472,9 +475,9 @@ export const RealEstateScreens = {
             const lsb = rich(lines).getStringBuilder();
             if (l.info().category === "Residential") { ExtensionsKt.appendNewline(lsb); ExtensionsKt.appendNormal$default(lsb, "Living here: ", null, null, null, 14, null); comfortSb(lsb, pf, l); }
             content.add(new ActionCellMultipleOptionsViewModel(img(l), l.name, new TextLabelViewModel("", null, false, false, null, lsb), text(""), [
-                button(`Buy (${money(l.askingPrice)})`, cash >= l.askingPrice, () => RealEstateScreens.confirm("Buy Property",
+                button(`Buy (${money(l.askingPrice)})`, adult && cash >= l.askingPrice, () => RealEstateScreens.confirm("Buy Property",
                     `Buy ${l.name} for ${money(l.askingPrice)} cash?`, img(l), "Buy", () => RealEstateScreens.afterBuy(l.id, pf.buyListing(pl, l.id, false), l))),
-                button(`Mortgage (${money(down)} down)`, refusal == null, () => RealEstateScreens.confirm("Mortgage",
+                button(`Mortgage (${money(down)} down)`, adult && refusal == null, () => RealEstateScreens.confirm("Mortgage",
                     `Put ${money(down)} down and borrow ${money(l.askingPrice - down)} at ${(RE.mortgageRate * 100).toFixed(1)}%? Payments are ${money(pay)} per week for ${RE.mortgageYears} years (paid automatically; you can pay it off early).`,
                     img(l), "Buy with mortgage", () => RealEstateScreens.afterBuy(l.id, pf.buyListing(pl, l.id, true), l))),
             ], null));
@@ -493,6 +496,8 @@ export const RealEstateScreens = {
         const next = Math.max(0, RE.listingRefreshWeeks - (pf.clock() - pf.listingsWeek));
         const cash = pl.getMoneyState().getCash().doubleValue();
         const lease = pf.lease, home = pf.residence();
+        const adult = pl.getAgeInYears() >= AgeLimits.adultStuff;
+        if (!adult) content.add(label("TooYoungToRent", [["", `You must be ${AgeLimits.adultStuff} to rent a home.`, R.color.flatRed]]));
         content.add(label("RentIntro", [
             ["", "Renting is cheaper up front: no down payment, no taxes or repairs (the landlord handles those). You pay rent and utilities every week."],
             ["Now living in", home ? `${home.name} (you own it — it stays yours if you move)` : lease ? `${lease.name} (${money(lease.leaseRent ?? 0)}/week)` : pl.getHousingState().currentHousing().getType().getTitle()],
@@ -513,7 +518,7 @@ export const RealEstateScreens = {
             const sb = rich(lines).getStringBuilder();
             ExtensionsKt.appendNewline(sb); ExtensionsKt.appendNormal$default(sb, "Living here: ", null, null, null, 14, null); comfortSb(sb, pf, l);
             content.add(new ActionCellMultipleOptionsViewModel(img(l), l.name, new TextLabelViewModel("", null, false, false, null, sb), text(""), [
-                button(`Rent (${money(rent)}/week)`, cash >= rent * 2, () => RealEstateScreens.confirm("Rent This Home",
+                button(`Rent (${money(rent)}/week)`, adult && cash >= rent * 2, () => RealEstateScreens.confirm("Rent This Home",
                     `Sign a lease on ${l.name} for ${money(rent)} per week and move in?${lease ? " Your current lease ends." : home ? " Your home stays yours (vacant) — you can rent it out or sell it." : ""}`,
                     img(l), "Sign lease", () => RealEstateScreens.run("Lease", pf.signLease(pl, l.id), img(l)))),
             ], null));

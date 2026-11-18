@@ -78,6 +78,8 @@ import { WorkType } from "../Enums/WorkType";
 export class Player {
     static INSTANCE: any;
     ageInWeeks: number = 0;
+    /** Month you were born (0 = January). Birthdays fall in this month. Undefined in older saves = January. */
+    birthMonth: number = Math.floor(Math.random() * 12);
     // Retirement (src/game/Managers/Retirement.ts). Undefined in older saves.
     retired: boolean = false;
     pensionWeekly: number = 0;
@@ -237,8 +239,11 @@ export class Player {
     }
     setAgeInWeeks(i: number): void {
         let i2: number = i - this.ageInWeeks;
-        if (i < (Constants.Time.INSTANCE.getWeeksPerYear() * Constants.Person.INSTANCE.getMinAgeInYears())) {
-            i = Constants.Time.INSTANCE.getWeeksPerYear() * Constants.Person.INSTANCE.getMinAgeInYears();
+        // The game can start at age 0 now; the old minimum age (8) only limits getting younger (Elixir of Youth).
+        const floor = Constants.Time.INSTANCE.getWeeksPerYear() * Constants.Person.INSTANCE.getMinAgeInYears();
+        if (i2 < 0 && i < floor) {
+            i = Math.min(this.ageInWeeks, floor);
+            i2 = i - this.ageInWeeks;
         }
         if (i2 > 0) {
             this.trueAgeInWeeks += i2;
@@ -247,6 +252,13 @@ export class Player {
     }
     getAgeInYears(): number {
         return JMath.idiv(this.ageInWeeks, Constants.Time.INSTANCE.getWeeksPerYear());
+    }
+    getBirthMonth(): number { return ((this.birthMonth ?? 0) % 12 + 12) % 12; }
+    setBirthMonth(m: number): void { this.birthMonth = ((m % 12) + 12) % 12; }
+    /** The calendar month now (0 = January): your birth month plus the months since your last birthday. */
+    getCurrentMonthIndex(): number {
+        const monthsSinceBirthday = JMath.idiv(this.ageInWeeks % Constants.Time.INSTANCE.getWeeksPerYear(), Constants.Time.INSTANCE.getWeeksPerMonth());
+        return (this.getBirthMonth() + monthsSinceBirthday) % 12;
     }
     getTrueAgeInWeeks(): number {
         return this.trueAgeInWeeks;
@@ -377,7 +389,7 @@ export class Player {
         return !this.getTooOldForFamilySupport() && this.familyState.getParentsStillLiving();
     }
     getGetHUDViewModel(): GameHUDViewModel {
-        let monthString: string = new DateFormatSymbols().getMonths()[((JMath.idiv((this.ageInWeeks % Constants.Time.INSTANCE.getWeeksPerYear()), Constants.Time.INSTANCE.getWeeksPerMonth())) + 1) - 1];
+        let monthString: string = new DateFormatSymbols().getMonths()[this.getCurrentMonthIndex()];
         let weeksPerYear: number = (this.ageInWeeks % Constants.Time.INSTANCE.getWeeksPerYear()) % Constants.Time.INSTANCE.getWeeksPerMonth();
         let health: number = this.attributeState.getHealth();
         let happiness: number = this.attributeState.getHappiness();
@@ -447,6 +459,10 @@ export class Player {
     }
     learnSkillOrEducation(action: CompletableAction): void {
         Intrinsics.checkParameterIsNotNull(action, "action");
+        // Too young / too old for this school, or its prerequisite isn't done (buttons are locked; this is a safety net).
+        if (CompletableActionState.ageBlockFor(action, this) != null) return;
+        const prereq = action.getPrerequiste();
+        if (prereq != null && !this.completableActionState.isCompleted(prereq)) return;
         TelemetryManager.INSTANCE.logEvent("SkillOrEducationEvent", MapsKt.mapOf(TuplesKt.to("Type", action.getTitle())));
         let lifeTracker: MiscState.LifeTracker = this.miscState.getLifeTracker();
         lifeTracker.setEducationAction(lifeTracker.getEducationAction() + 1);
@@ -497,6 +513,7 @@ export class Player {
     bankAction(bankAction: BankAction, amount: BankActionAmount): void {
         Intrinsics.checkParameterIsNotNull(bankAction, "bankAction");
         Intrinsics.checkParameterIsNotNull(amount, "amount");
+        if (bankAction.getLockedString() != null) return;
         TelemetryManager.INSTANCE.logEvent("BankAction", MapsKt.mapOf(TuplesKt.to("Type", bankAction.getTitle()), TuplesKt.to("Amount", amount.toString())));
         switch (bankAction) {
             case BankAction.withdrawal:
@@ -1234,7 +1251,7 @@ export class Player {
         player.initializeAge(i, z);
     }
     initializeAge(ageInYears: number, updateHousing: boolean): void {
-        this.setAgeInWeeks(Constants.Time.INSTANCE.getWeeksPerYear() * ageInYears);
+        this.ageInWeeks = Constants.Time.INSTANCE.getWeeksPerYear() * ageInYears;
         this.trueAgeInWeeks = this.ageInWeeks;
         if (updateHousing) {
             if (ageInYears < 18) {
@@ -1300,7 +1317,7 @@ export class Player {
         }
     }
     initializeAgeInYears(ageInYears: number): void {
-        this.setAgeInWeeks(ageInYears * Constants.Time.INSTANCE.getWeeksPerYear());
+        this.ageInWeeks = ageInYears * Constants.Time.INSTANCE.getWeeksPerYear();
         this.trueAgeInWeeks = this.ageInWeeks;
     }
     applyPerkStateEffects(): void {

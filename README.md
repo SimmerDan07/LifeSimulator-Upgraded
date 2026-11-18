@@ -101,6 +101,28 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `housing_hilltop_mansion.svg`) — replace them with same-named .png files and delete the .svg.
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **School rework (v0.10.0)** (`src/game/Managers/Schooling.ts`): new **Preschool** and **Elementary School**, and every
+  school now has a starting age and realistic length, so you finish high school around 17–18 instead of 15. You still click
+  a school each week to study (one week of school per click); a school year is 40 weeks of study.
+
+  | School | Ages | Length | Notes |
+  |---|---|---|---|
+  | Preschool | 3–5 | 2 school years (80 weeks) | optional; finishing it takes 20 weeks off elementary |
+  | Elementary School | from 5 | 6 school years (240 weeks) | |
+  | Middle School | from 11 | 3 school years (120 weeks) | needs Elementary |
+  | High School | from 14 | 4 school years (160 weeks) | needs Middle |
+
+  Adults (18+) who never finished go to **night school** at the original pace (elementary/middle 60 weeks, high school
+  80 weeks; Fast Learner etc. still apply). Fast Learner / Intellectual Curiosity / Stupid don't change kids' school.
+  New characters get the schooling their age implies (scenario kids, sandbox, heirs); older saves count preschool and
+  elementary as done for anyone 11+ or past middle school. Icons for the two new schools are placeholders
+  (`education_preschool.svg`, `education_elementaryschool.svg`).
+- **Young Child starts at age 0 (v0.10.0)**, and the game can now start at any age from 0 (sandbox slider 0–80). The old
+  minimum age (8) now only stops the Elixir of Youth making you younger than 8.
+- **Birth month (v0.10.0)**: pick the month you're born in on the new-life screen (it used to always be January).
+  Birthdays fall in that month; heirs keep the calendar month going.
+- **Age limits (v0.10.0)**: jobs and side hustles from 14; businesses, buying or renting property, bank loans, stocks
+  and the lottery from 18; skills and languages from 6; philanthropy from 18.
 - **New school icons (v0.9.2)**: Middle School and High School use the user's own icons (`assets/images/education_middleschool.png`, `education_highschool.png`).
 - **Retail career (v0.7.0)** (Work tab, `Job.retail` in `src/game/Enums/Job.ts`, icon `assets/images/work_retail.png`
   from the user): Cashier $400/wk → Senior Cashier $500 → Shift Supervisor $700 → Assistant Store Manager $1,000 →

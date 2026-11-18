@@ -1,5 +1,6 @@
 // Hand-ported from Managers/GameStateManager.java. Loads/saves the whole game via SaveCodec.
 import { BigInteger } from "../runtime";
+import { Schooling } from "./Schooling";
 import { GlobalStateManager } from "./GlobalStateManager";
 import { Player } from "./Player";
 import { NameGenerator } from "./NameGenerator";
@@ -67,6 +68,7 @@ export class GameStateManager {
         this.newGamePlayerState = lifeScenario.getInitialState();
     }
     startNewGame(player: Player): void {
+        Schooling.fillForAge(player);  // schooling that fits the starting age (preschool…high school)
         player.applyPerkStateEffects();
         player.applyNameEasternEgg();
         this.globalStateManager.getSaveState().currentSlot().setPersonState(player);

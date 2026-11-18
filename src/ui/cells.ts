@@ -301,7 +301,8 @@ export function renderCell(vm: any): HTMLElement | null {
             const url = imageUrl(o.getImageId());
             if (url) { const i = el("img"); i.src = url; chip.appendChild(i); }
             chip.appendChild(el("span", "", textToHtml(o.getTitle())));
-            if (o.getTitle() === vm.getDefaultOptionTitle()) chip.classList.add("selected");
+            const def = vm.getDefaultOptionTitle() ?? "";
+            if (o.getTitle() === def || (o.getTitle().length === 3 && def.startsWith(o.getTitle()))) chip.classList.add("selected");  // "Jan" ↔ "January"
             chip.addEventListener("click", () => runAction(() => o.getOnSelected().invoke()));
             opts.appendChild(chip);
         }

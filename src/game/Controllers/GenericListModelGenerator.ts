@@ -60,6 +60,7 @@ import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { TombstoneViewModel } from "../Models/TombstoneViewModel";
 import { Trait } from "../Enums/Trait";
 import { Utils } from "../Utils/Utils";
+import { DateFormatSymbols } from "../ui/bridge";
 
 /** New characters whose perks have been switched on by default already (see perkSelection). */
 const perksDefaulted = new WeakSet<object>();
@@ -364,8 +365,19 @@ export class GenericListModelGenerator {
                     newGamePlayerState.initializeSexuality(Sexuality.bisexual);
                 }
                 })]));
+                // Birth month (the original always started you in January). Birthdays fall in this month.
+                {
+                    const months: string[] = new DateFormatSymbols().getMonths();
+                    arrayList.add(new CustomizeOptionsViewModel("Birth Month", months[newGamePlayerState.getBirthMonth()], months.map((m, idx) =>
+                        new CustomizeSingleOptionViewModel(m.slice(0, 3), null, {
+                            invoke: () => {
+                                newGamePlayerState.setBirthMonth(idx);
+                                Utils.INSTANCE.reloadGenericList(GenericListType.customizeGame);
+                            },
+                        }))));
+                }
                 if (newGamePlayerState.getLifeScenario().isCustomizable()) {
-                    arrayList.add(new CustomizeSliderViewModel(Utils.INSTANCE.getString(R.string.identity_name_age), new SliderViewModel(8, 80, newGamePlayerState.getAgeInYears(), false, {
+                    arrayList.add(new CustomizeSliderViewModel(Utils.INSTANCE.getString(R.string.identity_name_age), new SliderViewModel(0, 80, newGamePlayerState.getAgeInYears(), false, {
                         invoke: (i3: number) => {
                         newGamePlayerState.initializeAge(i3, true);
                     }

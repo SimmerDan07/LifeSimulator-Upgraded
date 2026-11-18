@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, ArraysKt, CollectionsKt, Intrinsics, JEnum, JMath, NoWhenBranchMatchedException, R, Random } from "../runtime";
+import { AgeLimits } from "../Managers/Schooling";
 import { Trait } from "./Trait";
 import { CompletableAction } from "./CompletableAction";
 import { Constants } from "../Utils/Constants";
@@ -116,6 +117,8 @@ export class SideHustle extends JEnum {
     }
     requirementNotMetString(player: Player): string {
         Intrinsics.checkParameterIsNotNull(player, "player");
+        const tooYoung = AgeLimits.tooYoung(AgeLimits.work, player);
+        if (tooYoung != null) return tooYoung;
         let requiredDegree: CompletableAction = this.getRequiredDegree();
         if ((requiredDegree != null) && !player.getCompletableActionState().isCompleted(requiredDegree)) {
             return Utils.Strings.INSTANCE.getRequiresString(requiredDegree.getTitle());

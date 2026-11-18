@@ -2,6 +2,7 @@
 // The heir inherits the estate (money after debts, homes, possessions, businesses, stocks, pets),
 // keeps their own job, gets schooling that matches their age/job, and remembers their parents.
 import { ArrayList, BigInteger, Pair } from "../runtime";
+import { Schooling } from "./Schooling";
 import { GameStateManager } from "./GameStateManager";
 import { AlertManager } from "./AlertManager";
 import { AlertViewModel } from "./AlertViewModel";
@@ -96,11 +97,15 @@ export class Generations {
         heir.generation = parent.getGeneration() + 1;
         heir.ancestors = [...parent.getAncestors(), `${parent.getFullName()} (died at ${parent.getAgeInYears()})`];
 
-        // Schooling: kids went to school while growing up; a job implies its required education.
+        // Keep the calendar month the same when play passes to the heir (their birthday is in their own month).
+        const weeksPerMonth = Constants.Time.INSTANCE.getWeeksPerMonth(), weeksPerYear = Constants.Time.INSTANCE.getWeeksPerYear();
+        heir.setBirthMonth(parent.getCurrentMonthIndex() - Math.floor((child.getAgeInWeeks() % weeksPerYear) / weeksPerMonth));
+
+        // Schooling: kids went to school while growing up (preschool from 3 … high school done at 18);
+        // a job implies its required education.
         const age = child.getAgeInYears();
         const edu = heir.getCompletableActionState();
-        if (age >= 14) edu.completeAction(CompletableAction.middleSchool);
-        if (age >= 18) edu.completeAction(CompletableAction.highSchool);
+        Schooling.fillForAge(heir, true);
         const childJob = child.getChildJobState();
         if (childJob != null && childJob.getCurrentJob() != null) {
             heir.jobState = childJob;
@@ -114,6 +119,7 @@ export class Generations {
                 }
             }
         }
+        Schooling.fillForAge(heir, true);  // schools before any the job needed
 
         // Inheritance
         heir.setMoneyState(new MoneyState(estate, BigInteger.ZERO));

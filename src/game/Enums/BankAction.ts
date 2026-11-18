@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { Integer, JEnum, JMath, NoWhenBranchMatchedException, R, SpannableStringBuilder } from "../runtime";
+import { AgeLimits } from "../Managers/Schooling";
 import { CompletableAction } from "./CompletableAction";
 import { Constants } from "../Utils/Constants";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
@@ -56,6 +57,10 @@ export class BankAction extends JEnum {
     }
     getLockedString(): string {
         let i: BankAction = this;
+        if (i === BankAction.takeLoan || i === BankAction.buyStock || i === BankAction.sellStock || i === BankAction.buyLottery) {
+            const tooYoung = AgeLimits.tooYoung(AgeLimits.adultStuff);
+            if (tooYoung != null) return tooYoung;
+        }
         if (((i === BankAction.buyStock) || (i === BankAction.sellStock)) && !GameStateManager.INSTANCE.getPersonState().getCompletableActionState().isCompleted(CompletableAction.personalFinance)) {
             return Utils.Strings.INSTANCE.getRequiresString(CompletableAction.personalFinance.getTitle());
         }

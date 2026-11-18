@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { Arrays, BigInteger, Intrinsics, JEnum, NoWhenBranchMatchedException, R, StringCompanionObject, TypeCastException } from "../runtime";
+import { AgeLimits } from "../Managers/Schooling";
 import { Business } from "./Business";
 import { BusinessState } from "../Managers/BusinessState";
 import { CompletableAction } from "./CompletableAction";
@@ -182,6 +183,8 @@ export class BusinessAction extends JEnum {
     }
     requirementNotMetString(state: BusinessState.SingleBusinessState): string {
         Intrinsics.checkParameterIsNotNull(state, "state");
+        const tooYoung = AgeLimits.tooYoung(AgeLimits.adultStuff);
+        if (tooYoung != null) return tooYoung;
         let valueOf: BigInteger = BigInteger.valueOf(state.getType().upgradeUnitRequirement(state.getLevel() + 1));
         switch (this) {
             case BusinessAction.incorporate:

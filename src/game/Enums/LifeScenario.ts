@@ -318,7 +318,7 @@ export class LifeScenario extends JEnum {
                 newPerson.getCompletableActionState().setProgress(CompletableAction.highSchool, 15);
                 break;
             case LifeScenario.youngChild:
-                newPerson.initializeAgeInYears(13);
+                newPerson.initializeAgeInYears(0);  // a newborn (was 13)
                 newPerson.setMoneyState(new MoneyState(0, 0));
                 newPerson.changeDiet(Diet.scavenge);
                 newPerson.getHousingState().moveHere(Housing.parentsHouse);

@@ -13,6 +13,7 @@ import { Perk } from "./Perk";
 import { Player } from "../Managers/Player";
 import { Trait } from "./Trait";
 import { Utils } from "../Utils/Utils";
+import { Schooling } from "../Managers/Schooling";
 
 export class CompletableAction extends JEnum {
     static readonly middleSchool: CompletableAction = new CompletableAction("middleSchool", 0);
@@ -58,12 +59,17 @@ export class CompletableAction extends JEnum {
     static readonly sustainableEnergy: CompletableAction = new CompletableAction("sustainableEnergy", 40);
     static readonly lunarBase: CompletableAction = new CompletableAction("lunarBase", 41);
     static readonly marsColonization: CompletableAction = new CompletableAction("marsColonization", 42);
-    static values(): CompletableAction[] { return [CompletableAction.middleSchool, CompletableAction.highSchool, CompletableAction.college_music, CompletableAction.college_business, CompletableAction.college_biology, CompletableAction.college_finance, CompletableAction.college_science, CompletableAction.college_computerScience, CompletableAction.college_theater, CompletableAction.college_literature, CompletableAction.college_philosophy, CompletableAction.college_art, CompletableAction.masters, CompletableAction.mba, CompletableAction.phd, CompletableAction.law_school, CompletableAction.medSchool, CompletableAction.police_academy, CompletableAction.militaryAcademy, CompletableAction.homeChef, CompletableAction.nutritionScience, CompletableAction.frugalShopper, CompletableAction.personalFinance, CompletableAction.investmentStrategies, CompletableAction.financialLiteracy, CompletableAction.homeMedic, CompletableAction.meditationExpert, CompletableAction.hygieneExpert, CompletableAction.stocisim, CompletableAction.timeMangement, CompletableAction.selfHelp, CompletableAction.selfImprovement, CompletableAction.french, CompletableAction.japanese, CompletableAction.spanish, CompletableAction.chinese, CompletableAction.diseaseEradicationPolio, CompletableAction.diseaseEradicationMalaria, CompletableAction.cancerResearch, CompletableAction.worldHunger, CompletableAction.sustainableEnergy, CompletableAction.lunarBase, CompletableAction.marsColonization]; }
+    // Added in Life Sim Upgraded (listed first in values() so they show first on the Education tab).
+    static readonly preschool: CompletableAction = new CompletableAction("preschool", 43);
+    static readonly elementarySchool: CompletableAction = new CompletableAction("elementarySchool", 44);
+    static values(): CompletableAction[] { return [CompletableAction.preschool, CompletableAction.elementarySchool, CompletableAction.middleSchool, CompletableAction.highSchool, CompletableAction.college_music, CompletableAction.college_business, CompletableAction.college_biology, CompletableAction.college_finance, CompletableAction.college_science, CompletableAction.college_computerScience, CompletableAction.college_theater, CompletableAction.college_literature, CompletableAction.college_philosophy, CompletableAction.college_art, CompletableAction.masters, CompletableAction.mba, CompletableAction.phd, CompletableAction.law_school, CompletableAction.medSchool, CompletableAction.police_academy, CompletableAction.militaryAcademy, CompletableAction.homeChef, CompletableAction.nutritionScience, CompletableAction.frugalShopper, CompletableAction.personalFinance, CompletableAction.investmentStrategies, CompletableAction.financialLiteracy, CompletableAction.homeMedic, CompletableAction.meditationExpert, CompletableAction.hygieneExpert, CompletableAction.stocisim, CompletableAction.timeMangement, CompletableAction.selfHelp, CompletableAction.selfImprovement, CompletableAction.french, CompletableAction.japanese, CompletableAction.spanish, CompletableAction.chinese, CompletableAction.diseaseEradicationPolio, CompletableAction.diseaseEradicationMalaria, CompletableAction.cancerResearch, CompletableAction.worldHunger, CompletableAction.sustainableEnergy, CompletableAction.lunarBase, CompletableAction.marsColonization]; }
     static valueOf(n: string): CompletableAction { return (CompletableAction as any)[n]; }
     static INSTANCE: any;
     constructor(name: string, ordinal: number) { super(name, ordinal); }
     getType(): CompletableActionType {
         switch (this) {
+            case CompletableAction.preschool:
+            case CompletableAction.elementarySchool:
             case CompletableAction.middleSchool:
             case CompletableAction.highSchool:
             case CompletableAction.college_music:
@@ -116,6 +122,10 @@ export class CompletableAction extends JEnum {
     }
     getImageId(): number {
         switch (this) {
+            case CompletableAction.preschool:
+                return R.drawable.education_preschool;
+            case CompletableAction.elementarySchool:
+                return R.drawable.education_elementaryschool;
             case CompletableAction.middleSchool:
                 return R.drawable.education_middleschool;
             case CompletableAction.highSchool:
@@ -208,6 +218,10 @@ export class CompletableAction extends JEnum {
     }
     getTitle(): string {
         switch (this) {
+            case CompletableAction.preschool:
+                return Utils.INSTANCE.getString((R.string as any).Education_Type_Preschool);
+            case CompletableAction.elementarySchool:
+                return Utils.INSTANCE.getString((R.string as any).Education_Type_ElementarySchool);
             case CompletableAction.middleSchool:
                 return Utils.INSTANCE.getString(R.string.Education_Type_MiddleSchool);
             case CompletableAction.highSchool:
@@ -299,6 +313,7 @@ export class CompletableAction extends JEnum {
         }
     }
     getDescription(): string {
+        if (Schooling.isSchool(this)) return Schooling.description(this, GameStateManager.INSTANCE.getPersonState());
         switch (this) {
             case CompletableAction.homeChef:
                 return Utils.INSTANCE.getString(R.string.Education_Skill_HomeChef_Description);
@@ -371,6 +386,8 @@ export class CompletableAction extends JEnum {
     }
     getCostPerWeek(): BigInteger {
         switch (this) {
+            case CompletableAction.preschool:
+            case CompletableAction.elementarySchool:
             case CompletableAction.middleSchool:
                 let valueOf: BigInteger = BigInteger.valueOf(0);
                 return valueOf;
@@ -475,7 +492,11 @@ export class CompletableAction extends JEnum {
     }
     getPrerequiste(): CompletableAction {
         switch (this) {
+            case CompletableAction.preschool:
+            case CompletableAction.elementarySchool:
+                return null;
             case CompletableAction.middleSchool:
+                return CompletableAction.elementarySchool;
             case CompletableAction.masters:
             case CompletableAction.homeChef:
             case CompletableAction.personalFinance:
@@ -546,14 +567,18 @@ export class CompletableAction extends JEnum {
         let closeMindedSkillModifier: number;
         Intrinsics.checkParameterIsNotNull(player, "player");
         let d: number = 0.5;
-        switch (this) {
-            case CompletableAction.middleSchool:
+        // Kids' school (preschool to high school) takes real school years; adults go to night school.
+        if (Schooling.isSchool(this)) {
+            const kidWeeks = Schooling.weeksRequired(this, player);
+            if (!Schooling.isAdult(player)) return kidWeeks ?? 0;
+            d = (kidWeeks ?? 0) / Constants.Time.INSTANCE.getWorkYearLengthWeeks();
+        }
+        else switch (this) {
             case CompletableAction.selfImprovement:
             case CompletableAction.french:
             case CompletableAction.spanish:
                 d = 1.5;
                 break;
-            case CompletableAction.highSchool:
             case CompletableAction.masters:
             case CompletableAction.mba:
             case CompletableAction.militaryAcademy:
@@ -752,7 +777,7 @@ export namespace CompletableAction {
         return [CompletableAction.college_music, CompletableAction.college_business, CompletableAction.college_biology, CompletableAction.college_finance, CompletableAction.college_science, CompletableAction.college_computerScience, CompletableAction.college_theater, CompletableAction.college_literature, CompletableAction.college_philosophy, CompletableAction.college_art];
     }
         getGetSandboxCustomizableEducation(): CompletableAction[] {
-        let mutableListOf: ArrayList = CollectionsKt.mutableListOf(CompletableAction.middleSchool, CompletableAction.highSchool);
+        let mutableListOf: ArrayList = CollectionsKt.mutableListOf(CompletableAction.preschool, CompletableAction.elementarySchool, CompletableAction.middleSchool, CompletableAction.highSchool);
         CollectionsKt.addAll(mutableListOf, CompletableAction.INSTANCE.getCollegeDegrees());
         let array = mutableListOf.toArray(new Array(0).fill(null));
         if (array != null) {

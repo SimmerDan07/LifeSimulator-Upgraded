@@ -11,6 +11,7 @@ import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { GameStateManager } from "./GameStateManager";
 import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
+import { Schooling, AgeLimits } from "./Schooling";
 
 export class CompletableActionState {
     static INSTANCE: any;
@@ -35,10 +36,9 @@ export class CompletableActionState {
         Intrinsics.checkParameterIsNotNull(actionType, "actionType");
         let completableActionStateSingleArr: CompletableActionState.CompletableActionStateSingle[] = this.states;
         let arrayList: ArrayList = new ArrayList();
-        for (const completableActionStateSingle of completableActionStateSingleArr) {
-            if (completableActionStateSingle.getType().getType() === actionType) {
-                arrayList.add(completableActionStateSingle);
-            }
+        // Records added later (old saves) sit at the end of the list; show everything in the game's order.
+        for (const a of CompletableAction.values()) {
+            if (a.getType() === actionType) arrayList.add(this.getState(a));
         }
         let array = arrayList.toArray(new Array(0).fill(null));
         if (array != null) {
@@ -129,7 +129,24 @@ export class CompletableActionState {
                 arrayList.add(completableActionStateSingle);
             }
         }
+        if (arrayList.isEmpty()) return this.createMissing(type);
         return (CollectionsKt.first((arrayList as unknown as ArrayList)) as unknown as CompletableActionState.CompletableActionStateSingle);
+    }
+    /** Saves made before Preschool / Elementary School existed: add the record. Someone who has started middle
+     *  school, or is 11 or older, has already been through them. */
+    createMissing(type: CompletableAction): CompletableActionState.CompletableActionStateSingle {
+        const created = new CompletableActionState.CompletableActionStateSingle(type, 0, false);
+        this.states = [...this.states, created];
+        if (type === CompletableAction.preschool || type === CompletableAction.elementarySchool) {
+            const ms = this.getState(CompletableAction.middleSchool);
+            let owner: any = null;
+            try { const p = GameStateManager.INSTANCE.getPersonState(); if (p.getCompletableActionState() === this) owner = p; } catch { /* no game yet */ }
+            if (ms.getCompleted() || ms.getProgress() > 0 || (owner != null && owner.getAgeInYears() >= 11)) {
+                created.setCompleted(true);
+                created.setProgress(Schooling.info(type)!.years * Schooling.weeksPerSchoolYear);
+            }
+        }
+        return created;
     }
 }
 export namespace CompletableActionState {
@@ -228,6 +245,9 @@ export namespace CompletableActionState {
                 const what = this.type.getPrerequiste() != null ? this.type.getPrerequiste().getTitle() : Utils.INSTANCE.getString(R.string.Common_None);
                 description = Utils.Strings.INSTANCE.getRequiresString(what);
             }
+            // Age: schools have starting ages; skills and languages from 6; college needs high school anyway.
+            const ageBlock = this.completed ? null : CompletableActionState.ageBlockFor(this.type, player);
+            if (!locked && ageBlock != null) { locked = true; description = ageBlock; }
             let progress = this.progress;
             const required = this.type.getTimeRequiredInWeeks(player);
             if (this.completed && progress !== required) progress = required;
@@ -260,4 +280,13 @@ export namespace CompletableActionState {
     }
 }
 CompletableActionState.INSTANCE = new CompletableActionState.Companion(null);
+export namespace CompletableActionState {
+    /** Age reason this can't be studied now, or null. */
+    export function ageBlockFor(type: CompletableAction, player: any): string | null {
+        if (Schooling.isSchool(type)) return Schooling.ageBlock(type, player);
+        if (type.getType() === CompletableActionType.skill) return AgeLimits.tooYoung(AgeLimits.skills, player);
+        if (type.getType() === CompletableActionType.philanthrophy) return AgeLimits.tooYoung(AgeLimits.adultStuff, player);
+        return null;
+    }
+}
 CompletableActionState.CompletableActionStateSingle.INSTANCE = new CompletableActionState.CompletableActionStateSingle.Companion(null);
