@@ -314,6 +314,9 @@ export class CompletableAction extends JEnum {
     }
     getDescription(): string {
         if (Schooling.isSchool(this)) return Schooling.description(this, GameStateManager.INSTANCE.getPersonState());
+        // v0.19.0 Celebrity Life degrees
+        if (this === CompletableAction.college_music) return "Celebrity Life: needed to go beyond Opening Act in Music (Recording Artist and up). +15 music skill for chart results, tours and awards.";
+        if (this === CompletableAction.college_theater) return "Celebrity Life: needed for Theater Ensemble and up in Acting, and Dance Captain and up in Dance. +15 acting and dance skill for auditions, movies, battles and awards.";
         switch (this) {
             case CompletableAction.homeChef:
                 return Utils.INSTANCE.getString(R.string.Education_Skill_HomeChef_Description);

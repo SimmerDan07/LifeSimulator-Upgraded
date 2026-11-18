@@ -27,6 +27,8 @@ import { WorkAction } from "../Enums/WorkAction";
 import { WorkButtonsViewModel } from "../Models/WorkButtonsViewModel";
 import { WorkType } from "../Enums/WorkType";
 import { Retirement } from "../Managers/Retirement";
+import { Celebrity } from "../Lifepaths/Celebrity";
+import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
 
 export class WorkModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
@@ -42,6 +44,12 @@ export class WorkModelGenerator implements IViewModelGenerator {
         let arrayList: ArrayList = new ArrayList();
         arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.tab_name_work)));
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
+        // v0.19.0: celebrity careers live in Lifepaths › Celebrity Life; if you have one, it shows here too
+        const celeb = Celebrity.career(personState);
+        if (celeb != null) {
+            arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
+            arrayList.add(new SingleLabelCellViewModel("CelebrityWorkNote", new TextLabelViewModel(`Your ${celeb.title.toLowerCase()} career is part of Celebrity Life: open Lifepaths › Celebrity Life for auditions, songs, shows, fans and your team.`, null, false, false, null, null, 62, null)));
+        }
         for (const jobStateSingle of personState.getJobState().statesForPlayer(personState)) {
             arrayList.add(jobStateSingle.getViewModel());
         }

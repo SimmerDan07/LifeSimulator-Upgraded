@@ -77,6 +77,8 @@ import { WorkType } from "../Enums/WorkType";
 import { SocialCircle } from "../Social/SocialCircle";
 import { Subscriptions } from "./Subscriptions";
 import { Vampire } from "../Lifepaths/Vampire";
+import { Celebrity } from "../Lifepaths/Celebrity";
+import { CelebrityState } from "../Lifepaths/CelebrityState";
 import { Babies } from "../Social/Babies";
 import { VampireState } from "../Lifepaths/VampireState";
 import { Relationships } from "../Social/Relationships";
@@ -119,6 +121,8 @@ export class Player {
     subscriptions: string[] = null;
     /** The Vampire lifepath (v0.15.0). Undefined in older saves: human. */
     vampire: VampireState = null;
+    /** Celebrity Life (v0.19.0): fans, reputation, records. Undefined in older saves: never famous. */
+    celebrity: CelebrityState = null;
     /** v0.17.0: how this life ended (for the obituary). */
     deathCause: string = null;
     id: string = null;
@@ -734,7 +738,7 @@ export class Player {
                 this.romanticRelationshipStatus = RomanticRelationshipStatus.single;
                 break;
             default:
-                if ((event.getChanceOfFindingDate() > 0.0) && Utils.Random.INSTANCE.rollWithProbability(Math.min(1, event.getChanceOfFindingDate() * Vampire.datingMultiplier()))) {
+                if ((event.getChanceOfFindingDate() > 0.0) && Utils.Random.INSTANCE.rollWithProbability(Math.min(1, event.getChanceOfFindingDate() * Vampire.datingMultiplier() * Celebrity.datingMultiplier(this)))) {
                     let chooseFromPool: IProbableEvent = Utils.Random.INSTANCE.chooseFromPool(ArraysKt.toCollection(LoverPersonality.values(), new ArrayList()));
                     let alertManager4: AlertManager = AlertManager.INSTANCE;
                     if (chooseFromPool == null) {
@@ -838,6 +842,7 @@ export class Player {
         Retirement.countWeek(this);
         Subscriptions.afterWeek(this);
         Vampire.afterWeek(this);
+        Celebrity.afterWeek(this);
         let miscState: MiscState = this.miscState;
         miscState.setTotalWeekInLife(miscState.getTotalWeekInLife() + 1);
         let miscState2: MiscState = this.miscState;
@@ -1000,6 +1005,7 @@ export class Player {
         Retirement.collectWeeklyValues(this);
         Subscriptions.collectWeeklyValues(this);
         Vampire.collectWeeklyValues(this);
+        Celebrity.collectWeeklyValues(this);
         this.attributeState.setDeltaValue(PersonAttribute.health, Utils.INSTANCE.getString(R.string.identity_name_age), this.getHealthStatus().getHealthModifier());
         let effectiveInterestRate: number = this.moneyState.getEffectiveInterestRate();
         let weeksPerYear: number = Constants.Time.INSTANCE.getWeeksPerYear();

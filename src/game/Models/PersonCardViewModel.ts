@@ -37,7 +37,7 @@ export class SubHeaderViewModel extends BaseViewModel {
 
 /** A labelled 0–max meter (Lifepaths: Thirst, Suspicion). */
 export class MeterViewModel extends BaseViewModel {
-    constructor(public title: string, public value: number, public max: number, public tone: string, public note: string | null = null) {
+    constructor(public title: string, public value: number, public max: number, public tone: string, public note: string | null = null, public display: string | null = null) {
         super();
         this.identifier = "Meter." + title;
     }

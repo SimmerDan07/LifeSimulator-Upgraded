@@ -8,6 +8,7 @@
 // - The Family Line screen pages through a line's generations from its records; the cemetery pages through all.
 // - Older saves: records are made for every stored life the first time, the `ancestors` name list is turned into
 //   records, and matching old snapshots are linked into the player's line.
+import { Celebrity } from "../Lifepaths/Celebrity";
 import { ArrayList, Pair, SpannableStringBuilder, Layout, R, UUID } from "../runtime";
 import { AchievementBadge } from "../Enums/AchievementBadge";
 import { GameStateManager } from "./GameStateManager";
@@ -33,6 +34,8 @@ export interface LifeRecord {
     children: number;
     partner: string | null;
     vampireYears: number;
+    /** v0.19.0: "Superstar (12.4M fans at the peak)" for famous lives. */
+    fame?: string | null;
     /** Converted from an older save's ancestor list (only a name and age are known). */
     legacy?: boolean;
     appearance?: any;
@@ -92,6 +95,7 @@ export const Lineage = {
             children: (() => { try { return fam.getChildren().size(); } catch { return 0; } })(),
             partner: partner != null ? partner.getFullName() : null,
             vampireYears: Math.floor((p.vampire?.vampireWeeks ?? 0) / 48),
+            fame: (() => { try { return Celebrity.fameLine(p); } catch { return null; } })(),
             appearance: p.appearance ?? undefined,
         };
         if (r) Object.assign(r, data); else { recs.push(data); r = data; }

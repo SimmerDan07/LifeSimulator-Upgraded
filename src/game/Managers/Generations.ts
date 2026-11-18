@@ -1,6 +1,7 @@
 // Generational play (Life Sim Upgraded): when you die, continue the family line as one of your children.
 // The heir inherits the estate (money after debts, homes, possessions, businesses, stocks, pets),
 // keeps their own job, gets schooling that matches their age/job, and remembers their parents.
+import { Celebrity } from "../Lifepaths/Celebrity";
 import { Appearance } from "../Social/Appearance";
 import { ArrayList, BigInteger, Pair } from "../runtime";
 import { Schooling } from "./Schooling";
@@ -161,6 +162,8 @@ export class Generations {
         // v0.17.0: the rest of the family tree, one generation down (grandparents, aunts/uncles, cousins,
         // nieces/nephews, the heir's own children and grandchildren).
         ExtendedFamily.inherit(parent, heir, child);
+        // v0.19.0: a famous parent's name carries weight (10% of their peak fans)
+        Celebrity.inherit(parent, heir);
 
         // Real estate: every property (with its mortgage) passes to the heir; gifts they received come back,
         // and if they were living in one of the family's properties they stay there.
@@ -190,6 +193,8 @@ export class Generations {
     static identityRows(p: Player): Pair<string, string>[] {
         const rows = [new Pair("Look", Appearance.describe(p))];   // v0.18.0
         if (p.getGeneration() > 1) rows.push(new Pair("Generation", String(p.getGeneration())));
+        // v0.19.0 Celebrity Life
+        if (Celebrity.fans(p) >= 1000) rows.push(new Pair("Fame", `${Celebrity.tierName(p)} · ${Celebrity.fansText(Celebrity.fans(p))} fans`));
         return rows;
     }
 }

@@ -197,7 +197,7 @@ check("6 skin tones and 5 hair colors", SKIN_NAMES.length === 6 && HAIR_NAMES.le
 // ---------------------------------------------------------------- art slots (icons you can draw)
 {
     const imgs = fs.readdirSync("assets/images").map((f: string) => f.replace(/\.(svg|png)$/, ""));
-    check("27 icon slots, each with a stand-in that exists", ART_SLOTS.length === 27 && ART_SLOTS.every((s) => imgs.includes(s.fallback)), ART_SLOTS.filter((s) => !imgs.includes(s.fallback)).map((s) => s.name).join(","));
+    check("55 icon slots, each with a stand-in that exists", ART_SLOTS.length === 55 && ART_SLOTS.every((s) => imgs.includes(s.fallback)), ART_SLOTS.filter((s) => !imgs.includes(s.fallback)).map((s) => s.name).join(","));
     check("…and none drawn yet clash with existing files", ART_SLOTS.every((s) => !imgs.includes(s.name) || true));
 }
 

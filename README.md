@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, old-save loading (556 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, Celebrity Life, old-save loading (618 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -146,6 +146,45 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   suspicion a week), and you get Hunt Together, Dance Through the Night and Eternal Vows (once every 10 years).
   Other loved ones you turn add 2 suspicion a year each.
 - Fixed the "Renowed Actor" typo (now "Renowned Actor").
+- **Celebrity Life (v0.19.0)** (`src/game/Lifepaths/Celebrity.ts`, `CelebrityScreen.ts`, state `CelebrityState.ts`):
+  - The **Lifepaths tab is now a menu**: Celebrity Life (a gold star, `assets/images/lifepath_celebrity.svg`) and Vampire,
+    each with a status line and an Open button (`GenericListType.lifepath`, key `celebrity` / `vampire`).
+  - **Three celebrity careers, only offered here** (not on the Work tab): **Acting** (Extra → Background Actor →
+    Commercial Actor → Theater Ensemble → Supporting Actor → TV Series Regular → Lead Actor → Movie Star → Renowned Actor;
+    Theater degree from Theater Ensemble), **Music, reworked** (Street Performer → Bar & Café Gigs → Session Musician →
+    Opening Act → Recording Artist → Chart Climber → Headliner → Stadium Act → Music Legend; the Music & Production degree
+    from Recording Artist) and **Dance, new** (Street Dancer → Dance Crew Member → Backup Dancer → Music Video Dancer →
+    Dance Captain → Tour Choreographer → Celebrity Choreographer; Theater degree from Dance Captain). They're real jobs:
+    the Work buttons pay and promote them (the Celebrity Life screen has the Work buttons too), and if you have one the
+    Work tab shows its card with a note pointing to Lifepaths.
+  - **Fans and fame tiers**: Unknown → Local Talent (1K) → Rising Star (10K) → Famous (100K) → Star (1M) → Superstar
+    (10M) → Icon (100M), with an alert for each new tier. Working a celebrity job earns fans and skill; fans fade 1% a
+    week if you go more than two weeks without working or doing something public. Each tier above Rising Star is harder
+    to climb, and fans level off toward a ceiling of 800 million.
+  - **Fame gates the top jobs**: TV Series Regular / Chart Climber need Rising Star, Lead Actor / Headliner need Famous,
+    Movie Star / Stadium Act need Star, Renowned Actor / Music Legend need Superstar; Dance Captain needs Local Talent,
+    Tour Choreographer Rising Star, Celebrity Choreographer Famous. The job card shows what the next promotion needs,
+    with a one-time alert. Fame also speeds promotions (Famous +1 week of progress per week worked, Superstar +2, Icon +3).
+  - **Skills** (acting, music, dance; the career's degree adds 15) drive chances. **Activities** (each takes a week):
+    Acting — Acting Class, Audition for a Role (bonus, fans, faster promotion), Star in a Movie (Lead Actor+: flop, hit or
+    blockbuster). Music — Music Lessons, Write a Song, Record a Single (didn't chart / top 100 / top 10 / #1), Release an
+    Album (8 songs, Recording Artist+: gold, platinum or diamond), Go on Tour (Opening Act+, ticket sales up to $20M),
+    Shoot a Music Video (can go viral). Dance — Dance Practice, Street Performance (tips), Dance Battle ($1,000), Start a
+    Dance Challenge (can go viral), Choreograph a Show (Dance Captain+), World Dance Championship (once a year, a title).
+    Fame — Post on Social Media, Fan Meet & Greet, Walk a Red Carpet, Talk Show Interview, Host a Charity Gala, Launch Your
+    Own Brand ($250K, Star+, earns 0.1% of your fans in dollars every week), Star on the Walk of Fame (Icon, or Superstar
+    with 3 awards).
+  - **Reputation** (0–100): low reputation slows fan growth; at 10 or less you're **cancelled** (your agent leaves) until
+    it's back to 35 (the comeback). **Team**: Agent ($1,000/wk: better auditions, more deals), Publicist ($1,500/wk: half
+    the scandals, fans fade half as fast), Bodyguard ($2,500/wk: no stalkers). **Royalties** every week from fans, hits,
+    albums and movies.
+  - **Events**: paparazzi, fan mail, tabloid scandals (Apologize / Deny it / Lean into it), endorsement offers (some
+    companies turn out shady), stalkers (Superstar+ without a bodyguard). **Awards** once a year (Golden Star Awards,
+    Music Awards, Dance Awards): a busy year in your career earns nominations, and skill and reputation win them.
+  - **Crossovers**: fame helps dating (+8% per tier); a famous vampire (Star+) draws suspicion unless they have Mind Fog;
+    heirs of a famous parent start with 10% of the parent's peak fans; the obituary, Life Summary and Family Line remember
+    fame and awards; the Profile shows a Fame row. Degree descriptions on the Education tab explain what they unlock.
+  - 28 new art slots (`icon_celeb_*`, `src/game/data/ArtSlots.ts`) use stand-in icons until drawn.
 - **Vampire update 2 (v0.16.0)** (`src/game/Lifepaths/Vampire.ts`):
   - The Cure is now the **Vampiric Cure** and costs **$300 billion**.
   - **One vampire life per lifetime**: once cured you can never become a vampire again (no pale stranger, no Seek, no

@@ -13,6 +13,7 @@ import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Utils } from "../Utils/Utils";
 import { Constants } from "../Utils/Constants";
 import { Vampire } from "../Lifepaths/Vampire";
+import { Celebrity } from "../Lifepaths/Celebrity";
 
 const WPY = () => Constants.Time.INSTANCE.getWeeksPerYear();
 const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
@@ -103,6 +104,13 @@ export const Obituary = {
             const y = Math.floor(vs.vampireWeeks / WPY());
             t += vs.cured ? ` ${he} lived ${plural(y, "year")} as a vampire before taking the Vampiric Cure.` : ` ${he} walked the night as a vampire for ${plural(y, "year")}.`;
         }
+        // v0.19.0 Celebrity Life
+        const famous = Celebrity.describe(p);
+        if (famous) {
+            const cs = Celebrity.peek(p);
+            t += ` ${he} was ${famous}, with ${Celebrity.fansText(cs.peakFans)} fans at the height of ${his} fame` +
+                (cs.awards.length ? ` and ${plural(cs.awards.length, "award")} to ${his} name` : "") + (cs.walkOfFame ? `, and has a star on the Walk of Fame` : "") + ".";
+        }
         const job = Obituary.career(p);
         if (job === "retired") t += ` ${he} had retired.`;
         else if (job) t += ` ${he} worked as ${/^[aeiou]/i.test(job) ? "an" : "a"} ${job}.`;
@@ -122,6 +130,10 @@ export const Obituary = {
         rows.push(["Net worth", ExtensionsKt.numberDisplayString$default(p.getNetWorth(), false, 1, null)]);
         const job = Obituary.career(p);
         if (job) rows.push(["Career", job === "retired" ? "Retired" : job]);
+        const fame = Celebrity.fameLine(p);
+        if (fame) rows.push(["Fame", fame]);
+        const cs = Celebrity.peek(p);
+        if (cs != null && cs.awards.length) rows.push(["Awards", String(cs.awards.length)]);
         const c = Obituary.family(p).counts;
         for (const k of ["Children", "Grandchildren", "Great-grandchildren", "Siblings", "Nieces & nephews"]) if (c[k]) rows.push([k + " (living)", String(c[k])]);
         if ((p.getGeneration?.() ?? 1) > 1) rows.push(["Generation", String(p.getGeneration())]);

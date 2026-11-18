@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { LifepathsModelGenerator } from "./LifepathsModelGenerator";
 import { Appearance, SKIN_NAMES, HAIR_NAMES } from "../Social/Appearance";
 import { AgeGroup } from "../Enums/AgeGroup";
 import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
@@ -93,6 +94,7 @@ export class GenericListModelGenerator {
         if (type === GenericListType.relatives) return LoveScreens.relatives(key);
         if (type === GenericListType.familyTree) return FamilyTree.screen();
         if (type === GenericListType.familyLine) return FamilyTree.lineScreen();
+        if (type === GenericListType.lifepath) return new LifepathsModelGenerator().screen(key);
         // v0.18.0: lives older than the newest 25 are kept as records; their Life Summary comes from the record
         if (type === GenericListType.gameSummary && key != null && key !== Constants.ViewModel.INSTANCE.getTombstoneModeDeath() && !Lineage.hasFull(key)) return FamilyTree.archivedSummary(key);
         let hidden: SwitchViewModel;

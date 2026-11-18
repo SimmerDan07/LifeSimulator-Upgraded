@@ -27,6 +27,7 @@ import { ValueRange } from "../Utils/ValueRange";
 import { WorkAction } from "../Enums/WorkAction";
 import { Retirement } from "./Retirement";
 import { Vampire } from "../Lifepaths/Vampire";
+import { Celebrity } from "../Lifepaths/Celebrity";
 
 export class JobState {
     static INSTANCE: any;
@@ -109,10 +110,16 @@ export class JobState {
         let moneyState: MoneyState = personState.getMoneyState();
         let valueOf: BigInteger = BigInteger.valueOf(JMath.toInt(randomValue));
         MoneyState.updateMoney$default(moneyState, valueOf, MoneyUpdateType.workIncome, null, null, 12, null);
+        // v0.19.0 Celebrity Life: celebrity careers earn fans and skill
+        Celebrity.onWork(personState, job, state.getLevel(), workAction.getPayModifier());
         if (!state.isMaxLevel()) {
             if (state.getProgress() >= (job.weeksForPromotion(state.getLevel()) - 1)) {
                 let educationRequirement: CompletableAction = state.getType().educationRequirement(state.getLevel() + 1);
-                if ((educationRequirement != null) ? personState.getCompletableActionState().isCompleted(educationRequirement) : true) {
+                const fameBlock: string | null = Celebrity.promotionBlock(job, state.getLevel() + 1, personState);
+                const hasDegree: boolean = (educationRequirement != null) ? personState.getCompletableActionState().isCompleted(educationRequirement) : true;
+                if (hasDegree && fameBlock != null) {
+                    Celebrity.blocked(job, state.getLevel() + 1, personState);
+                } else if (hasDegree) {
                     state.setProgress(0);
                     state.setLevel(state.getLevel() + 1);
                     personState.getMiscState().setHasShownDegreeMissingAlert(false);
@@ -122,7 +129,8 @@ export class JobState {
                     personState.getMiscState().setHasShownDegreeMissingAlert(true);
                 }
             } else {
-                state.setProgress(state.getProgress() + 1);
+                // v0.19.0: fame speeds up celebrity careers
+                state.setProgress(Math.min(job.weeksForPromotion(state.getLevel()) - 1, state.getProgress() + 1 + Celebrity.progressBonus(job, personState)));
             }
         }
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForJob(state.getType()), false, 2, null);
@@ -262,6 +270,11 @@ export namespace JobState {
             if ((educationRequirement2 != null) && !personState.getCompletableActionState().isCompleted(educationRequirement2)) {
                 ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, (Utils.INSTANCE.getString(R.string.Job_Action_NextPromotion) + ": ") + educationRequirement2.getTitle(), null, null, null, 14, null));
             }
+        }
+        // v0.19.0: celebrity careers also need fans for the top promotions
+        if (!this.isMaxLevel() && Celebrity.isCelebJob(this.type)) {
+            const fame = Celebrity.promotionBlock(this.type, this.level + 1, personState);
+            if (fame != null) ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, `Next promotion needs: ${fame}`, null, null, null, 14, null));
         }
         let progressBarViewModel: ProgressBarViewModel = hidden;
         if (!z3) {

@@ -2449,7 +2449,11 @@ export namespace RandomEvent {
                 mutableList.add(RandomEvent.anyTerribleTraffic);
                 break;
             case Job.actor:
-                CollectionsKt.addAll(mutableList, [RandomEvent.anyTerribleTraffic]);
+                CollectionsKt.addAll(mutableList, [RandomEvent.anyTerribleTraffic, RandomEvent.workFreeDonuts, RandomEvent.workAwardedBonus]);
+                break;
+            case Job.dancer:
+                // v0.19.0 Celebrity Life: the Dance career
+                CollectionsKt.addAll(mutableList, [RandomEvent.anyTerribleTraffic, RandomEvent.workBigTip, RandomEvent.workFreePizza]);
                 break;
             case Job.barista:
                 CollectionsKt.addAll(mutableList, [RandomEvent.workAwardedBonus, RandomEvent.workNapping, RandomEvent.workFreeDonuts, RandomEvent.anyTerribleTraffic, RandomEvent.workDifficultCustomer, RandomEvent.workBigTip]);

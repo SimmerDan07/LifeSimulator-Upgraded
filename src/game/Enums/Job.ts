@@ -12,6 +12,11 @@ import { Modifiers } from "../Managers/Modifiers";
 import { Player } from "../Managers/Player";
 import { Utils } from "../Utils/Utils";
 
+const M = (h: number, hap: number, san: number) => new Modifiers(h, hap, san);
+/** v0.19.0 Celebrity Life career ladders (music reworked; dance is new). */
+export const MUSIC_TITLES = ["Street Performer", "Bar & Café Gigs", "Session Musician", "Opening Act", "Recording Artist", "Chart Climber", "Headliner", "Stadium Act", "Music Legend"];
+export const DANCE_TITLES = ["Street Dancer", "Dance Crew Member", "Backup Dancer", "Music Video Dancer", "Dance Captain", "Tour Choreographer", "Celebrity Choreographer"];
+
 export class Job extends JEnum {
     static readonly panHandler: Job = new Job("panHandler", 0);
     static readonly burgerFlipper: Job = new Job("burgerFlipper", 1);
@@ -39,7 +44,9 @@ export class Job extends JEnum {
     static readonly constructionWorker: Job = new Job("constructionWorker", 23);
     /** New in Life Sim Upgraded: a full retail career, starting as a cashier. */
     static readonly retail: Job = new Job("retail", 24);
-    static values(): Job[] { return [Job.panHandler, Job.burgerFlipper, Job.dataEntry, Job.uber, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.police, Job.army, Job.lawyer, Job.artist, Job.actor, Job.barista, Job.sushiChef, Job.animeArtist, Job.pastryChef, Job.tourGuide, Job.sommelier, Job.royalGuard, Job.constructionWorker, Job.retail]; }
+    /** v0.19.0 Celebrity Life: a dance career that starts as a Street Dancer (Lifepaths tab only). */
+    static readonly dancer: Job = new Job("dancer", 25);
+    static values(): Job[] { return [Job.panHandler, Job.burgerFlipper, Job.dataEntry, Job.uber, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.police, Job.army, Job.lawyer, Job.artist, Job.actor, Job.barista, Job.sushiChef, Job.animeArtist, Job.pastryChef, Job.tourGuide, Job.sommelier, Job.royalGuard, Job.constructionWorker, Job.retail, Job.dancer]; }
     static valueOf(n: string): Job { return (Job as any)[n]; }
     static INSTANCE: any;
     constructor(name: string, ordinal: number) { super(name, ordinal); }
@@ -95,6 +102,8 @@ export class Job extends JEnum {
                 return R.drawable.work_retail;
             case Job.actor:
                 return CompletableAction.college_theater.getImageId();
+            case Job.dancer:
+                return R.drawable.icon_celeb_dance;
             default:
                 throw new NoWhenBranchMatchedException();
         }
@@ -110,7 +119,7 @@ export class Job extends JEnum {
             case Job.uber:
                 return [Utils.INSTANCE.getString(R.string.Job_Title_LowSkill_DriveUber)];
             case Job.music:
-                return [Utils.INSTANCE.getString(R.string.Job_Title_Music_StreetPerformer), Utils.INSTANCE.getString(R.string.Job_Title_Music_PopularStreetPerformer), Utils.INSTANCE.getString(R.string.Job_Title_Music_MusicTeacher), Utils.INSTANCE.getString(R.string.Job_Title_Music_BandDirector), Utils.INSTANCE.getString(R.string.Job_Title_Music_IndieBand), Utils.INSTANCE.getString(R.string.Job_Title_Music_RisingStar), Utils.INSTANCE.getString(R.string.Job_Title_Music_Superstar)];
+                return MUSIC_TITLES;
             case Job.business:
                 return [Utils.INSTANCE.getString(R.string.Job_Title_Business_Assistant), Utils.INSTANCE.getString(R.string.Job_Title_Business_Analyst), Utils.INSTANCE.getString(R.string.Job_Title_Business_Senior_Analyst), Utils.INSTANCE.getString(R.string.Job_Title_Business_Manager), Utils.INSTANCE.getString(R.string.Job_Title_Business_Partner), Utils.INSTANCE.getString(R.string.Job_Title_Business_VicePresident), Utils.INSTANCE.getString(R.string.Job_Title_Business_CEO)];
             case Job.medical:
@@ -151,6 +160,8 @@ export class Job extends JEnum {
                 return [1, 2, 3, 4, 5, 6, 7].map((i) => Utils.INSTANCE.getString((R.string as any)[`Job_Title_Retail_${i}`]));
             case Job.actor:
                 return [Utils.INSTANCE.getString(R.string.Title_Actor_1), Utils.INSTANCE.getString(R.string.Title_Actor_2), Utils.INSTANCE.getString(R.string.Title_Actor_3), Utils.INSTANCE.getString(R.string.Title_Actor_4), Utils.INSTANCE.getString(R.string.Title_Actor_5), Utils.INSTANCE.getString(R.string.Title_Actor_6), Utils.INSTANCE.getString(R.string.Title_Actor_7), Utils.INSTANCE.getString(R.string.Title_Actor_8), Utils.INSTANCE.getString(R.string.Title_Actor_9)];
+            case Job.dancer:
+                return DANCE_TITLES;
             default:
                 throw new NoWhenBranchMatchedException();
         }
@@ -206,7 +217,10 @@ export class Job extends JEnum {
                 table = [ValueRange.INSTANCE.getWithValue(d)];
                 break;
             }
-            case Job.music: table = [R(0, 400), R(200, 800), W(800), W(1200), R(400, 2000), R(1000, 4000), R(3000, 8000)]; break;
+            // v0.19.0 Celebrity Life: Street Performer → … → Music Legend
+            case Job.music: table = [R(0, 400), R(200, 900), W(1000), W(1600), W(2500), W(4000), W(7000), R(10000, 25000), R(20000, 50000)]; careerTrait = Trait.entertainer; break;
+            // v0.19.0 Celebrity Life: Street Dancer → … → Celebrity Choreographer
+            case Job.dancer: table = [R(0, 300), W(400), W(700), W(1100), W(1800), W(3000), R(5000, 12000)]; careerTrait = Trait.entertainer; break;
             case Job.business: table = [W(600), W(800), W(1200), W(2000), W(3000), W(5000), W(8000)]; careerTrait = Trait.confident; break;
             case Job.medical: table = [W(600), W(800), W(3000), W(4000), W(6000)]; break;
             case Job.finance: table = [W(700), W(1000), W(1400), R(800, 2000), W(2500), W(4000), W(7500)]; break;
@@ -228,8 +242,8 @@ export class Job extends JEnum {
             case Job.retail: table = [W(400), W(500), W(700), W(1000), W(1500), W(2500), W(4000)]; break;
             case Job.artist: table = [W(350), W(600), W(1000), W(1500), W(2500), W(4000), W(7000)]; break;
             case Job.actor:
-                table = [ValueRange.INSTANCE.getWithIntRange(0, 1000), W(400), W(800), W(1200), W(2000), W(2500), W(5000),
-                    ValueRange.INSTANCE.getWithIntRange(5000, 15000), ValueRange.INSTANCE.getWithIntRange(10000, 20000)];
+                // v0.19.0 Celebrity Life: Extra → … → Renowned Actor
+                table = [R(0, 800), W(500), W(900), W(1400), W(2200), W(3500), W(6000), R(8000, 20000), R(15000, 40000)];
                 careerTrait = Trait.entertainer;
                 break;
             default: throw new NoWhenBranchMatchedException();
@@ -261,7 +275,7 @@ export class Job extends JEnum {
                 modifiersArr = [new Modifiers(0.0, 0.0, 0.0)];
                 break;
             case Job.music:
-                modifiersArr = [new Modifiers(0.0, -1.0, -1.0), new Modifiers(0.0, -1.0, -1.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 1.0, -2.0), new Modifiers(0.0, 2.0, -5.0)];
+                modifiersArr = [M(0, -1, -1), M(0, 0, -1), M(0, 0, 0), M(0, 1, -1), M(0, 1, -1), M(0, 1, -2), M(-1, 2, -2), M(-1, 2, -3), M(0, 3, -3)];
                 break;
             case Job.business:
                 modifiersArr = [new Modifiers(0.0, -1.0, 0.0), new Modifiers(0.0, -1.0, 0.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 0.0, -2.0), new Modifiers(0.0, 0.0, -3.0), new Modifiers(0.0, 0.0, -4.0), new Modifiers(0.0, -1.0, -5.0)];
@@ -321,7 +335,10 @@ export class Job extends JEnum {
                 modifiersArr = [new Modifiers(0.0, -1.0, -1.0), new Modifiers(0.0, -2.0, -1.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 0.0, -2.0)];
                 break;
             case Job.actor:
-                modifiersArr = [new Modifiers(0.0, -2.0, -1.0), new Modifiers(0.0, -1.0, -1.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, 0.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 0.0, -1.0), new Modifiers(0.0, 1.0, -2.0), new Modifiers(0.0, 1.0, -2.0), new Modifiers(0.0, 2.0, -3.0)];
+                modifiersArr = [M(0, -2, -1), M(0, -1, -1), M(0, 0, 0), M(0, 1, 0), M(0, 1, -1), M(0, 0, -1), M(0, 1, -2), M(0, 2, -2), M(0, 2, -3)];
+                break;
+            case Job.dancer:
+                modifiersArr = [M(1, -1, 0), M(1, 0, 0), M(1, 0, -1), M(1, 1, -1), M(1, 1, -1), M(0, 1, -2), M(0, 2, -2)];
                 break;
             default:
                 throw new NoWhenBranchMatchedException();
@@ -342,7 +359,8 @@ export class Job extends JEnum {
             case Job.uber:
                 return null;
             case Job.music:
-                return CompletableAction.college_music;
+                // v0.19.0: anyone can busk; the Music degree is needed from Recording Artist (level 5)
+                return level >= 5 ? CompletableAction.college_music : null;
             case Job.business:
                 if ((level === 1) || (level === 2)) {
                     return CompletableAction.college_business;
@@ -426,7 +444,11 @@ export class Job extends JEnum {
             case Job.artist:
                 return CompletableAction.college_art;
             case Job.actor:
-                return CompletableAction.college_theater;
+                // v0.19.0: extras need no degree; the Theater degree is needed from Theater Ensemble (level 4)
+                return level >= 4 ? CompletableAction.college_theater : null;
+            case Job.dancer:
+                // v0.19.0: street dancing needs no degree; the Theater degree is needed from Dance Captain (level 5)
+                return level >= 5 ? CompletableAction.college_theater : null;
         }
     }
     getRequiredItem(): Possession {
@@ -457,7 +479,7 @@ export namespace Job {
         arrayList.add(Job.panHandler);
         let arrayList2: ArrayList = arrayList;
         CollectionsKt.addAll(arrayList2, player.getCountry().getUnskilledJobOptions());
-        CollectionsKt.addAll(arrayList2, [Job.dataEntry, Job.uber, Job.retail, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.artist, Job.actor, Job.police, Job.army, Job.lawyer]);
+        CollectionsKt.addAll(arrayList2, [Job.dataEntry, Job.uber, Job.retail, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.artist, Job.police, Job.army, Job.lawyer]);
         CollectionsKt.addAll(arrayList2, player.getCountry().getAdditionalJobOptions());
         let array = arrayList2.toArray(new Array(0).fill(null));
         if (array != null) {

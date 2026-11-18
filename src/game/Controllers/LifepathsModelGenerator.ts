@@ -1,5 +1,6 @@
 // Lifepaths tab: hidden paths a life can take that change what your character is.
 // v0.15.0: the Vampire lifepath (see src/game/Lifepaths/Vampire.ts).
+// v0.19.0: the tab is a menu of paths (Celebrity Life, Vampire); each opens its own screen (GenericListType.lifepath).
 import { ArrayList, R } from "../runtime";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentViewModel";
@@ -13,25 +14,83 @@ import { MainGameTab } from "../Enums/MainGameTab";
 import { GameStateManager } from "../Managers/GameStateManager";
 import { Vampire, LifeActions, BECOMING, FEEDING, HIDING, ENDINGS, powerDefs, POWERS } from "../Lifepaths/Vampire";
 import { LoveScreens } from "../Social/LoveScreens";
+import { Celebrity } from "../Lifepaths/Celebrity";
+import { CelebrityScreen } from "../Lifepaths/CelebrityScreen";
+import { NavigationBarViewModel } from "../Models/NavigationBarViewModel";
+import { Utils } from "../Utils/Utils";
+import { GenericListType } from "../Fragments/GenericListType";
+import { WorkModelGenerator } from "./WorkModelGenerator";
 
 const text = (s: string) => new TextLabelViewModel(s, null, false, false, null, null);
 const thirstTrend = (n: number) => (n > 0 ? `Rises ${n} a week on your diet.` : `Falls ${-n} a week on your diet.`);
 const info = (image: any, title: string, body: string) => new ActionCellSingleViewModel(image, title, text(body), ButtonViewModel.INSTANCE.getHidden(), null, null);
+const open = (key: string) => Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.lifepath, key, false, 4, null);
+const row = (image: any, title: string, body: string, go: () => void) =>
+    new ActionCellSingleViewModel(image, title, text(body), new ButtonViewModel("Open", null, true, false, false, false, false, { invoke: () => { go(); return null; } }), null, null);
 
 export class LifepathsModelGenerator {
     gameTab: MainGameTab = MainGameTab.Lifepaths;
 
+    /** The Lifepaths tab (v0.19.0): a menu of paths. Each opens its own screen. */
     generateViewModels(): GenericListFragmentViewModel {
         const out = new ArrayList<BaseViewModel>();
         const p: any = GameStateManager.INSTANCE.getPersonState();
-        const s = Vampire.peek(p);
-        if (s?.isVampire) {
-            this.vampire(p, out);
-            return new GenericListFragmentViewModel(out);
-        }
         out.add(new HeaderTitleViewModel("Lifepaths"));
         out.add(info(R.drawable.tab_lifepaths, "The All-Seeing Eye",
             "Some lives don't follow the usual road. Lifepaths change what you are, how long you live and how the world sees you."));
+        out.add(row(Celebrity.image, "Celebrity Life", this.celebrityStatus(p), () => open("celebrity")));
+        const v = Vampire.peek(p);
+        if (p.getAgeInYears() < Vampire.minAge && !v?.isVampire) {
+            out.add(new ActionCellSingleViewModel(R.drawable.locked, "Vampire", text("A path for adults. Come back when you're 18."),
+                new ButtonViewModel("Locked", null, false, false, true, false, false, { invoke: () => null }), null, null));
+        } else {
+            out.add(row(Vampire.image, "Vampire", this.vampireStatus(p), () => open("vampire")));
+        }
+        return new GenericListFragmentViewModel(out);
+    }
+
+    celebrityStatus(p: any): string {
+        const s = Celebrity.peek(p);
+        const c = Celebrity.career(p);
+        if ((s == null || s.peakFans === 0) && c == null)
+            return "Act, sing or dance your way to fame. Three careers you'll only find here, fans to win, scandals to survive, awards, and a star on the Walk of Fame.";
+        const job = c ? `${c.title}: ${p.getJobState().getCurrentJobState().getJobTitle()}` : "No celebrity career right now";
+        return `${Celebrity.tierName(p)} · ${Celebrity.fansText(Celebrity.fans(p))} fans${s?.cancelled ? " · Cancelled" : ""}\n${job}`;
+    }
+
+    vampireStatus(p: any): string {
+        const s = Vampire.peek(p);
+        if (s?.isVampire) {
+            if (s.cureWeeks > 0) return `The Vampiric Cure is working: ${s.cureWeeks} week${s.cureWeeks === 1 ? "" : "s"} to go.`;
+            const years = Vampire.years(p);
+            return `${years > 0 ? `Vampire for ${years} year${years === 1 ? "" : "s"}` : "A newly risen vampire"} · Thirst ${s.thirst} · Suspicion ${s.suspicion}`;
+        }
+        if (s != null && s.turningWeeks > 0) return "The Turning: you'll rise a vampire at the end of this week.";
+        if (s?.cured) return "Human again. You get one vampire life: this path is closed to you now.";
+        return s?.discovered ? "An ancient vampire has offered you eternity." : "Rumours say vampires walk among us.";
+    }
+
+    /** A Lifepaths screen: "celebrity" or "vampire". */
+    screen(key: string | null): GenericListFragmentViewModel {
+        const p: any = GameStateManager.INSTANCE.getPersonState();
+        const out = new ArrayList<BaseViewModel>();
+        const header = new ArrayList<BaseViewModel>();
+        if (key === "vampire") {
+            header.add(new NavigationBarViewModel("Vampire", false, 2, null));
+            this.vampireContent(p, out);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        header.add(new NavigationBarViewModel("Celebrity Life", false, 2, null));
+        let footer: ArrayList<BaseViewModel> = null;
+        if (Celebrity.career(p) != null) { footer = new ArrayList<BaseViewModel>(); footer.add(new WorkModelGenerator().getWorkButtonsViewModel()); }
+        CelebrityScreen.content(p, out);
+        return new GenericListFragmentViewModel(out, header, footer);
+    }
+
+    /** The Vampire screen (before v0.19.0 this was the whole Lifepaths tab). */
+    vampireContent(p: any, out: ArrayList<BaseViewModel>) {
+        const s = Vampire.peek(p);
+        if (s?.isVampire) { this.vampire(p, out); return; }
         out.add(new HeaderTitleViewModel("Vampire"));
         if (s != null && s.turningWeeks > 0) {
             out.add(info(Vampire.image, "The Turning", "Your heart is slowing and the light hurts. By the end of this week you'll rise a vampire."));
@@ -47,7 +106,6 @@ export class LifepathsModelGenerator {
                 : "Rumours say vampires walk among us. Some say a pale stranger appears at nightclubs and local events. Or you could go looking."));
             for (const c of LifeActions.cells(BECOMING, p)) out.add(c);
         }
-        return new GenericListFragmentViewModel(out);
     }
 
     vampire(p: any, out: ArrayList<BaseViewModel>) {

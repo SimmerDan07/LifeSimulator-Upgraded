@@ -49,7 +49,7 @@ const yes = () => {
 };
 const W = 48;
 const text = (vm: any): string => JSON.stringify(vm, (k, v) => (k === "parent" ? undefined : v));
-const tab = () => Array.from(new LifepathsModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
+const tab = () => Array.from(new LifepathsModelGenerator().screen("vampire").getContentViewModels() as any) as any[];
 const titles = (rows: any[]) => rows.map((r) => r.title).filter((t) => typeof t === "string");
 const def = (list: any[], id: string) => list.find((d) => d.id === id);
 const withRandom = <T>(v: number, fn: () => T): T => { const r = Math.random; Math.random = () => v; try { return fn(); } finally { Math.random = r; } };

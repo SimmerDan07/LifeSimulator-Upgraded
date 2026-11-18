@@ -303,7 +303,7 @@ export function renderCell(vm: any): HTMLElement | null {
     if (vm instanceof MeterViewModel) {
         const c = el("div", "card meter-card tone-" + vm.tone);
         const top = el("div", "meter-top");
-        top.append(el("b", "", textToHtml(vm.title)), el("span", "meter-val", `${Math.round(vm.value)}/${vm.max}`));
+        top.append(el("b", "", textToHtml(vm.title)), el("span", "meter-val", textToHtml(vm.display ?? `${Math.round(vm.value)}/${vm.max}`)));
         const bar = el("div", "meter-bar"), fill = el("div", "meter-fill");
         fill.style.width = Math.max(0, Math.min(100, (vm.value / (vm.max || 1)) * 100)) + "%";
         bar.appendChild(fill);

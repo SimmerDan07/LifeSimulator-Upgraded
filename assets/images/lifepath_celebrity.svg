@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 370" width="370" height="370">
+ <!-- Celebrity Life (Lifepaths menu): a gold star with sparkles. Flat style to match the game's icons. -->
+ <defs>
+  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#ffe27a"/>
+   <stop offset="1" stop-color="#f5b82e"/>
+  </linearGradient>
+ </defs>
+ <path d="M185 28 L229 128 L337 138 L255 210 L280 316 L185 260 L90 316 L115 210 L33 138 L141 128 Z"
+       fill="url(#g)" stroke="#d48a12" stroke-width="12" stroke-linejoin="round"/>
+ <path d="M185 70 L215 140 L185 230 Z" fill="#fff3b8" opacity=".7"/>
+ <g fill="#fbd96b">
+  <path d="M320 22 L328 46 L352 54 L328 62 L320 86 L312 62 L288 54 L312 46 Z"/>
+  <path d="M46 250 L52 268 L70 274 L52 280 L46 298 L40 280 L22 274 L40 268 Z"/>
+  <path d="M330 270 L335 284 L349 289 L335 294 L330 308 L325 294 L311 289 L325 284 Z"/>
+ </g>
+</svg>

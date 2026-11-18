@@ -159,6 +159,7 @@ export const FamilyTree = {
         const bits = [`Lived to ${r.age}` + (r.trueAge !== r.age ? ` (true age ${r.trueAge})` : "")];
         if (r.cause) bits.push(r.cause);
         if (r.vampireYears > 0) bits.push(`vampire for ${r.vampireYears} years`);
+        if (r.fame) bits.push(r.fame);
         if (r.partner) bits.push(`partner ${r.partner}`);
         bits.push(`${r.children} ${r.children === 1 ? "child" : "children"}`);
         return bits.join(" · ");
