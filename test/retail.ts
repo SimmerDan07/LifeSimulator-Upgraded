@@ -76,7 +76,7 @@ const back = SaveCodec.decode(SaveCodec.encode(GameStateManager.INSTANCE.getGlob
 check("saved", back.getJobState().getCurrentJob() === Job.retail && back.getJobState().getCurrentJobState().getLevel() >= lvl);
 
 // icons removed
-check("Assisted Dying row has no picture", AssistedDying.cell()?.getImageId() == null);
-check("Come Out row has no picture", ComingOut.cell()?.getImageId() == null);
+check("Assisted Dying row has its picture", AssistedDying.cell()?.getImageId() === "health_assisted_dying");
+check("Come Out row has its picture", ComingOut.cell()?.getImageId() === "love_comingout");
 console.log(failures ? `\n${failures} FAILED` : "\nALL PASSED");
 process.exit(failures ? 1 : 0);

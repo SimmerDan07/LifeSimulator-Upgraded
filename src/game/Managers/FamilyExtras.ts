@@ -20,6 +20,7 @@ import { ButtonViewModel } from "../Models/ButtonViewModel";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Utils } from "../Utils/Utils";
 import { Constants } from "../Utils/Constants";
+import { Relationships } from "../Social/Relationships";
 
 const WPY = () => Constants.Time.INSTANCE.getWeeksPerYear();
 const refresh = () => { const f = GameStateManager.INSTANCE.getMainGameFragment(); if (f != null) f.updateUI(null); };
@@ -53,7 +54,7 @@ export const FamilyExtras = {
         const ok = FamilyExtras.canGetElixir(person);
         const sub = ok ? `Make ${person.getFirstName()} ${FamilyExtras.elixirYears} years younger (not below ${FamilyExtras.elixirMinAge}).`
             : `Only for people older than ${FamilyExtras.elixirMinAge}.`;
-        return new ActionCellSingleViewModel(null, `Give ${person.getFirstName()} the Elixir of Youth`,  // no row picture, like the other Love/Health actions
+        return new ActionCellSingleViewModel(R.drawable.health_youthelixir, `Give ${person.getFirstName()} the Elixir of Youth`,
             new TextLabelViewModel(sub, null, false, false, null, null),
             new ButtonViewModel(ExtensionsKt.numberDisplayString(price, true), null, ok && p.getMoneyState().getCash().compareTo(price) >= 0, false, !ok, false, false,
                 { invoke: () => { FamilyExtras.confirmElixir(person); return null; } }),
@@ -122,6 +123,9 @@ export const FamilyExtras = {
         for (const list of [fam.getParents(), fam.getChildren(), fam.getPets()]) {
             for (const x of Array.from(list as any) as any[]) if (x.getIsAlive() && !x.getNotYetBorn()) out.push(x);
         }
+        // v0.12.0: brothers and sisters come too
+        const social = GameStateManager.INSTANCE.getPersonState().getSocial?.();
+        if (social != null) for (const s of social.list("sibling")) if (s.getIsAlive()) out.push(s);
         return out;
     },
     spendTimeCell(): ActionCellSingleViewModel {
@@ -129,7 +133,7 @@ export const FamilyExtras = {
         const sub = people.length ? `A week with ${people.length === 1 ? people[0].getFirstName() : `all ${people.length} of your family, partner and pets`}. Everyone grows closer.`
             : "You don't have any family, partner or pets to spend time with.";
         const text = new TextLabelViewModel(sub, null, false, false, null, null);
-        return new ActionCellSingleViewModel(null, "Spend Time with Everyone", text,
+        return new ActionCellSingleViewModel(R.drawable.family, "Spend Time with Everyone", text,
             new ButtonViewModel("Free", null, people.length > 0, false, false, false, false,
                 { invoke: () => { FamilyExtras.spendTimeWithEveryone(); return null; } }),
             null, null);
@@ -138,7 +142,7 @@ export const FamilyExtras = {
         const p = GameStateManager.INSTANCE.getPersonState();
         const people = FamilyExtras.everyone();
         if (!people.length) return 0;
-        for (const x of people) x.setRelationshipProgress(x.getRelationshipProgress() + FamilyExtras.togetherBond);
+        for (const x of people) Relationships.applyGain(x, "rel:everyone", FamilyExtras.togetherBond);
         p.getAttributeState().setDeltaValueImmediate(FamilyExtras.togetherModifiers);
         p.applyWeekly();
         refresh();

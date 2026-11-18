@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Integer, Intrinsics, JMath, NoWhenBranchMatchedException, R, Random, SpannableStringBuilder, StringCompanionObject, TypeCastException, UUID } from "../runtime";
+import { Relationships } from "../Social/Relationships";
 import { FamilyExtras } from "./FamilyExtras";
 import { AgeGroup } from "../Enums/AgeGroup";
 import { AlertManager } from "./AlertManager";
@@ -228,7 +229,7 @@ export class Person {
     getChanceOfDeathThisWeek(): number {
         let pet: Pet;
         if ((this.relationship === Relationship.pet) && ((pet = this.petType) != null)) {
-            return Constants.Person.INSTANCE.chanceOfDeathAtAgePerWeek(this.getAgeInYears(), pet.getAgeExpectancy());
+            return Constants.Person.INSTANCE.chanceOfDeathAtAgePerWeek(this.getAgeInYears(), pet.getAgeExpectancy()) * Relationships.petHealthFactor(this);
         }
         return Constants.Person.INSTANCE.chanceOfDeathAtAgePerWeek(this.getAgeInYears(), Constants.Person.INSTANCE.getPersonLifeExpectancy());
     }
@@ -540,7 +541,7 @@ export class Person {
         } else if ((event !== PersonInteraction.abandonPet) && ((pet = this.petType) != null)) {
             SoundManager.INSTANCE.playSound(pet.getSoundEffect());
         }
-        this.setRelationshipProgress(this.relationshipProgress + event.getRelationshipModifier());
+        Relationships.applyGain(this, "pi:" + event.name(), event.getRelationshipModifier());
         if (event === PersonInteraction.putUpForAdoption) {
             let alertManager: AlertManager = AlertManager.INSTANCE;
             let string: string = Utils.INSTANCE.getString(R.string.Common_AreYouSure);

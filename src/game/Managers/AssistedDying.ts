@@ -25,7 +25,7 @@ export const AssistedDying = {
         const p = GameStateManager.INSTANCE.getPersonState();
         if (!AssistedDying.available(p)) return null;
         const price = ExtensionsKt.numberDisplayString(AssistedDying.price(), true);
-        return new ActionCellSingleViewModel(null, "Assisted Dying",
+        return new ActionCellSingleViewModel(R.drawable.health_assisted_dying, "Assisted Dying",
             new TextLabelViewModel("End this life peacefully with medical assistance.", null, false, false, null, null),
             new ButtonViewModel(price, null, true, false, false, true, false, { invoke: () => { AssistedDying.confirm(); return null; } }),
             null, null);

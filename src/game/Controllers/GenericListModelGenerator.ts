@@ -2,6 +2,7 @@
 /* eslint-disable */
 import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
 import { FamilyExtras } from "../Managers/FamilyExtras";
+import { LoveScreens } from "../Social/LoveScreens";
 import { Generations } from "../Managers/Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
 import { ArrayList, Arrays, ArraysKt, BigInteger, Boolean, CollectionsKt, ComparisonsKt, Integer, Intrinsics, Pair, R, Ref, SpannableStringBuilder, StringBuilder, StringsKt, TypeCastException, UUID, Unit } from "../runtime";
@@ -79,6 +80,9 @@ export class GenericListModelGenerator {
         if (type === GenericListType.propertyRenovations) return RealEstateScreens.renovations(key);
         if (type === GenericListType.propertyFamily) return RealEstateScreens.family(key);
         if (type === GenericListType.rentalMarket) return RealEstateScreens.rentalMarket();
+        // Love tab remodel: one shared person screen for partners, parents, children, pets, siblings, friends and exes.
+        if (type === GenericListType.personDetails || type === GenericListType.childDetails || type === GenericListType.parentDetails || type === GenericListType.petDetails) return LoveScreens.person(key);
+        if (type === GenericListType.pastRelationships) return LoveScreens.pastRelationships();
         let hidden: SwitchViewModel;
         let additionalDescription: string;
         let obj: any;
@@ -434,7 +438,7 @@ export class GenericListModelGenerator {
                 const reloadPerks = () => { try { Utils.INSTANCE.reloadGenericList(GenericListType.perkSelection); } catch { /* not open */ } };
                 if (unlockedPerks.length > 0) {
                     const onCount = unlockedPerks.filter((perk) => chosen.hasPerk(perk)).length;
-                    arrayList.add(new ActionCellMultipleOptionsViewModel(null, "All Perks",
+                    arrayList.add(new ActionCellMultipleOptionsViewModel(R.drawable.iap_perk_all, "All Perks",
                         new TextLabelViewModel(`${onCount} of ${unlockedPerks.length} perks on`, null, false, false, null, null, 62, null),
                         TextLabelViewModel.INSTANCE.getHidden(), [
                             new ButtonViewModel("Enable all", null, onCount < unlockedPerks.length, false, false, false, false, {

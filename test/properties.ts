@@ -139,6 +139,7 @@ const house = pf.all()[0];
 
 // problems and repairs
 {
+    house.problems = [];   // a random problem may already have broken out during the weeks above
     house.problems.push({ type: "leakyRoof", weeks: 0 });
     const c0 = house.condition;
     withRandom(0.999, () => pf.advanceWeek(p));

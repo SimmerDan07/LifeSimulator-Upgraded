@@ -30,6 +30,7 @@ import { TextLabelViewModel } from "../game/Models/TextLabelViewModel";
 import { TombstoneViewModel } from "../game/Models/TombstoneViewModel";
 import { WorkButtonsViewModel } from "../game/Models/WorkButtonsViewModel";
 import { EditableTextFieldViewModel } from "../game/Models/EditableTextFieldViewModel";
+import { PersonCardViewModel, SubHeaderViewModel } from "../game/Models/PersonCardViewModel";
 
 const IMG: Record<string, string> = images as any;
 
@@ -167,8 +168,42 @@ function imageButton(vm: ImageButtonViewModel | null | undefined): HTMLElement |
     return b;
 }
 
+function personCard(vm: PersonCardViewModel): HTMLElement {
+    const c = el("div", "card person-card" + (vm.large ? " large" : "") + (vm.greyed ? " greyed" : ""));
+    const head = el("div", "pc-head");
+    const url = imageUrl(vm.imageId);
+    if (url) { const i = el("img"); i.src = url; i.alt = ""; i.draggable = false; head.appendChild(i); }
+    const body = el("div", "pc-body");
+    const title = el("div", "pc-title");
+    title.innerHTML = (vm.relation ? `<b>${textToHtml(vm.relation)} - </b>` : "") + textToHtml(vm.name);
+    for (const b of vm.badges ?? []) title.appendChild(el("span", "pc-badge", textToHtml(b)));
+    body.appendChild(title);
+    const age = el("div", "pc-age", textToHtml(vm.ageText ?? ""));
+    if (vm.large && vm.statusTitle && vm.score != null) age.appendChild(el("span", "pc-status st-" + vm.status, textToHtml(vm.statusTitle)));
+    body.appendChild(age);
+    if (vm.note) body.appendChild(el("div", "pc-note", textToHtml(vm.note)));
+    if (vm.score != null) {
+        const max = vm.maxScore || 1000;
+        const bar = el("div", "pc-bar st-" + vm.status);
+        const fill = el("div", "pc-fill");
+        fill.style.width = Math.max(0, Math.min(100, (vm.score / max) * 100)) + "%";
+        bar.append(fill, el("span", "pc-score", `${Math.round(vm.score)}/${Math.round(max)}`));
+        body.appendChild(bar);
+    }
+    c.append(head, body);
+    const click = vm.onClick;
+    if (click) {
+        c.classList.add("tappable");
+        c.appendChild(el("span", "chevron fa", "\uf054"));
+        c.addEventListener("click", () => runAction(() => click.invoke()));
+    }
+    return c;
+}
+
 export function renderCell(vm: any): HTMLElement | null {
     if (vm == null) return null;
+    if (vm instanceof PersonCardViewModel) return personCard(vm);
+    if (vm instanceof SubHeaderViewModel) return el("div", "memory-label", textToHtml(vm.title));
     if (vm instanceof HeaderTitleViewModel) return el("h2", "section-header", textToHtml(vm.getDisplayTitle()));
     if (vm instanceof NavigationBarViewModel) return null; // drawn by the screen header
     if (vm instanceof ActionCellSingleViewModel) {

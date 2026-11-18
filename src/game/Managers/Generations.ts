@@ -26,6 +26,7 @@ import type { BaseViewModel } from "../Models/BaseViewModel";
 import { Constants } from "../Utils/Constants";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Utils } from "../Utils/Utils";
+import { Relationships } from "../Social/Relationships";
 import { SaveCodec } from "../save/SaveCodec";
 
 export class Generations {
@@ -144,6 +145,8 @@ export class Generations {
         }
         for (const pet of parent.getFamilyState().getPets()) if (pet.getIsAlive()) fam.getFamilyMembers().add(pet);
         heir.familyState = fam;
+        // Your brothers and sisters: the deceased's other children.
+        Relationships.inheritSiblings(parent, heir, child);
 
         // Real estate: every property (with its mortgage) passes to the heir; gifts they received come back,
         // and if they were living in one of the family's properties they stay there.

@@ -74,6 +74,8 @@ import { Trait } from "../Enums/Trait";
 import { TraitState } from "./TraitState";
 import { Utils } from "../Utils/Utils";
 import { WorkType } from "../Enums/WorkType";
+import { SocialCircle } from "../Social/SocialCircle";
+import { Relationships } from "../Social/Relationships";
 
 export class Player {
     static INSTANCE: any;
@@ -102,6 +104,8 @@ export class Player {
     housingState: HousingState = null;
     /** Property System Overhaul: every property owned, with condition, renovations, tenants, mortgages and history. */
     realEstate: RealEstatePortfolio = null;
+    /** Love tab remodel: siblings, friends, exes, moods and per-person notes. */
+    social: SocialCircle = null;
     id: string = null;
     itemState: ItemState = null;
     jobState: JobState = null;
@@ -309,6 +313,11 @@ export class Player {
             if (this.housingState != null) this.realEstate.reconcile(this);
         }
         return this.realEstate;
+    }
+    /** Created on first use, so older saves start with an empty circle (no siblings or exes). */
+    getSocial(): SocialCircle {
+        if (this.social == null) this.social = new SocialCircle();
+        return this.social;
     }
     getCompletableActionState(): CompletableActionState {
         return this.completableActionState;
@@ -625,7 +634,7 @@ export class Player {
         this.applyAttributeAndMoneyFromEvent(event);
         let partner: Person = this.familyState.getPartner();
         if (partner != null) {
-            partner.setRelationshipProgress(partner.getRelationshipProgress() + event.getDateprogressValue());
+            if (event.getDateprogressValue() !== 0) Relationships.applyGain(partner, "love:" + event.name(), event.getDateprogressValue());
         }
         switch (event) {
             case LoveEvent.breakUp:
@@ -1121,6 +1130,7 @@ export class Player {
     }
     initializeParents(initialState: ParentInitialState): void {
         Intrinsics.checkParameterIsNotNull(initialState, "initialState");
+        Relationships.rollSiblings(this);
         let i: ParentInitialState = initialState;
         if (i === ParentInitialState.alive) {
             this.populateParentsBasedOnAge(true);
@@ -1270,6 +1280,7 @@ export class Player {
     initializeLastName(lastName: string): void {
         Intrinsics.checkParameterIsNotNull(lastName, "lastName");
         this.lastName = lastName;
+        for (const s of this.getSocial().list("sibling")) s.lastName = lastName;
         let parents: ArrayList<Person> = this.familyState.getParents();
         let arrayList: ArrayList = new ArrayList();
         let it = parents.iterator();

@@ -139,26 +139,32 @@ import * as M135 from "./Models/ImageCellViewModel";
 import * as M136 from "./Models/LeftRightCellViewModel";
 import * as M137 from "./Models/NavigationBarViewModel";
 import * as M138 from "./Models/OptionsBarViewModel";
-import * as M139 from "./Models/ProgressBarCellViewModel";
-import * as M140 from "./Models/ProgressBarViewModel";
-import * as M141 from "./Models/ProgressCellTappableViewModel";
-import * as M142 from "./Models/SettingsRowViewModel";
-import * as M143 from "./Models/SingleButtonViewModel";
-import * as M144 from "./Models/SingleLabelCellViewModel";
-import * as M145 from "./Models/SliderViewModel";
-import * as M146 from "./Models/SwitchViewModel";
-import * as M147 from "./Models/TextLabelViewModel";
-import * as M148 from "./Models/TombstoneViewModel";
-import * as M149 from "./Models/WorkButtonsViewModel";
-import * as M150 from "./RealEstate/OwnedProperty";
-import * as M151 from "./RealEstate/RealEstateConfig";
-import * as M152 from "./RealEstate/RealEstatePortfolio";
-import * as M153 from "./RealEstate/RealEstateScreens";
-import * as M154 from "./Unlocks";
-import * as M155 from "./Utils/Constants";
-import * as M156 from "./Utils/ExtensionsKt";
-import * as M157 from "./Utils/Utils";
-import * as M158 from "./Utils/ValueRange";
+import * as M139 from "./Models/PersonCardViewModel";
+import * as M140 from "./Models/ProgressBarCellViewModel";
+import * as M141 from "./Models/ProgressBarViewModel";
+import * as M142 from "./Models/ProgressCellTappableViewModel";
+import * as M143 from "./Models/SettingsRowViewModel";
+import * as M144 from "./Models/SingleButtonViewModel";
+import * as M145 from "./Models/SingleLabelCellViewModel";
+import * as M146 from "./Models/SliderViewModel";
+import * as M147 from "./Models/SwitchViewModel";
+import * as M148 from "./Models/TextLabelViewModel";
+import * as M149 from "./Models/TombstoneViewModel";
+import * as M150 from "./Models/WorkButtonsViewModel";
+import * as M151 from "./RealEstate/OwnedProperty";
+import * as M152 from "./RealEstate/RealEstateConfig";
+import * as M153 from "./RealEstate/RealEstatePortfolio";
+import * as M154 from "./RealEstate/RealEstateScreens";
+import * as M155 from "./Social/LoveActions";
+import * as M156 from "./Social/LoveScreens";
+import * as M157 from "./Social/Relationships";
+import * as M158 from "./Social/SocialCircle";
+import * as M159 from "./Social/SocialPerson";
+import * as M160 from "./Unlocks";
+import * as M161 from "./Utils/Constants";
+import * as M162 from "./Utils/ExtensionsKt";
+import * as M163 from "./Utils/Utils";
+import * as M164 from "./Utils/ValueRange";
 /** Built on first use (not at import time) so import cycles can't leave entries undefined. */
 export function allClasses(): Record<string, any> {
     return Object.assign({},
@@ -322,5 +328,11 @@ export function allClasses(): Record<string, any> {
         M156,
         M157,
         M158,
+        M159,
+        M160,
+        M161,
+        M162,
+        M163,
+        M164,
     );
 }

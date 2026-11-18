@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, elixir price, the property system + old-save migration, assisted dying, new-game names, coming out
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, old-save loading (337 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -101,6 +101,41 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `housing_hilltop_mansion.svg`) — replace them with same-named .png files and delete the .svg.
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Love tab remodel (v0.12.0)** (`src/game/Social/`): the Love tab is now a people screen.
+  - **Layout** (`LoveScreens.ts`): status and counters on top with group actions (Spend Time with Everyone, Family
+    Gathering, Family Vacation), then **Partner** (or *Find Love* with the dating options when single), **Parents**
+    (allowance, Road Trip), **Children**, **Siblings**, **Friends** (+ Meet New People), **Pets** (+ Adopt Pet),
+    **Past Relationships** (one row that opens the list) and **More** (Come Out). Empty groups are hidden.
+  - **Cards** (`Models/PersonCardViewModel.ts`, drawn in `src/ui/cells.ts`): avatar head by age and sex (pets show their
+    picture), "Daughter - Marcene Larson", "Age: 46 (true age 56)", and a bar printed "906/1000" coloured red Distant,
+    orange Lacking, yellow Good, green Close/Besties. Oldest first; the deceased are greyed under "In memory".
+    Badges: "Birthday this week", "Anniversary this week".
+  - **One person screen for everyone** (`GenericListType.personDetails`; the old child/parent/pet screens open it too):
+    large card, an About card (mood, personality, Together/Married, next anniversary and birthday, school or job, how
+    you met, pet benefits), then **Spend time**, **Big moments** and **Hard choices**. Your partner now has a screen.
+  - **New actions** (`LoveActions.ts`, one week each unless noted):
+    | Who | New actions |
+    |---|---|
+    | Partner | Cook Dinner Together (+10), Deep Talk (+12, shows their mood), Give a Gift ($200, +15), Weekend Getaway ($1,500, +60), Anniversary Celebration (anniversary week, $500, +80), Couples Therapy (score < 300, $300, +40), Renew Your Vows (married 10+ years, $5,000, +150) |
+    | Parents | Call (+20) and Visit (+60) when you live apart, Ask for Advice (+10), Help Around the House (+25, at home), Take Them on Vacation (18+, $2,000, +100), Ask for Money (18+, −20, maybe cash; every 24 weeks) |
+    | Children | 0–3: Feed and Cuddle (+10), Sing a Lullaby (+8). 5–11: Help with Homework (+15), Sign Up for Sports (6+, $100, +20). 12–17: Talk About the Future (+20), Teach to Drive (16–17, needs a car, +30). Birthday Party (birthday week, 4–17, $300/$500, +60). 18+: Family Dinner ($100, +25), Give Money ($1,000, +40), Help with Rent ($200 a week until you stop, +5 a week) |
+    | Pets | Go for a Walk (dogs, +20), Play Together (+15), Grooming (dogs/cats, $80, +12), Vet Checkup ($200, +10, halves their chance of dying for a year) |
+    | Siblings | Hang Out (+15), Play Video Games / Prank (both under 18), Call / Visit (living apart), Give a Gift, Lend $1,000 (+30, 60% chance it's paid back in 8–24 weeks), Attend Funeral |
+    | Friends | Hang Out, Call (8+), Go to the Movies ($30), Go to a Party (16+, $50), Give a Gift ($100), Unfriend |
+    | Exes | Text Them (+10, small chance they want you back), Ask to Get Back Together (score 500+), Remove from List |
+    | Everyone | Family Gathering ($250, +30 with every family member), Meet New People (50% chance of a new friend, up to 10) |
+  - **Systems** (`Relationships.ts`): every relationship still uses the 0–1000 score and the −2/week drift (doing
+    something with someone skips it that week). **Moods** (Happy, Fine, Stressed, Upset) are re-rolled every 4 weeks,
+    weighted by the score and a partner's personality; Stressed/Upset halve gains, and Deep Talk, Call, Ask for Advice and
+    Couples Therapy lift them back to Fine. **Repeat-action fatigue**: the same action with the same person in back-to-back
+    weeks gives half, then a quarter (dates included). **Anniversaries** come from the Together/Married counters;
+    missing one costs 40 and upsets your partner. **Siblings**: new games roll 0–3; heirs get the deceased's other
+    children. **Exes**: a breakup or divorce keeps them with their score. **Friends** are met at school (4–17) or work
+    (2% a week) or with Meet New People; one you ignore until 0 drifts away.
+  - **Saves**: everything new lives in `Player.social` (`SocialCircle.ts`); older saves open with no siblings, friends or
+    exes and everyone Fine.
+  - **Action row pictures are back**: every action row shows its original picture again (the port turned the picture
+    names into NaN), including Come Out and Assisted Dying (your request in v0.7.0 is reversed), Retire and All Perks.
 - **Playtime (v0.11.0)** (Leisure tab, ages 0–8, `src/game/Managers/KidsLeisure.ts`): Nap Time (0–4), Play with Toys,
   Bedtime Story, Go to the Playground (2+), Play Catch with a Parent (3+), Family Movie Night ($10), Children's Museum
   (4+, $20), Go to the Carnival (3+, $40), Theme Park Trip (4+, $150), Family Vacation ($400). The family ones bring
@@ -165,6 +200,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - **Net worth** now includes property equity (value minus mortgages).
 
 ## Fixes to the original
+- **Pets (v0.12.0):** "Pet" and "Abandon" cost $5,000 and Abandon showed "+undefined relationship" (port bugs); petting
+  and abandoning are free again.
 - **Perks can be switched off (v0.8.0):** the new-game perk screen switched every unlocked perk back on whenever it
   redrew, so turning one off never stuck. Fixed, and the screen now has **Enable all** / **Disable all** buttons.
 - New-game customization: a typed first/last name was lost — the boxes were redrawn empty, and picking a sex

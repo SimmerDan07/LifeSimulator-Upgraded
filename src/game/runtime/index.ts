@@ -69,7 +69,9 @@ export const JMath = {
 export const Integer = {
     MAX_VALUE: 2147483647,
     MIN_VALUE: -2147483648,
-    valueOf: (x: any) => (typeof x === "string" ? parseInt(x, 10) : x),
+    // Image ids are resource NAMES in this port ("vacation_park"): pass them through instead of turning them into NaN
+    // (that bug hid every action row's picture). Numeric strings still parse.
+    valueOf: (x: any) => (typeof x === "string" ? (/^\s*-?\d+\s*$/.test(x) ? parseInt(x, 10) : x) : x),
     parseInt: (s: string) => parseInt(s, 10),
     compare: (a: number, b: number) => (a < b ? -1 : a > b ? 1 : 0),
     toString: (x: number) => String(x),

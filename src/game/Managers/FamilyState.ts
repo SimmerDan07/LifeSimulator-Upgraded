@@ -11,6 +11,7 @@ import { Relationship } from "../Enums/Relationship";
 import { RelationshipProgressStatus } from "../Enums/RelationshipProgressStatus";
 import { RomanticRelationshipStatus } from "../Enums/RomanticRelationshipStatus";
 import { Sex } from "../Enums/Sex";
+import { Relationships } from "../Social/Relationships";
 
 export class FamilyState {
     static INSTANCE: any;
@@ -110,6 +111,7 @@ export class FamilyState {
     breakUp(): void {
         let partner: Person = this.getPartner();
         if (partner != null) {
+            Relationships.recordEx(partner, GameStateManager.INSTANCE.getPersonState().getRomanticRelationshipStatus());
             this.familyMembers.remove(partner);
         }
         GameStateManager.INSTANCE.getPersonState().setRomanticRelationshipStatus(RomanticRelationshipStatus.single);
@@ -179,12 +181,14 @@ export class FamilyState {
         while (it.hasNext()) {
             ((it.next() as unknown as Person)).advanceWeek(weeksToAdvance);
         }
+        Relationships.weekly(weeksToAdvance);
     }
     collectWeeklyValues(): void {
         let it = this.familyMembers.iterator();
         while (it.hasNext()) {
             ((it.next() as unknown as Person)).collectWeeklyValuesForPerson();
         }
+        Relationships.collectWeeklyValues();
     }
     removeWithId(id: string): void {
         Intrinsics.checkParameterIsNotNull(id, "id");

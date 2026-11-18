@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ComingOut } from "../Managers/ComingOut";
+import { LoveScreens } from "../Social/LoveScreens";
 import { FamilyExtras } from "../Managers/FamilyExtras";
 import { ArrayList, BigInteger, CollectionsKt, ComparisonsKt, Integer, Intrinsics, R, SpannableStringBuilder } from "../runtime";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
@@ -24,6 +25,10 @@ import { Utils } from "../Utils/Utils";
 
 export class LoveModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
+        // v0.12.0: the remodelled Love tab (grouped relationship cards). The original builders below are kept for reference.
+        return LoveScreens.tab();
+    }
+    originalViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
         arrayList.addAll(this.getRomanceViewModels());
         arrayList.addAll(this.getParentsViewModels());

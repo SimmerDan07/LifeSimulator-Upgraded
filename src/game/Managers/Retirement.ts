@@ -4,7 +4,7 @@
 //
 // Also: years-in-career text for the job cards. Each career record counts the weeks it was your job
 // (JobStateSingle.weeksInCareer, counted in Player.applyWeekly).
-import { BigInteger } from "../runtime";
+import { BigInteger, R } from "../runtime";
 import { GameStateManager } from "./GameStateManager";
 import { AlertManager } from "./AlertManager";
 import { AlertViewModel } from "./AlertViewModel";
@@ -69,7 +69,7 @@ export const Retirement = {
         const p = GameStateManager.INSTANCE.getPersonState();
         if (Retirement.isRetired(p)) {
             const from = p.retiredFrom ? ` from ${p.retiredFrom}` : "";
-            return new ActionCellSingleViewModel(null, "Retired",
+            return new ActionCellSingleViewModel(R.drawable.achievement_old, "Retired",
                 new TextLabelViewModel(`You retired${from} at ${p.retiredAtAge ?? Retirement.minAge}. Pension: ${Retirement.money(Retirement.pension(p))} a week. Applying for a job brings you out of retirement.`, null, false, false, null, null),
                 ButtonViewModel.INSTANCE.getHidden(), null, null);
         }
@@ -79,7 +79,7 @@ export const Retirement = {
         const detail = st != null
             ? `${years} ${years === 1 ? "year" : "years"} in your career: 2% of your pay for each year, up to 70%.`
             : "You have no job, so you get the basic pension.";
-        return new ActionCellSingleViewModel(null, "Retire",
+        return new ActionCellSingleViewModel(R.drawable.achievement_old, "Retire",
             new TextLabelViewModel(`Stop working and get ${Retirement.money(Retirement.pensionIfRetiredNow(p))} a week for life. ${detail}`, null, false, false, null, null),
             new ButtonViewModel("Retire", null, true, false, false, true, false, { invoke: () => { Retirement.confirm(); return null; } }),
             null, null);

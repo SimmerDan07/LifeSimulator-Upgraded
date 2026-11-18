@@ -1,7 +1,6 @@
 // Leisure tab: "Playtime" — things to do for young children (ages 0–8), shown above the normal leisure list.
 // They work like the other leisure actions (cost + happiness/sanity/health, one week passes); the family ones also
-// bring you closer to your parents. The images are the original game's child-activity pictures; like the other
-// leisure rows they aren't drawn (ActionCellSingleViewModel.initWithActionDescriptor passes Integer.valueOf(name) = NaN).
+// bring you closer to your parents. The pictures are the original game's child-activity pictures.
 import { BigInteger, R } from "../runtime";
 import { GameStateManager } from "./GameStateManager";
 import { Modifiers } from "./Modifiers";

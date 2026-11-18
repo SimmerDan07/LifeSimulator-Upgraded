@@ -1,0 +1,39 @@
+// Everything the Love tab remodel needs to remember. Saved with the player (Player.social).
+// Older saves have no circle: one is created empty (no siblings or exes, everyone's mood Fine).
+import { SocialPerson } from "./SocialPerson";
+
+/** Per-person notes, keyed by Person/SocialPerson id. All fields optional. */
+export interface PersonMeta {
+    mood?: string;          // happy | fine | stressed | upset
+    lastKey?: string;       // last action done with them
+    lastWeek?: number;      // week it was done (your true age in weeks)
+    streak?: number;        // back-to-back weeks of that same action
+    touched?: number;       // last week you did anything with them (skips their weekly drift)
+    annivYear?: number;     // last anniversary celebrated (years together)
+    annivMissed?: number;   // last anniversary that was missed
+    bdayYear?: number;      // last birthday party (their age)
+    rentHelp?: boolean;     // you pay $200/week towards their rent
+    vetUntil?: number;      // pet checked by a vet: healthier until this week
+    moneyAskedWeek?: number;
+    vowsWeek?: number;
+    loanDue?: number;       // sibling loan: week it may be paid back
+}
+
+export class SocialCircle {
+    people: SocialPerson[] = [];
+    meta: any = {};
+    /** Week the moods were last rolled. */
+    moodWeek: number = -1;
+
+    list(kind?: string): SocialPerson[] {
+        const all = this.people ?? (this.people = []);
+        return kind ? all.filter((p) => p.kind === kind) : all.slice();
+    }
+    get(id: string): SocialPerson | null { return (this.people ?? []).find((p) => p.id === id) ?? null; }
+    add(p: SocialPerson) { (this.people ?? (this.people = [])).push(p); }
+    remove(id: string) { this.people = (this.people ?? []).filter((p) => p.id !== id); delete (this.meta ?? {})[id]; }
+    metaFor(id: string): PersonMeta {
+        const m = this.meta ?? (this.meta = {});
+        return m[id] ?? (m[id] = {});
+    }
+}

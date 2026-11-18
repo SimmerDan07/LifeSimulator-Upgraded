@@ -111,6 +111,10 @@ export class PersonInteraction extends JEnum implements ActionDescriptor {
             case PersonInteraction.playCatch:
             case PersonInteraction.call:
             case PersonInteraction.spendTime:
+            // v0.12.0 fix: petting, adopting (the pet's own price applies) and abandoning fell through to $5,000 in the port
+            case PersonInteraction.petPet:
+            case PersonInteraction.adoptPet:
+            case PersonInteraction.abandonPet:
                 i = 0;
                 break;
             case PersonInteraction.visitPlayground:
@@ -319,6 +323,7 @@ export class PersonInteraction extends JEnum implements ActionDescriptor {
             case PersonInteraction.spendTime:
                 return 10;
         }
+        return 0;   // adopt/abandon a pet: no change (was undefined → "+undefined relationship")
     }
     getAdditionalDescription(): string {
         if (this.getRelationshipModifier() <= 0) {
@@ -335,7 +340,7 @@ export class PersonInteraction extends JEnum implements ActionDescriptor {
     action(player: Player): void {
         Intrinsics.checkParameterIsNotNull(player, "player");
         let currentlyShowingGenericList: GenericListFragment = GameStateManager.INSTANCE.getCurrentlyShowingGenericList();
-        if ((currentlyShowingGenericList != null) && (((currentlyShowingGenericList.getListType() === GenericListType.childDetails) || (currentlyShowingGenericList.getListType() === GenericListType.petDetails)) || (currentlyShowingGenericList.getListType() === GenericListType.parentDetails))) {
+        if ((currentlyShowingGenericList != null) && (((currentlyShowingGenericList.getListType() === GenericListType.childDetails) || (currentlyShowingGenericList.getListType() === GenericListType.petDetails)) || (currentlyShowingGenericList.getListType() === GenericListType.parentDetails) || (currentlyShowingGenericList.getListType() === GenericListType.personDetails))) {
             let withId: Person = player.getFamilyState().getWithId(currentlyShowingGenericList.getListKey());
             if (withId != null) {
                 withId.interactionEvent(this);
