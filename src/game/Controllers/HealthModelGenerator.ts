@@ -2,6 +2,7 @@
 /* eslint-disable */
 import { ArrayList, Integer, R, SpannableStringBuilder } from "../runtime";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
+import { Vampire } from "../Lifepaths/Vampire";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { GameStateManager } from "../Managers/GameStateManager";
@@ -46,6 +47,13 @@ export class HealthModelGenerator implements IViewModelGenerator {
     getDietViewModels(): ArrayList<BaseViewModel> {
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
         let arrayList: ArrayList = new ArrayList();
+        if (Vampire.isVampire(personState)) {
+            // v0.16.0: vampires live on blood diets
+            arrayList.add(new HeaderTitleViewModel("Blood Diet"));
+            arrayList.add(Vampire.currentDietCell(personState));
+            arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, HealthEvent.chooseMenu, null, 2, null));
+            return arrayList;
+        }
         arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.Common_Diet)));
         let initWithActionDescriptor$default: ActionCellSingleViewModel = ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, personState.getDiet(), null, 2, null);
         initWithActionDescriptor$default.getActionButton().setHidden(true);

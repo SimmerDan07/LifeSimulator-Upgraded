@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, old-save loading (416 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, old-save loading (436 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -50,7 +50,7 @@ reconstructed by hand from bytecode (e.g. job salaries, side-hustle income, mone
 All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - `removePaywall` — sandbox mode, all perks, all destinations, extra save slots and "unlock all content" are owned.
 - **No store (v0.5.0):** the store screen is gone. What it sold as unlocks is simply unlocked; its money packs and
-  Elixir of Youth packs no longer exist (the Elixir is now the vampire Cure, v0.15.0).
+  Elixir of Youth packs no longer exist (the Elixir became the vampire Cure, now the Vampiric Cure).
   Revive on the death / bankruptcy pop-ups is kept and free (`InAppPurchaseManager` now only handles that).
 - `unlockProgression` — scenarios, perks, the achievement save slot and countries that were earned through
   achievements, life goals or daily rewards start unlocked.
@@ -100,6 +100,27 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     and Hilltop Mansion in v0.12.1).
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Vampire update 2 (v0.16.0)** (`src/game/Lifepaths/Vampire.ts`):
+  - The Cure is now the **Vampiric Cure** and costs **$300 billion**.
+  - **One vampire life per lifetime**: once cured you can never become a vampire again (no pale stranger, no Seek, no
+    bite; the Lifepaths tab says "Human Again"). Heirs start a new life and can.
+  - **A vampire's health never decays**: the Health tab shows Good / 0 a week at any frozen age, and weekly health
+    losses (age, food, housing, jobs, traits) are ignored (`Vampire.protectHealth`). Vampire dangers still hurt:
+    starving, sunlight, hunters and frenzies.
+  - **Blood diets** (`BLOOD_DIETS`; Health tab → Blood Diet → Choose, or Lifepaths → Feeding → Change):
+
+    | Diet | Cost a week | Thirst a week | Also |
+    |---|---|---|---|
+    | Feed by Hand | $0 | +15 | use the Feeding actions |
+    | Rats & Strays | $0 | +8 | −3 happiness |
+    | Butcher's Blood | $300 | +3 | −1 happiness |
+    | Blood Bank Bags | $2,000 | −10 | +1 health; needs Blood Bank Contact or a medical job |
+    | Nightly Hunting | $0 | −20 | +2 happiness, +4 suspicion, 5% police trouble (not with Mist Step) |
+    | Willing Donors | $8,000 | −15 | +3 happiness, +2 sanity, +1 suspicion |
+    | Rare Vintage | $50,000 | −20 | +2 health, +6 happiness, +4 sanity |
+
+    Diets pause while curing or in jail; older saves start on Feed by Hand. New icons: `vdiet_rats`, `vdiet_butcher`,
+    `vdiet_bloodbag`, `vdiet_vintage` (SVG).
 - **Vampire lifepath (v0.15.0)** (`src/game/Lifepaths/Vampire.ts`, state `VampireState.ts`, Lifepaths tab, icon
   `assets/images/lifepath_vampire.png`):
   - **Becoming one (18+)**: a pale stranger can appear at nightclubs and local events (2%), or *Seek the Ancient*
@@ -116,7 +137,7 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   - **Loved ones**: Tell Your Secret (they may accept, or recoil and talk), Turn a partner/parent/child/sibling/friend
     (3 blood power), Find a Coven (vampire friends). Badges say "Vampire". Family deaths hit harder.
   - **No biological children** while a vampire (adoption, surrogacy and insemination still work).
-  - **Endings**: *Elixir of Youth: The Cure* ($1M, 4 weeks; you're human again and age from where you froze) or
+  - **Endings**: the Cure (v0.15.0: $1M; v0.16.0: the *Vampiric Cure*, $300B; 4 weeks, then you age from where you froze) or
     *Final Rest*. The old Elixir of Youth is gone from the Health tab and family screens.
   - Tests: `test/vampire.ts`.
 - **Children for every couple (v0.15.0)** (`src/game/Social/Babies.ts`): fixes a bug where a man could get pregnant
@@ -231,7 +252,7 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   down). Anyone you meet afterwards matches your new sexuality. Can be changed again later.
 - **No row icons on Love/Health actions (v0.7.0)**: like the original game, only careers and education have pictures,
   so Come Out and Assisted Dying are text rows (their icons were deleted).
-- **Elixir of Youth** is no longer a Health tab item; it became the vampire Cure (v0.15.0).
+- **Elixir of Youth** is no longer a Health tab item; it became the vampire Cure (v0.15.0), renamed the Vampiric Cure in v0.16.0.
 
 - **Net worth** now includes property equity (value minus mortgages).
 

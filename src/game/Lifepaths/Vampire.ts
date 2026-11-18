@@ -6,7 +6,9 @@
 // High thirst hurts; at 100 you frenzy, and 4+ weeks at 100 starves you. Daytime leisure and day jobs burn you.
 // Suspicion grows from hunting, frenzies and never ageing; at 80+ vampire hunters may come.
 // Blood power (1 a year, +1 every 10 years) buys six powers. Tell loved ones your secret; turn them (3 blood power).
-// Vampires can't have biological children. Endings: the Cure (the reworked Elixir of Youth) or Final Rest.
+// Vampires can't have biological children. Endings: the Vampiric Cure (the reworked Elixir of Youth) or Final Rest.
+// v0.16.0: the Vampiric Cure costs $300 billion; one vampire life per lifetime (no turning again after the Cure);
+// a vampire's health never decays (only vampire dangers hurt it); blood diets replace food diets.
 import { ArrayList, BigInteger, R } from "../runtime";
 import { GameStateManager } from "../Managers/GameStateManager";
 import { AlertManager } from "../Managers/AlertManager";
@@ -26,6 +28,8 @@ import { Constants } from "../Utils/Constants";
 import { Relationships } from "../Social/Relationships";
 import { SocialPerson } from "../Social/SocialPerson";
 import { VampireState } from "./VampireState";
+import { Utils } from "../Utils/Utils";
+import { GenericListType } from "../Fragments/GenericListType";
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
 const WPY = () => Constants.Time.INSTANCE.getWeeksPerYear();
@@ -49,11 +53,42 @@ export const POWERS: PowerDef[] = [
 /** Leisure that happens in daylight (burns a vampire). */
 const DAYTIME = new Set(["goToPark", "goCamping", "local_vacation", "international_vacation", "luxury_vacation", "ski", "watchSoccer", "badminton", "bullfightingShow"]);
 
+const STARVING = "Starving for blood";
+
+export interface BloodDiet {
+    id: string; title: string; image: any; cost: number;
+    /** Thirst change per week (Feed by Hand: +15). */
+    thirst: number;
+    mods: [number, number, number];
+    suspicion?: number;
+    blurb: string;
+    lock?: (p: any) => string | null;
+}
+/** What a vampire lives on every week (the Health tab's Choose Menu and the Lifepaths Feeding section). */
+export const BLOOD_DIETS: BloodDiet[] = [
+    { id: "hand", title: "Feed by Hand", image: R.drawable.lifepath_vampire, cost: 0, thirst: 15, mods: [0, 0, 0],
+        blurb: "No plan: you feed yourself with the Feeding actions." },
+    { id: "rats", title: "Rats & Strays", image: R.drawable.vdiet_rats, cost: 0, thirst: 8, mods: [0, -3, 0],
+        blurb: "Free, but grim and never enough." },
+    { id: "butcher", title: "Butcher's Blood", image: R.drawable.vdiet_butcher, cost: 300, thirst: 3, mods: [0, -1, 0],
+        blurb: "Pig and cow blood from the butcher. Keeps you going." },
+    { id: "bags", title: "Blood Bank Bags", image: R.drawable.vdiet_bloodbag, cost: 2000, thirst: -10, mods: [1, 0, 0],
+        blurb: "Human blood, delivered cold and discreet.",
+        lock: (p) => (Vampire.has("bloodBank", p) || Vampire.hasMedicalJob(p) ? null : "Needs the Blood Bank Contact power or a medical job") },
+    { id: "hunting", title: "Nightly Hunting", image: R.drawable.mosquito, cost: 0, thirst: -20, mods: [0, 2, 0], suspicion: 4,
+        blurb: "Free and fresh, but people notice. 5% chance of police trouble a week (none with Mist Step)." },
+    { id: "donors", title: "Willing Donors", image: R.drawable.love_nightclub, cost: 8000, thirst: -15, mods: [0, 3, 2], suspicion: 1,
+        blurb: "A private club of people who like being bitten." },
+    { id: "vintage", title: "Rare Vintage", image: R.drawable.vdiet_vintage, cost: 50000, thirst: -20, mods: [2, 6, 4],
+        blurb: "Aged blood from the finest cellars. Only the oldest vampires can afford it." },
+];
+
 export const Vampire = {
     minAge: 18,
     thirstPerWeek: 15,
     turnCost: 3,            // blood power to turn someone
-    curePrice: 1_000_000,
+    curePrice: 300_000_000_000,
+    cureName: "Vampiric Cure",
     cureWeeks: 4,
     image: R.drawable.lifepath_vampire,
 
@@ -72,6 +107,7 @@ export const Vampire = {
     /** Added to the age for the calendar (month, new years). */
     calendarOffset(p: any): number { return p?.vampire?.calendarOffset ?? 0; },
     canBecome(p: any = player()): string | null {
+        if (p?.vampire?.cured) return "You've already lived your one vampire life";
         if (p.getAgeInYears() < Vampire.minAge) return `Must be at least ${Vampire.minAge}`;
         if (p.getCrimeState().getIsInJail()) return "Not while you're in jail";
         return null;
@@ -142,7 +178,52 @@ export const Vampire = {
         if (!s?.isVampire || s.cureWeeks > 0) return;
         if (s.thirst >= 80) p.getAttributeState().setDeltaValue(new Modifiers(0, 0, -20), "Thirst");
         else if (s.thirst >= 60) p.getAttributeState().setDeltaValue(new Modifiers(0, -5, 0), "Thirst");
-        if (s.weeksAtMaxThirst >= 4) p.getAttributeState().setDeltaValue(new Modifiers(-25, 0, 0), "Starving for blood");
+        if (s.weeksAtMaxThirst >= 4) p.getAttributeState().setDeltaValue(new Modifiers(-25, 0, 0), STARVING);
+        // the blood diet: weekly cost and how it makes you feel
+        const d = Vampire.diet(p);
+        const label = "Blood Diet - " + d.title;
+        if (d.cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.cost), MoneyUpdateType.expense, label, null, 8, null);
+        p.getAttributeState().setDeltaValue(new Modifiers(d.mods[0], d.mods[1], d.mods[2]), label);
+    },
+    /** A vampire's health never decays: only vampire dangers (starving, sunlight, hunters, frenzy) can lower it. */
+    protectHealth(p: any) {
+        if (!Vampire.isVampire(p)) return;
+        const list: any = p.getAttributeState().getDeltaThisWeek(PersonAttribute.health);
+        for (let i = list.size() - 1; i >= 0; i--) {
+            const pair = list.get(i);
+            const v = pair.getSecond();
+            const n = typeof v === "number" ? v : Number(v?.doubleValue?.() ?? v);
+            if (n < 0 && pair.getFirst() !== STARVING) list.removeAt(i);
+        }
+    },
+
+    // ------------------------------------------------------------------ blood diets
+    /** The diet in effect this week (paused while curing or in jail; falls back to Feed by Hand if it's locked). */
+    diet(p: any = player()): BloodDiet {
+        const s = Vampire.peek(p);
+        const hand = BLOOD_DIETS[0];
+        if (!s?.isVampire || s.cureWeeks > 0) return hand;
+        try { if (p.getCrimeState().getIsInJail()) return hand; } catch { /* ignore */ }
+        const d = BLOOD_DIETS.find((x) => x.id === (s.diet ?? "hand")) ?? hand;
+        return d.lock?.(p) ? hand : d;
+    },
+    chosenDiet(p: any = player()): BloodDiet { return BLOOD_DIETS.find((x) => x.id === (Vampire.peek(p)?.diet ?? "hand")) ?? BLOOD_DIETS[0]; },
+    /** Thirst change per week on your current diet (Feed by Hand: +15). */
+    thirstPerWeekFor(p: any = player()): number { return Vampire.diet(p).thirst; },
+    chooseDiet(p: any, id: string) { Vampire.state(p).diet = id; },
+    openDietMenu() { Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.chooseDiet, null, false, 6, null); },
+    dietCells(p: any = player()): ActionCellSingleViewModel[] {
+        const current = Vampire.chosenDiet(p).id;
+        return BLOOD_DIETS.map((d) => {
+            const c = ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new BloodDietCell(d) as any, null);
+            if (d.id === current) c.getActionButton().setEnabled(false);
+            return c;
+        });
+    },
+    currentDietCell(p: any = player()): ActionCellSingleViewModel {
+        const c = ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new BloodDietCell(Vampire.chosenDiet(p)) as any, null);
+        c.getActionButton().setHidden(true);
+        return c;
     },
     afterWeek(p: any) {
         const s = Vampire.peek(p);
@@ -152,13 +233,20 @@ export const Vampire = {
         if (s.cureWeeks > 0) {
             s.cureWeeks--;
             if (s.cureWeeks === 0) {
-                s.isVampire = false; s.cured = true; s.thirst = 0; s.suspicion = 0; s.weeksAtMaxThirst = 0;
-                Vampire.alert("Human Again", `The Elixir has done its work. Your heart beats again, and you'll start ageing from ${p.getAgeInYears()}.`, R.drawable.health_youthelixir);
+                s.isVampire = false; s.cured = true; s.thirst = 0; s.suspicion = 0; s.weeksAtMaxThirst = 0; s.diet = "hand";
+                Vampire.alert("Human Again", `The Vampiric Cure has done its work. Your heart beats again, and you'll start ageing from ${p.getAgeInYears()}. The vampire's path is closed to you for the rest of this life.`, R.drawable.health_youthelixir);
             }
             return;
         }
-        s.thirst = Math.min(100, s.thirst + Vampire.thirstPerWeek);
+        const d = Vampire.diet(p);
+        s.thirst = Math.max(0, Math.min(100, s.thirst + d.thirst));
         s.weeksAtMaxThirst = s.thirst >= 100 ? s.weeksAtMaxThirst + 1 : 0;
+        if (d.suspicion) s.suspicion = Math.max(0, Math.min(100, s.suspicion + d.suspicion));
+        if (d.id === "hunting" && !Vampire.has("mistStep", p) && roll(0.05)) {
+            pay(p, 2000);
+            s.suspicion = Math.min(100, s.suspicion + 10);
+            Vampire.alert("Police Trouble", `Someone saw you on one of your nightly hunts. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
+        }
         if (Vampire.has("mindFog", p)) s.suspicion = Math.max(0, s.suspicion - 5);
         // a year of not ageing: blood power, and people start to wonder
         const years = Math.floor(s.vampireWeeks / WPY());
@@ -381,11 +469,38 @@ export interface LifeActionDef {
     actionTitle?: () => string | null;
 }
 
+/** A blood diet in the shape of the game's diet rows. */
+export class BloodDietCell {
+    constructor(public d: BloodDiet) {}
+    getTitle(): string { return this.d.title; }
+    getImageId(): any { return this.d.image; }
+    getCost(): BigInteger { return BigInteger.valueOf(this.d.cost); }
+    getModifiers(): Modifiers { return new Modifiers(this.d.mods[0], this.d.mods[1], this.d.mods[2]); }
+    getActionTitle(): string { return "Drink"; }
+    getAdditionalDescription(): string {
+        const t = this.d.thirst;
+        const thirst = t > 0 ? `Thirst +${t} a week` : `Thirst −${-t} a week`;
+        const sus = this.d.suspicion ? `, suspicion +${this.d.suspicion} a week` : "";
+        return `${money(this.d.cost)} a week · ${thirst}${sus}\n${this.d.blurb}\n`;
+    }
+    getAgeRange(): any { return null; }
+    getRequiredItem(): any { return null; }
+    overrideCost(_m: any): any { return null; }
+    overrideImageId(_m: any): any { return null; }
+    overrideTitle(_m: any): any { return null; }
+    requirementNotMetString(p: any): string | null { return this.d.lock?.(p) ?? null; }
+    action(p: any): void {
+        Vampire.chooseDiet(p, this.d.id);
+        try { Utils.INSTANCE.broadcastIntent(Constants.Intent.INSTANCE.getPopModal()); } catch { /* no UI */ }
+        refreshUI();
+    }
+}
+
 /** A Lifepaths row in the shape of the game's action rows. */
 export class LifeActionCell {
     constructor(public def: LifeActionDef) {}
     getTitle(): string { return typeof this.def.title === "function" ? this.def.title() : this.def.title; }
-    getImageId(): any { return this.def.image; }
+    getImageId(): any { const i = this.def.image; return typeof i === "function" ? i() : i; }
     costValue(): number { const c = this.def.cost; return typeof c === "function" ? c() : c ?? 0; }
     getCost(): BigInteger { return BigInteger.valueOf(this.costValue()); }
     getModifiers(): Modifiers { const m = this.def.mods ?? [0, 0, 0]; return new Modifiers(m[0], m[1], m[2]); }
@@ -434,11 +549,15 @@ export const BECOMING: LifeActionDef[] = [
     { id: "bite", title: "Accept the Bite", image: R.drawable.lifepath_vampire, show: (p) => Vampire.state(p).discovered,
         lock: (p) => Vampire.canBecome(p),
         note: () => "Become a vampire. Takes a week; your health drops to 50%.\n",
-        confirm: () => "You'll never age again, but you'll need blood every week, the sun will burn you, and you can't have biological children. You can only go back with the Cure. Accept the bite?",
+        confirm: () => "You'll never age again, but you'll need blood every week, the sun will burn you, and you can't have biological children. You can only go back with the Vampiric Cure, and you only get one vampire life. Accept the bite?",
         run: (p) => Vampire.acceptBite(p) },
 ];
 
 export const FEEDING: LifeActionDef[] = [
+    { id: "diet", title: () => `Blood Diet: ${Vampire.chosenDiet(player()).title}`, image: () => Vampire.chosenDiet(player()).image, instant: true,
+        actionTitle: () => "Change",
+        note: () => new BloodDietCell(Vampire.chosenDiet(player())).getAdditionalDescription(),
+        run: () => Vampire.openDietMenu() },
     { id: "bloodBank", title: "Buy from a Blood Bank", image: R.drawable.health_hospitalstay, cost: 500,
         lock: (p) => (Vampire.has("bloodBank", p) || Vampire.hasMedicalJob(p) ? null : "Needs the Blood Bank Contact power or a medical job"),
         note: () => thirstNote(40, 2), run: (p) => Vampire.feed(p, 40, 2) },
@@ -469,10 +588,10 @@ export const HIDING: LifeActionDef[] = [
 ];
 
 export const ENDINGS: LifeActionDef[] = [
-    { id: "cure", title: "Elixir of Youth: The Cure", image: R.drawable.health_youthelixir, cost: Vampire.curePrice,
+    { id: "cure", title: Vampire.cureName, image: R.drawable.health_youthelixir, cost: Vampire.curePrice,
         show: (p) => Vampire.state(p).cureWeeks === 0,
-        note: () => `The old youth elixir, brewed into a cure. Become human again over ${Vampire.cureWeeks} weeks; you'll start ageing from your frozen age.\n`,
-        confirm: () => "Drink the Elixir and become human again? Your powers and blood power will be gone.", run: (p) => Vampire.startCure(p) },
+        note: () => `The rarest thing in the world. Become human again over ${Vampire.cureWeeks} weeks and start ageing from your frozen age. You get one vampire life: you can never become one again.\n`,
+        confirm: () => "Drink the Vampiric Cure and become human again? Your powers and blood power will be gone, and you can never become a vampire again in this life.", run: (p) => Vampire.startCure(p) },
     { id: "finalRest", title: "Final Rest", image: R.drawable.grave2, instant: true,
         note: () => "End your eternal life peacefully. The game continues with your heirs, as with any death.\n",
         confirm: () => "Watch one last sunrise and end this life?", run: (p) => Vampire.finalRest(p) },

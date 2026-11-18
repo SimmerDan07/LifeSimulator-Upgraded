@@ -23,4 +23,6 @@ export class VampireState {
     /** You were a vampire once and took the Cure. */
     cured: boolean = false;
     seekTries: number = 0;
+    /** v0.16.0: the blood diet id (see BLOOD_DIETS); undefined in older saves = Feed by Hand. */
+    diet: string = "hand";
 }

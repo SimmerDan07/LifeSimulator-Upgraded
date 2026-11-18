@@ -10,6 +10,7 @@ import { Achievement } from "../Enums/Achievement";
 import { AchievementBadge } from "../Enums/AchievementBadge";
 import { ActionCellMultipleOptionsViewModel } from "../Models/ActionCellMultipleOptionsViewModel";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
+import { Vampire } from "../Lifepaths/Vampire";
 import { ActionProgressViewModel } from "../Models/ActionProgressViewModel";
 import { AlertManager } from "../Managers/AlertManager";
 import { AlertViewModel } from "../Managers/AlertViewModel";
@@ -218,6 +219,10 @@ export class GenericListModelGenerator {
                 }
                 break;
             case GenericListType.chooseDiet:
+                if (Vampire.isVampire(personState)) {
+                    for (const c of Vampire.dietCells(personState)) arrayList.add(c);
+                    break;
+                }
                 for (const diet of personState.getCountry().getDietOptions()) {
                     let initWithActionDescriptor$default: ActionCellSingleViewModel = ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, diet, null, 2, null);
                     if (personState.getDiet() === diet) {

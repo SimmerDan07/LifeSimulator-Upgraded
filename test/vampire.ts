@@ -24,7 +24,8 @@ import { MoneyState } from "../src/game/Managers/MoneyState";
 import { MoneyUpdateType } from "../src/game/Enums/MoneyUpdateType";
 import { SaveCodec } from "../src/game/save/SaveCodec";
 import { BigInteger } from "../src/game/runtime";
-import { Vampire, LifeActions, BECOMING, FEEDING, HIDING, ENDINGS, powerDefs, LifeActionCell } from "../src/game/Lifepaths/Vampire";
+import { Vampire, LifeActions, BECOMING, FEEDING, HIDING, ENDINGS, powerDefs, LifeActionCell, BLOOD_DIETS, BloodDietCell } from "../src/game/Lifepaths/Vampire";
+import { HealthModelGenerator } from "../src/game/Controllers/HealthModelGenerator";
 import { Babies } from "../src/game/Social/Babies";
 import { Relationships } from "../src/game/Social/Relationships";
 import { LoveActions, loveAction, LoveActionCell } from "../src/game/Social/LoveActions";
@@ -203,19 +204,77 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     check("Coven shows her card on the Lifepaths tab", tab().some((r) => r.id === ana.getId()));
 }
 
+// ---------------------------------------------------------------- v0.16.0: health never decays, blood diets
+{
+    const s = Vampire.state(p);
+    const hp = () => p.getAttributeState().getHealth();
+    // health never decays for a vampire
+    p.getAttributeState().setDeltaValueImmediate(new Modifiers(-100, 0, 0));
+    p.getAttributeState().setDeltaValueImmediate(new Modifiers(60, 0, 0));
+    s.thirst = 0; s.diet = "hand";
+    const h0 = hp();
+    p.getAttributeState().setDeltaValue(PersonAttribute.health, "Old age", -7);
+    p.applyWeekly(); clear();
+    check("a vampire's health never decays (weekly health losses are ignored)", hp() >= h0, `${h0} → ${hp()}`);
+    check("…and the Health tab shows no decline for a vampire (Health: Good)", p.getHealthStatus().name() === "good");
+    s.thirst = 100; s.weeksAtMaxThirst = 4;
+    const h1 = hp();
+    withRandom(0.99, () => { p.collectWeeklyValues(); });
+    const starving = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.health) as any).some((x: any) => x.getFirst() === "Starving for blood");
+    p.resetValuesThisWeek();
+    check("…but starving for blood still hurts", starving && h1 === hp());
+    s.thirst = 0; s.weeksAtMaxThirst = 0;
+    // blood diets
+    check("seven blood diets", BLOOD_DIETS.length === 7 && BLOOD_DIETS.map((d) => d.title).join("|") === "Feed by Hand|Rats & Strays|Butcher's Blood|Blood Bank Bags|Nightly Hunting|Willing Donors|Rare Vintage");
+    const hrows = Array.from(new HealthModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
+    check("Health tab: a Blood Diet section with Choose Menu", hrows.some((r) => r.title === "Blood Diet") && hrows.some((r) => r.title === "Feed by Hand") && hrows.some((r) => /Choose/i.test(text(r)) && r.title === HealthEvent.chooseMenu.getTitle()));
+    const menu = Array.from(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.chooseDiet, null, true).getContentViewModels() as any) as any[];
+    check("Choose Menu lists the blood diets (not food) for a vampire", BLOOD_DIETS.every((d) => menu.some((r) => r.title === d.title)) && !menu.some((r) => r.title === "Fast Food"), titles(menu).join(","));
+    s.powers = (s.powers ?? []).filter((x: string) => x !== "bloodBank");
+    check("Blood Bank Bags need Blood Bank Contact (or a medical job)", new BloodDietCell(BLOOD_DIETS[3]).requirementNotMetString(p) != null || Vampire.hasMedicalJob(p));
+    new BloodDietCell(BLOOD_DIETS[1]).action(p); clear();
+    check("pick Rats & Strays", Vampire.chosenDiet(p).id === "rats" && Vampire.state(p).diet === "rats");
+    week(p, 1, false);
+    check("Rats & Strays: thirst +8 a week", s.thirst === 8, String(s.thirst));
+    p.collectWeeklyValues();
+    const hap = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).some((x: any) => x.getFirst() === "Blood Diet - Rats & Strays");
+    p.resetValuesThisWeek();
+    check("…and it shows in your weekly changes (−3 happiness)", hap);
+    new BloodDietCell(BLOOD_DIETS[6]).action(p); s.thirst = 50;
+    week(p, 1, false);
+    check("Rare Vintage: thirst −20 a week", s.thirst === 30, String(s.thirst));
+    new BloodDietCell(BLOOD_DIETS[4]).action(p); s.thirst = 50; s.suspicion = 10;
+    s.powers = (s.powers ?? []).filter((x: string) => x !== "mindFog");
+    withRandom(0.99, () => week(p, 1, false));
+    check("Nightly Hunting: thirst −20 and suspicion +4 a week", s.thirst === 30 && s.suspicion === 14, `${s.thirst} ${s.suspicion}`);
+    check("Lifepaths Feeding shows your Blood Diet with Change", tab().some((r) => r.title === "Blood Diet: Nightly Hunting"));
+    check("the Thirst meter says it falls on your diet", /Falls 20 a week/.test(text(tab())));
+    const old: any = Object.create(Object.getPrototypeOf(s)); Object.assign(old, s); delete old.diet;
+    const real = p.vampire; p.vampire = old;
+    check("older saves: no diet = Feed by Hand", Vampire.diet(p).id === "hand");
+    p.vampire = real; s.diet = "hand"; s.thirst = 0; s.suspicion = 0;
+}
+
 // ---------------------------------------------------------------- save, the Cure, Final Rest
 {
     const back: any = SaveCodec.decode(SaveCodec.encode(GameStateManager.INSTANCE.getGlobalStateManager()));
     const p2 = back.getSaveState().currentSlot().getPersonState();
     check("save keeps the vampire (thirst, powers, blood power)", p2.vampire?.isVampire === true && JSON.stringify(p2.vampire.powers) === JSON.stringify(Vampire.state(p).powers));
-    rich(p, 2_000_000);
     const cure = def(ENDINGS, "cure");
-    check("the Cure is the reworked Elixir: $1,000,000", new LifeActionCell(cure).costValue() === 1_000_000 && new LifeActionCell(cure).getTitle() === "Elixir of Youth: The Cure");
+    check("the Vampiric Cure costs $300 billion", new LifeActionCell(cure).costValue() === 300_000_000_000 && new LifeActionCell(cure).getTitle() === "Vampiric Cure");
+    check("…you can't drink it without the money", !LifeActions.perform(cure, p));
+    rich(p, 300_100_000_000);
     LifeActions.perform(cure, p); yes(); clear();
     week(p, 2, false);
     check("the Cure is working (still a vampire, no thirst) — 4 weeks in all", Vampire.isVampire(p) && Vampire.state(p).cureWeeks === 1, String(Vampire.state(p).cureWeeks));
     week(p, 1, false);
     check("after 4 weeks you're human again", !Vampire.isVampire(p) && Vampire.state(p).cured);
+    check("one vampire life: you can't become a vampire again", Vampire.canBecome(p) === "You've already lived your one vampire life");
+    check("…the Lifepaths tab says the path is closed (no Seek / Accept the Bite)", tab().some((r) => r.title === "Human Again") && !titles(tab()).includes("Accept the Bite") && !titles(tab()).includes("Seek the Ancient"));
+    check("…and Accept the Bite does nothing", (Vampire.state(p).discovered = true, !LifeActions.perform(def(BECOMING, "bite"), p)) && !Vampire.isTurning(p));
+    const before = alerts.length;
+    withRandom(0, () => Vampire.maybeStranger(p, { name: () => "nightClub" }));
+    check("…and no pale stranger appears", alerts.length === before);
     const a = p.getAgeInWeeks();
     week(p, 2);
     check("…and you age again", p.getAgeInWeeks() === a + 2);

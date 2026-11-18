@@ -393,6 +393,8 @@ export class Player {
         return this.moneyState.getTotalAsset().add(BigInteger.valueOf(Math.round(this.getRealEstate().totalEquity())));
     }
     getHealthStatus(): HealthStatus {
+        // v0.16.0: a vampire's body never declines with age
+        if (Vampire.isVampire(this)) return HealthStatus.good;
         return HealthStatus.INSTANCE.getStatus(this.getAgeInYears());
     }
     getTooOldForFamilySupport(): boolean {
@@ -1056,6 +1058,8 @@ export class Player {
                 this.attributeState.setDeltaValue(modifiers, (Utils.INSTANCE.getString(R.string.Common_Trait) + " - ") + next2.getTitle());
             }
         }
+        // a vampire's health never decays (only vampire dangers can lower it)
+        Vampire.protectHealth(this);
     }
     resetValuesThisWeek(): void {
         this.attributeState.clearWeeklyValues();
