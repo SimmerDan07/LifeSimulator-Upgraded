@@ -115,8 +115,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   Adults (18+) who never finished go to **night school** at the original pace (elementary/middle 60 weeks, high school
   80 weeks; Fast Learner etc. still apply). Fast Learner / Intellectual Curiosity / Stupid don't change kids' school.
   New characters get the schooling their age implies (scenario kids, sandbox, heirs); older saves count preschool and
-  elementary as done for anyone 11+ or past middle school. Icons for the two new schools are placeholders
-  (`education_preschool.svg`, `education_elementaryschool.svg`).
+  elementary as done for anyone 11+ or past middle school. The two new schools use the user's
+  icons (v0.10.1, `education_preschool.png`, `education_elementaryschool.png`).
 - **Young Child starts at age 0 (v0.10.0)**, and the game can now start at any age from 0 (sandbox slider 0–80). The old
   minimum age (8) now only stops the Elixir of Youth making you younger than 8.
 - **Birth month (v0.10.0)**: pick the month you're born in on the new-life screen (it used to always be January).
