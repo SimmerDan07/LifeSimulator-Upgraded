@@ -1,0 +1,41 @@
+{
+ "skins": [
+  "Fair",
+  "Light",
+  "Tan",
+  "Olive",
+  "Brown",
+  "Deep"
+ ],
+ "hairs": [
+  "Brown",
+  "Black",
+  "Blonde",
+  "Red",
+  "Light Brown"
+ ],
+ "styles": {
+  "male": [
+   {
+    "id": 0,
+    "ages": {
+     "1": "svg",
+     "2": "svg",
+     "3": "svg",
+     "4": "svg"
+    }
+   }
+  ],
+  "female": [
+   {
+    "id": 0,
+    "ages": {
+     "1": "svg",
+     "2": "svg",
+     "3": "svg",
+     "4": "svg"
+    }
+   }
+  ]
+ }
+}

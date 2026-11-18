@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, old-save loading (510 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, old-save loading (556 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -100,6 +100,28 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     and Hilltop Mansion in v0.12.1).
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Built for very long saves (v0.18.0)** (`src/game/Managers/Lineage.ts`, `src/game/Models/Paging.ts`):
+  - Every life that ends gets a ~1.4 KB record (`CemetaryState.records`: name, ages, cause, badges, tombstone lines,
+    obituary, look) tagged with its family line (`Player.lineId`) and generation. Only the newest 25 lives keep
+    their full ~35 KB snapshot; older ones show their Life Summary from the record (no revive). The player no longer
+    carries a growing `ancestors` list; older saves' ancestor names are turned into records.
+  - Measured: 900 generations = a 2.15 MB save, ~15 ms to save (it would have been ~32 MB).
+  - Pages: a **Family Line** screen (`GenericListType.familyLine` 36) with every generation, 10 a page, opening on
+    the newest (« −10 ‹ page box › +10 »); the cemetery (25 a page, newest first); relative lists (30 a page); and
+    family tree rows with more than 14 people page inside the row (‹ 1/3 ›).
+  - Fixes: a surviving partner no longer also appears as the heir's grandparent; two moms or two dads both show in
+    the tree.
+- **Looks (v0.18.0)** (`src/game/Social/Appearance.ts`, `tools/gen-heads.mjs`): everyone has one look for life — head
+  style, skin tone (Fair, Light, Tan, Olive, Brown, Deep) and hair color (Brown, Black, Blonde, Red, Light Brown) — so
+  nobody changes skin color when they age up. Children take after their parents, relatives after the parent they
+  come from; partners, friends and strangers vary. Pick your look when starting a new game; Profile and person
+  screens show it. The build recolors every SVG head (240 variants for the original art) into `dist`; new head
+  styles drop in as `head_<male|female>_s<N>_<1-4>.svg`. Older saves: the player keeps the original look.
+- **Art slots (v0.18.0)** (`src/game/data/ArtSlots.ts`): 27 rows that borrow an icon now have their own file name
+  (`icon_vamp_*`, `icon_power_*`, `icon_bond*`, `icon_sub_coach`) and fall back to the stand-in until that file exists.
+- **Save folder (v0.18.0)** (`electron/main.cjs`): saves live in `Documents\Life Simulator\Saves` (with a READ ME and
+  a `.bak` of the previous save); saves from older versions are copied there on first launch; if Windows blocks
+  Documents, saving falls back to the old app-data folder. Settings › Save Folder shows the path and opens it.
 - **Extended family & Family Tree (v0.17.0)** (`src/game/Social/ExtendedFamily.ts`, `FamilyTree.ts`):
   - New relatives in the SocialCircle (`SocialPerson.kind`): grandparents, aunts & uncles, cousins, nieces & nephews,
     grandchildren and great-grandchildren, linked by `parentId` (whose child) and `side` (which parent's family).

@@ -1,8 +1,11 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { UIBridge } from "../ui/bridge";
 import { ArrayList, Buglife, ContextCompat, Intrinsics, MapsKt, R, TuplesKt, TypeCastException } from "../runtime";
 import { AlertManager } from "./AlertManager";
 import { AlertViewModel } from "./AlertViewModel";
+import { AlertActionViewModel } from "./AlertActionViewModel";
+import { AlertType } from "./AlertType";
 import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentViewModel";
 import { GenericListType } from "../Fragments/GenericListType";
 import { ImageButtonViewModel } from "../Models/ImageButtonViewModel";
@@ -34,8 +37,23 @@ export class SettingsManager {
                 }
                 }));
             }
+            // v0.18.0: where your saves are (Documents\Life Simulator\Saves on Windows)
+            arrayList.add(new SettingsRowViewModel("Save Folder", R.drawable.menu_saves, true, true, {
+                invoke: () => SettingsManager.INSTANCE.showSaveFolder(),
+            }));
             return new GenericListFragmentViewModel(arrayList, arrayList2, arrayList3);
         }
+    }
+    showSaveFolder(): void {
+        const dir = UIBridge.saveFolder();
+        if (dir == null) {
+            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Save Folder", "This version keeps your save in the browser. The Windows game saves to Documents\\Life Simulator\\Saves.", R.drawable.menu_saves, null, null, null, null, null, null, 504, null), false, 2, null);
+            return;
+        }
+        AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Save Folder", `Your saves are in:\n${dir}\n\nCopy this folder to back up your game.`, R.drawable.menu_saves, null, null,
+            new AlertActionViewModel("Open Folder", { invoke: () => { UIBridge.openSaveFolder(); return null; } }),
+            new AlertActionViewModel("Close", { invoke: () => null }),
+            new ArrayList(), AlertType.Alert, 0, null), false, 2, null);
     }
     handleRowTap(settingsRow: SettingRow): void {
         Intrinsics.checkParameterIsNotNull(settingsRow, "settingsRow");

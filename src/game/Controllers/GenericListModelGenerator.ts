@@ -1,9 +1,13 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Appearance, SKIN_NAMES, HAIR_NAMES } from "../Social/Appearance";
+import { AgeGroup } from "../Enums/AgeGroup";
 import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
 import { FamilyExtras } from "../Managers/FamilyExtras";
 import { FamilyTree } from "../Social/FamilyTree";
 import { Obituary } from "../Managers/Obituary";
+import { Lineage } from "../Managers/Lineage";
+import { Paging } from "../Models/Paging";
 import { LoveScreens } from "../Social/LoveScreens";
 import { Generations } from "../Managers/Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
@@ -88,6 +92,9 @@ export class GenericListModelGenerator {
         if (type === GenericListType.pastRelationships) return LoveScreens.pastRelationships();
         if (type === GenericListType.relatives) return LoveScreens.relatives(key);
         if (type === GenericListType.familyTree) return FamilyTree.screen();
+        if (type === GenericListType.familyLine) return FamilyTree.lineScreen();
+        // v0.18.0: lives older than the newest 25 are kept as records; their Life Summary comes from the record
+        if (type === GenericListType.gameSummary && key != null && key !== Constants.ViewModel.INSTANCE.getTombstoneModeDeath() && !Lineage.hasFull(key)) return FamilyTree.archivedSummary(key);
         let hidden: SwitchViewModel;
         let additionalDescription: string;
         let obj: any;
@@ -178,7 +185,7 @@ export class GenericListModelGenerator {
                 }
                 let person: Person = (CollectionsKt.first((arrayList9 as unknown as ArrayList)) as unknown as Person);
                 arrayList2.add(new NavigationBarViewModel(person.getFullName(), false, 2, null));
-                arrayList.add(new ImageCellViewModel("ChildProfileImage", person.getAgeGroup().imageId(person.getSex()), null, 4, null));
+                arrayList.add(new ImageCellViewModel("ChildProfileImage", Appearance.head(person), null, 4, null));
                 arrayList.add(Utils.ViewModel.INSTANCE.getPropertyListViewModel([new Pair(Utils.INSTANCE.getString(R.string.identity_name_name), String.valueOf(person.getFullName())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_relation), String.valueOf(person.getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(person.getAgeInYears())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_trueAge), String.valueOf(FamilyExtras.trueAgeYears(person))), new Pair(Utils.INSTANCE.getString(R.string.identity_name_gender), String.valueOf(person.getGender().getTitle())), new Pair(Utils.INSTANCE.getString(R.string.Common_Status), String.valueOf(person.getChildStatus()))]));
                 CollectionsKt.addAll(arrayList, person.getRelationDescriptorAndProgressBarViewModels());
                 if (person.getSupportedByParent()) {
@@ -267,7 +274,7 @@ export class GenericListModelGenerator {
                 }
                 let person3: Person = (CollectionsKt.first((arrayList11 as unknown as ArrayList)) as unknown as Person);
                 arrayList2.add(new NavigationBarViewModel(person3.getFullName(), false, 2, null));
-                arrayList.add(new ImageCellViewModel("ParentProfileImage", person3.getAgeGroup().imageId(person3.getSex()), null, 4, null));
+                arrayList.add(new ImageCellViewModel("ParentProfileImage", Appearance.head(person3), null, 4, null));
                 arrayList.add(Utils.ViewModel.INSTANCE.getPropertyListViewModel([new Pair(Utils.INSTANCE.getString(R.string.identity_name_name), String.valueOf(person3.getFullName())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_relation), String.valueOf(person3.getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(person3.getAgeInYears())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_trueAge), String.valueOf(FamilyExtras.trueAgeYears(person3))), new Pair(Utils.INSTANCE.getString(R.string.identity_name_gender), String.valueOf(person3.getGender().getTitle()))]));
                 CollectionsKt.addAll(arrayList, person3.getRelationDescriptorAndProgressBarViewModels());
                 for (const personInteraction3 of PersonInteraction.INSTANCE.getParentActions()) {
@@ -353,6 +360,19 @@ export class GenericListModelGenerator {
                     Utils.INSTANCE.reloadGenericList(GenericListType.customizeGame);
                 }
                 })]));
+                {
+                    // v0.18.0: your look (kept for your whole life)
+                    const look = Appearance.of(np);
+                    const sexNow = newGamePlayerState.getSex();
+                    const reload = () => Utils.INSTANCE.reloadGenericList(GenericListType.customizeGame);
+                    const pick = (title: string, current: string, opts: { title: string; look: any }[]) => new CustomizeOptionsViewModel(title, current,
+                        [...opts.map((o) => new CustomizeSingleOptionViewModel(o.title, Appearance.headFor(sexNow, AgeGroup.youngAdult, o.look) as any, { invoke: () => { Appearance.set(np, o.look); reload(); } })),
+                         new CustomizeSingleOptionViewModel(Utils.INSTANCE.getString(R.string.Common_Random), R.drawable.random as any, { invoke: () => { Appearance.set(np, Appearance.random(sexNow)); reload(); } })]);
+                    arrayList.add(pick("Skin Tone", SKIN_NAMES[look.skin], SKIN_NAMES.map((t, i) => ({ title: t, look: { ...look, skin: i } }))));
+                    arrayList.add(pick("Hair Color", HAIR_NAMES[look.hair], HAIR_NAMES.map((t, i) => ({ title: t, look: { ...look, hair: i } }))));
+                    const styles = Appearance.styles(sexNow);
+                    if (styles.length > 1) arrayList.add(pick("Face", `Style ${styles.indexOf(look.style) + 1}`, styles.map((st, i) => ({ title: `Style ${i + 1}`, look: { ...look, style: st } }))));
+                }
                 if (newGamePlayerState.getMiscState().getIsSexExplicitlySet()) {
                     arrayList.add(new CustomizeOptionsViewModel(Utils.INSTANCE.getString(R.string.Common_Gender), newGamePlayerState.getGender().getTitle(), [new CustomizeSingleOptionViewModel(Gender.male.getTitle(), Gender.male.getImageId(), {
                         invoke: () => {
@@ -586,27 +606,25 @@ export class GenericListModelGenerator {
                     arrayList3.add(singleButtonViewModel2);
                     break;
                 }
-            case GenericListType.cemetery:
-                if (GameStateManager.INSTANCE.getGlobalStateManager().getCemetaryState().getPastLives().size() === 0) {
+            case GenericListType.cemetery: {
+                // v0.18.0: every past life from its record (newest first), 25 a page
+                const lives = Lineage.all();
+                if (lives.length === 0) {
                     arrayList.add(new LeftRightCellViewModel("EmptyCell", Utils.INSTANCE.getString(R.string.Cemetery_Empty_String)));
                     break;
-                } else {
-                    for (let it3 = GameStateManager.INSTANCE.getGlobalStateManager().getCemetaryState().getPastLives().iterator(); it3.hasNext(); ) {
-                        let live: Player = it3.next();
-                        let appendNewline: SpannableStringBuilder = ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(new SpannableStringBuilder(), Utils.Strings.INSTANCE.formatWithColon(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(live.getAgeInYears())), null, null, null, 14, null));
-                        let sb: StringBuilder = new StringBuilder();
-                        let companion2 = AchievementBadge.INSTANCE;
-                        sb.append(companion2.getBadges(live).size());
-                        sb.append(" ");
-                        sb.append(Utils.INSTANCE.getString(R.string.Menu_Leaderboard_Badges));
-                        arrayList.add(new LeftRightCellViewModel(live.getFullName(), new TextLabelViewModel(live.getFullName(), null, false, false, null, null, 62, null), new TextLabelViewModel(ExtensionsKt.appendBold$default(appendNewline, sb.toString(), R.color.flatGreen, 14, null, 8, null), false, false, null, 14, null), {
-                            invoke: () => {
-                            Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.gameSummary, live.getId(), false, 4, null);
-                        }
-                        }));
-                    }
-                    break;
                 }
+                const pg = Paging.slice(lives, "cemetery", 25, "first");
+                if (pg.pages > 1) arrayList.add(Paging.pager("cemetery", pg.page, pg.pages, `Lives ${pg.from}–${pg.to} of ${lives.length} (newest first)`, GenericListType.cemetery));
+                for (const live of pg.items) {
+                    const sub = ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(new SpannableStringBuilder(), Utils.Strings.INSTANCE.formatWithColon(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(live.age)) + (live.generation > 1 ? `  ·  Generation ${live.generation}` : ""), null, null, null, 14, null));
+                    ExtensionsKt.appendBold$default(sub, `${live.badges.length} ${Utils.INSTANCE.getString(R.string.Menu_Leaderboard_Badges)}`, R.color.flatGreen, 14, null, 8, null);
+                    arrayList.add(new LeftRightCellViewModel("Life." + live.id, new TextLabelViewModel(live.name, null, false, false, null, null, 62, null), new TextLabelViewModel(sub, false, false, null, 14, null), {
+                        invoke: () => { Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.gameSummary, live.id, false, 4, null); }
+                    }));
+                }
+                if (pg.pages > 1) arrayList.add(Paging.pager("cemetery", pg.page, pg.pages, `Lives ${pg.from}–${pg.to} of ${lives.length}`, GenericListType.cemetery));
+                break;
+            }
             case GenericListType.help:
                 let spannableStringBuilder: SpannableStringBuilder = new SpannableStringBuilder();
                 ExtensionsKt.appendDoubleNewline(ExtensionsKt.appendBold$default(spannableStringBuilder, Utils.INSTANCE.getString(R.string.HelpPage_Attributes), null, 22, null, 10, null));

@@ -3,6 +3,7 @@
 // Love tab: status and group actions on top, then Partner, Parents, Children, Siblings, Friends, Pets,
 // Past Relationships and More. Empty groups are hidden. Inside a group: oldest first, the deceased last under "In memory".
 // Every card opens the same person screen: a large card, an About card, then Spend time / Big moments / Hard choices.
+import { Appearance } from "./Appearance";
 import { ArrayList, BigInteger, R, SpannableStringBuilder } from "../runtime";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentViewModel";
@@ -32,6 +33,7 @@ import { Relationships, MOOD_TITLE } from "./Relationships";
 import { LoveActions, LoveActionCell, loveAction, Section } from "./LoveActions";
 import { SocialPerson, RELATIVE_KINDS } from "./SocialPerson";
 import { ExtendedFamily, RELATIVE_TITLES } from "./ExtendedFamily";
+import { Paging } from "../Models/Paging";
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
 const S = (k: string) => Utils.INSTANCE.getString((R.string as any)[k]);
@@ -50,7 +52,7 @@ export const LoveScreens = {
     headImage(person: any): any {
         const pet = person.getPetType?.();
         if (pet != null) return pet.easternEggImage(person.getFirstName()) ?? pet.getImageId();
-        try { return person.getAgeGroup().imageId(person.getSex()); } catch { return R.drawable.non_binary_1; }
+        try { return Appearance.head(person); } catch { return R.drawable.non_binary_1; }   // v0.18.0: their own look
     },
     ageLine(person: any): string {
         if (!person.getIsAlive()) return person.getIsBuried?.() ? "Deceased · laid to rest" : "Deceased";
@@ -194,6 +196,7 @@ export const LoveScreens = {
         return new GenericListFragmentViewModel(out);
     },
 
+    RELATIVES_PAGE: 30,
     /** v0.17.0: one kind of relative, grouped by family (side or parent). */
     relatives(kind: string): GenericListFragmentViewModel {
         const p = player();
@@ -203,13 +206,25 @@ export const LoveScreens = {
         const list = ExtendedFamily.relatives(kind, p);
         if (!list.length) out.add(new SingleLabelCellViewModel("NoRelatives", text("Nobody yet.")));
         const bySide = kind === "grandparent" || kind === "auntUncle";
+        const keyOf = (x: any) => (bySide ? x.side : x.parentId) ?? "";
         const keys: string[] = [];
-        for (const x of Relationships.byAge(list)) { const k = (bySide ? x.side : x.parentId) ?? ""; if (!keys.includes(k)) keys.push(k); }
+        for (const x of Relationships.byAge(list)) { const k = keyOf(x); if (!keys.includes(k)) keys.push(k); }
+        // v0.18.0: big families are split into pages of 30 (families stay in order; the living before the dead)
+        const ordered: any[] = [];
         for (const k of keys) {
-            const members = list.filter((x) => ((bySide ? x.side : x.parentId) ?? "") === k);
+            const members = list.filter((x) => keyOf(x) === k);
+            ordered.push(...Relationships.byAge(members.filter((x) => x.getIsAlive())), ...Relationships.byAge(members.filter((x) => !x.getIsAlive())));
+        }
+        const pageKey = "relatives:" + kind;
+        const pg = Paging.slice(ordered, pageKey, LoveScreens.RELATIVES_PAGE, "first");
+        if (pg.pages > 1) out.add(Paging.pager(pageKey, pg.page, pg.pages, `${RELATIVE_TITLES[kind]} ${pg.from}–${pg.to} of ${ordered.length}`, GenericListType.relatives));
+        for (const k of keys) {
+            const members = pg.items.filter((x) => keyOf(x) === k);
+            if (!members.length) continue;
             out.add(new HeaderTitleViewModel(bySide ? ExtendedFamily.sideTitle(k || null, p) : ExtendedFamily.groupLabel(k || null, p)));
             LoveScreens.group(members, out);
         }
+        if (pg.pages > 1) out.add(Paging.pager(pageKey, pg.page, pg.pages, `${RELATIVE_TITLES[kind]} ${pg.from}–${pg.to} of ${ordered.length}`, GenericListType.relatives));
         return new GenericListFragmentViewModel(out, header, null);
     },
 
@@ -249,6 +264,7 @@ export const LoveScreens = {
         }
         if (kind === "child" && t.getIsAlive()) { try { rows.push([S("Common_Status"), t.getChildStatus()]); } catch { /* none */ } }
         if ((kind === "sibling" || RELATIVE_KINDS.includes(kind)) && t.getIsAlive()) { const o = Relationships.occupationOf(t); if (o) rows.push(["Occupation", o]); }
+        if (t.getPetType?.() == null) rows.push(["Look", Appearance.describe(t)]);   // v0.18.0
         // v0.17.0: where they sit in the family
         if (kind === "grandparent" || kind === "auntUncle") rows.push(["Family", ExtendedFamily.sideTitle(t.side, p)]);
         else if (t instanceof SocialPerson && t.parentId) {

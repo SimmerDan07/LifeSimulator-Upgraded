@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Appearance } from "../Social/Appearance";
 import { Obituary } from "./Obituary";
 import { Generations } from "./Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
@@ -314,7 +315,7 @@ export class AlertManager {
         let string: string = Utils.INSTANCE.getString(R.string.Alert_Love_YouMetSomeone_Title);
         let objArr = [partnerForPlayer.getSex().getDatingTitle()];
         let format: string = String.format(string, Arrays.copyOf(objArr, objArr.length));
-        AlertManager.showAlert$default(this, new AlertViewModel(format, null, Integer.valueOf(AgeGroup.INSTANCE.getAgeGroup(partnerForPlayer.getAgeInYears()).imageId(partnerForPlayer.getSex())), appendAttributesString$default, null, alertActionViewModel, alertActionViewModel2, null, null, 400, null), false, 2, null);
+        AlertManager.showAlert$default(this, new AlertViewModel(format, null, Appearance.head(partnerForPlayer), appendAttributesString$default, null, alertActionViewModel, alertActionViewModel2, null, null, 400, null), false, 2, null);
     }
     showBabyBornAlert(baby: Person, adopted: boolean): void {
         Intrinsics.checkParameterIsNotNull(baby, "baby");

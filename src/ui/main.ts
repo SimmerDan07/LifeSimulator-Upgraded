@@ -27,7 +27,7 @@ import { richToHtml, textToHtml } from "./rich";
 import { ButtonViewModel } from "../game/Models/ButtonViewModel";
 
 declare global {
-    interface Window { lifesimFS?: { read(name: string): string | null; write(name: string, text: string): void; dir(): string }; }
+    interface Window { lifesimFS?: { read(name: string): string | null; write(name: string, text: string): void; dir(): string; openDir?(): boolean }; }
 }
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -315,6 +315,8 @@ function boot() {
         showAlert,
         readFile: (n) => storage.read(n),
         writeFile: (n, t) => storage.write(n, t),
+        saveFolder: () => (window.lifesimFS ? window.lifesimFS.dir() : null),
+        openSaveFolder: () => (window.lifesimFS?.openDir ? window.lifesimFS.openDir() : false),
     });
     setAfterAction(refresh);
 

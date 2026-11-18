@@ -30,7 +30,7 @@ export interface SubscriptionDef {
 
 export const SUBSCRIPTIONS: SubscriptionDef[] = [
     { id: "gym", title: "Gym Membership", image: R.drawable.health_workout, weekly: 50, mods: [2, 0, 0], minAge: 14, blurb: "Work out whenever you like." },
-    { id: "coach", title: "Gym Coach", image: R.drawable.skill_selfimprovement, weekly: 150, mods: [3, 0, 0], minAge: 14, requires: "gym", blurb: "A personal trainer at your gym." },
+    { id: "coach", title: "Gym Coach", image: R.drawable.icon_sub_coach, weekly: 150, mods: [3, 0, 0], minAge: 14, requires: "gym", blurb: "A personal trainer at your gym." },
     { id: "therapist", title: "Therapist", image: R.drawable.health_psychologist, weekly: 200, mods: [0, 0, 4], minAge: 12, blurb: "A weekly session for your mental health." },
 ];
 

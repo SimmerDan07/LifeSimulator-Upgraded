@@ -101,8 +101,13 @@ export class Player {
     familyState: FamilyState = null;
     /** Generational play: 1 for a fresh life, +1 for each heir. */
     generation: number = 1;
-    /** Names of earlier generations, oldest first. */
+    /** Names of earlier generations, oldest first (up to v0.17.0; v0.18.0 keeps life records instead). */
     ancestors: string[] = [];
+    /** v0.18.0: the family line this life belongs to (shared by every heir). */
+    lineId: string = null;
+    lineageMigrated: boolean = false;
+    /** v0.18.0: head style, skin tone and hair color (see Social/Appearance). */
+    appearance: { style: number; skin: number; hair: number } = null;
     firstName: string = null;
     gender: Gender = null;
     housingState: HousingState = null;
@@ -433,6 +438,13 @@ export class Player {
         }
         ExtensionsKt.appendNewline(appendNewline);
         ExtensionsKt.appendNewline(appendNewline);
+        for (const pair of this.tombstonePairs()) {
+            ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(appendNewline, ((pair.component1() as string)) + ": ", R.color.tombstoneTextGrey, 12, null, 8, null), (pair.component2() as string), R.color.tombstoneTextGrey, 12, null, 8, null));
+        }
+        return appendNewline;
+    }
+    /** The tombstone's facts (v0.18.0: also saved in each life's record). */
+    tombstonePairs(): Pair[] {
         let pairArr: Pair[] = new Array(8).fill(null);
         pairArr[0] = new Pair(Utils.INSTANCE.getString(R.string.identity_name_trueAge), String.valueOf(this.getTrueAgeInYears()));
         pairArr[1] = new Pair(Utils.INSTANCE.getString(R.string.identity_name_networth), String.valueOf(ExtensionsKt.numberDisplayString$default(this.getNetWorth(), false, 1, null)));
@@ -450,10 +462,7 @@ export class Player {
         pairArr[5] = new Pair(Utils.INSTANCE.getString(R.string.Family_RelationshipLabel), this.familyState.getCombinedParentRelationshipProgressStatus().title(Relationship.parent));
         pairArr[6] = new Pair((Utils.INSTANCE.getString(R.string.Common_NumberOf) + " ") + Utils.INSTANCE.getString(R.string.Common_Children), String.valueOf(this.familyState.getChildren().size()));
         pairArr[7] = new Pair((Utils.INSTANCE.getString(R.string.Common_NumberOf) + " ") + Utils.INSTANCE.getString(R.string.Common_Pets), String.valueOf(this.familyState.getPets().size()));
-        for (const pair of pairArr) {
-            ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(appendNewline, ((pair.component1() as string)) + ": ", R.color.tombstoneTextGrey, 12, null, 8, null), (pair.component2() as string), R.color.tombstoneTextGrey, 12, null, 8, null));
-        }
-        return appendNewline;
+        return pairArr;
     }
     leisureAction(action: Leisure): void {
         Intrinsics.checkParameterIsNotNull(action, "action");

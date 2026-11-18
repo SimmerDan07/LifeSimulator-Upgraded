@@ -70,8 +70,10 @@ export const ExtendedFamily = {
     parentOf(x: SocialPerson, p: any = player()): any { return x.parentId ? Relationships.find(x.parentId, p) : null; },
     parentsOfPlayer(p: any = player()): { mom: any; dad: any; list: any[] } {
         const list = Array.from(p.getFamilyState().getParents() as any) as any[];
-        const mom = list.find((x) => x.getSex() === Sex.female) ?? null;
-        const dad = list.find((x) => x !== mom && x.getSex() === Sex.male) ?? list.find((x) => x !== mom) ?? null;
+        const female = list.find((x) => x.getSex() === Sex.female), male = list.find((x) => x.getSex() === Sex.male);
+        // v0.18.0: two moms or two dads both count (mom = the first parent, dad = the second, for the tree's sides)
+        const mom = female != null && male != null ? female : (list[0] ?? null);
+        const dad = female != null && male != null ? male : (list[1] ?? null);
         return { mom, dad, list };
     },
     /** "Mom's side", "Dad's side" (or the parent's name when both are moms/dads). */
@@ -179,10 +181,11 @@ export const ExtendedFamily = {
     // ------------------------------------------------------------------ the family grows
     /** The age that decides whether your parents can still have a baby: your mother's, or the younger parent's. */
     parentsFertileAge(p: any = player()): number | null {
-        const { mom, list } = ExtendedFamily.parentsOfPlayer(p);
+        const { list } = ExtendedFamily.parentsOfPlayer(p);
         const living = list.filter((x) => x.getIsAlive());
         if (living.length < 2) return null;
-        if (mom != null) return mom.getAgeInYears();
+        const mother = living.find((x) => x.getSex() === Sex.female && living.some((y) => y !== x && y.getSex() === Sex.male));
+        if (mother != null) return mother.getAgeInYears();
         return Math.min(...living.map((x) => x.getAgeInYears()));
     },
     canParentsHaveBaby(p: any = player()): boolean {
@@ -262,8 +265,11 @@ export const ExtendedFamily = {
             copyMeta(n.id);
             return n;
         };
-        // your parents → the heir's grandparents (on your side of the family)
+        // your parents → the heir's grandparents (on your side of the family). Not your partner: they've just
+        // become the heir's living parent (v0.18.0 fix).
+        const heirParents = new Set((Array.from(heir.getFamilyState().getParents() as any) as any[]).map((x) => x.getId()));
         for (const par of Relationships.family(Relationship.parent, dead)) {
+            if (heirParents.has(par.getId())) continue;
             const g = SocialPerson.make("grandparent", par.getSex(), par.getLastName(), par.getAgeInWeeks());
             g.id = par.getId();
             g.firstName = par.getFirstName();
@@ -272,6 +278,7 @@ export const ExtendedFamily = {
             g.isBuried = !par.getIsAlive();
             g.side = side;
             g.setRelationshipProgress(500);
+            if (par.appearance) g.appearance = { ...par.appearance };
             to.add(g);
             copyMeta(g.id);
         }
@@ -284,6 +291,7 @@ export const ExtendedFamily = {
             if (g.parentId === chosen.getId()) {
                 const k = new Person(g.firstName, g.lastName, g.getGender(), g.sexuality ?? Sexuality.straight, g.getSex(), Relationship.child, g.getAgeInWeeks(), null);
                 k.setId(g.id);
+                if (g.appearance) (k as any).appearance = { ...g.appearance };
                 k.setTrueAgeInWeeks(g.getTrueAgeInWeeks());
                 k.setRelationshipProgress(g.getRelationshipProgress());
                 if (!g.getIsAlive()) { k.setAlive(false); k.setBuried(g.getIsBuried()); }

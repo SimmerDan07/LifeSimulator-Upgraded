@@ -229,6 +229,7 @@ export const Relationships = {
             if (k === chosenChild || k.getId() === chosenChild.getId() || !k.getIsAlive() || k.getNotYetBorn()) continue;
             const s = SocialPerson.make("sibling", k.getSex(), k.getLastName() ?? heir.getLastName(), k.getAgeInWeeks());
             s.id = k.getId();   // v0.17.0: keeps their children (your grandchildren) linked as the heir's nieces/nephews
+            if (k.appearance) s.appearance = { ...k.appearance };   // v0.18.0: same look
             s.firstName = k.getFirstName();
             s.trueAgeInWeeks = k.getTrueAgeInWeeks?.() ?? k.getAgeInWeeks();
             s.setRelationshipProgress(500);

@@ -80,7 +80,7 @@ export class LifepathsModelGenerator {
             const married = bond.marriedSinceWeek != null;
             const since = bond.marriedSinceWeek ?? bond.togetherSinceWeek;
             const yrs = since != null ? Math.floor((p.getTrueAgeInWeeks() - since) / 48) : null;
-            out.add(info(R.drawable.love_propose, `Eternal Bond with ${bond.getFirstName()}`,
+            out.add(info(R.drawable.icon_bond, `Eternal Bond with ${bond.getFirstName()}`,
                 (yrs != null ? `${married ? "Married" : "Together"} ${yrs} year${yrs === 1 ? "" : "s"}. ` : "") + "You never drift apart, fight hunters side by side (70% to win) and share your blood diet (it costs double; with no diet, they hunt alone: +2 suspicion a week). Hunt Together, Dance Through the Night and Eternal Vows are on their Love tab screen."));
         }
         out.add(new HeaderTitleViewModel("Coven"));

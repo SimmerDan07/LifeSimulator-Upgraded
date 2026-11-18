@@ -1,5 +1,6 @@
 // The Family Tree screen (v0.17.0): every generation from your grandparents down to your great-grandchildren,
 // each row split into family groups ("Mom's side", "Aunt Rosa's children", "Your children"…). Tap anyone to open them.
+import { Appearance, ORIGINAL } from "./Appearance";
 import { ArrayList } from "../runtime";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentViewModel";
@@ -10,12 +11,21 @@ import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { FamilyTreeViewModel, TreeGroup, TreeNode, TreeRow } from "../Models/PersonCardViewModel";
 import { GameStateManager } from "../Managers/GameStateManager";
 import { Relationship } from "../Enums/Relationship";
+import { R } from "../runtime";
 import { Sex } from "../Enums/Sex";
 import { Utils } from "../Utils/Utils";
 import { Relationships } from "./Relationships";
 import { ExtendedFamily } from "./ExtendedFamily";
 import { LoveScreens } from "./LoveScreens";
 import { SocialPerson } from "./SocialPerson";
+import { LeftRightCellViewModel } from "../Models/LeftRightCellViewModel";
+import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
+import { TombstoneViewModel } from "../Models/TombstoneViewModel";
+import { PersonCardViewModel } from "../Models/PersonCardViewModel";
+import { Paging } from "../Models/Paging";
+import { Lineage, LifeRecord } from "../Managers/Lineage";
+import { AgeGroup } from "../Enums/AgeGroup";
+import { Pair } from "../runtime";
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
 const open = (id: string) => Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.personDetails, id, false, 4, null);
@@ -46,7 +56,7 @@ export const FamilyTree = {
     },
     you(p: any): TreeNode {
         let img: any = null;
-        try { img = p.getAgeGroup().imageId(p.getSex()); } catch { /* none */ }
+        try { img = Appearance.head(p); } catch { /* none */ }
         return { id: p.getId?.() ?? "you", name: p.getFirstName(), relation: "You", sub: `Age ${p.getAgeInYears()}`, imageId: img, dead: false, you: true, badge: null, onClick: null };
     },
     /** Oldest first, the living before the dead. */
@@ -120,12 +130,87 @@ export const FamilyTree = {
         const out = new ArrayList<BaseViewModel>();
         const header = new ArrayList<BaseViewModel>();
         header.add(new NavigationBarViewModel("Family Tree", false, 2, null));
-        const anc = p.getAncestors?.() ?? [];
         const living = ExtendedFamily.all(p).filter((x) => x.getIsAlive()).length + Relationships.familyPeople(p).filter((x) => !ExtendedFamily.isRelative(x)).length;
         const intro = `${p.getLastName()} family · ${living} living relatives` + (p.getGeneration?.() > 1 ? ` · Generation ${p.getGeneration()}` : "") + ". Tap anyone to see them.";
         out.add(new SingleLabelCellViewModel("TreeIntro", new TextLabelViewModel(intro, null, false, false, null, null, 62, null)));
-        if (anc.length) out.add(new SingleLabelCellViewModel("TreeAncestors", new TextLabelViewModel("Earlier generations: " + anc.join(" → "), null, false, false, null, null, 62, null)));
+        // v0.18.0: earlier generations live on their own paged screen (built for very long family lines)
+        const line = Lineage.line(p);
+        if (line.length) {
+            const row = new LeftRightCellViewModel("FamilyLineRow", new TextLabelViewModel("Family Line", null, false, false, null, null, 62, null),
+                new TextLabelViewModel(`${line.length + 1} generations · see every ancestor`, null, false, false, null, null, 62, null), null, 8, null);
+            row.setOnClick({ invoke: () => Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.familyLine, null, false, 6, null) });
+            out.add(row);
+        }
         out.add(new FamilyTreeViewModel(FamilyTree.rows(p)));
+        return new GenericListFragmentViewModel(out, header, null);
+    },
+
+    // ------------------------------------------------------------------ v0.18.0 Family Line (every generation, paged)
+    LINE_PAGE: 10,
+    recordImage(r: LifeRecord): any {
+        try { return FamilyTree.headForRecord(r); } catch { return R.drawable.non_binary_1; }
+    },
+    headForRecord(r: LifeRecord): any {
+        const sex = r.sex === "female" ? Sex.female : Sex.male;
+        return Appearance.headFor(sex, AgeGroup.INSTANCE.getAgeGroup(Math.max(r.age, 19)), r.appearance ?? ORIGINAL);
+    },
+    lineText(r: LifeRecord): string {
+        if (r.legacy) return `Lived to ${r.age}`;
+        const bits = [`Lived to ${r.age}` + (r.trueAge !== r.age ? ` (true age ${r.trueAge})` : "")];
+        if (r.cause) bits.push(r.cause);
+        if (r.vampireYears > 0) bits.push(`vampire for ${r.vampireYears} years`);
+        if (r.partner) bits.push(`partner ${r.partner}`);
+        bits.push(`${r.children} ${r.children === 1 ? "child" : "children"}`);
+        return bits.join(" · ");
+    },
+    lineScreen(): GenericListFragmentViewModel {
+        const p = player();
+        const out = new ArrayList<BaseViewModel>();
+        const header = new ArrayList<BaseViewModel>();
+        header.add(new NavigationBarViewModel("Family Line", false, 2, null));
+        const line = Lineage.line(p);
+        type Entry = { r: LifeRecord | null; gen: number };
+        const entries: Entry[] = [...line.map((r) => ({ r, gen: r.generation })), { r: null, gen: p.getGeneration?.() ?? line.length + 1 }];
+        const total = entries.length;
+        out.add(new SingleLabelCellViewModel("LineIntro", new TextLabelViewModel(
+            `The ${p.getLastName()} family line · ${total} generation${total === 1 ? "" : "s"}. Oldest first; tap a past life to read their Life Summary.`, null, false, false, null, null, 62, null)));
+        const pg = Paging.slice(entries, "familyLine:" + Lineage.lineIdOf(p), FamilyTree.LINE_PAGE, "last");
+        const label = `Generations ${pg.items[0]?.gen ?? 1}–${pg.items[pg.items.length - 1]?.gen ?? 1} of ${total}`;
+        if (pg.pages > 1) out.add(Paging.pager("familyLine:" + Lineage.lineIdOf(p), pg.page, pg.pages, label, GenericListType.familyLine));
+        else out.add(new HeaderTitleViewModel(label));
+        for (const e of pg.items) {
+            if (e.r == null) {
+                let img: any = null;
+                try { img = FamilyTree.you(p).imageId; } catch { /* none */ }
+                out.add(new PersonCardViewModel("line-you", img, `Generation ${e.gen}`, `${p.getFullName()} (you)`, `Age: ${p.getAgeInYears()} · living`, null, 1000, "good", "", ["You"], null));
+                continue;
+            }
+            const r = e.r;
+            const open = r.legacy ? null : { invoke: () => Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.gameSummary, r.id, false, 4, null) };
+            out.add(new PersonCardViewModel("line-" + r.id, FamilyTree.recordImage(r), `Generation ${r.generation}`, r.name, FamilyTree.lineText(r), null, 1000, "good", "",
+                Lineage.hasFull(r.id) ? [] : r.legacy ? ["Name only"] : ["Summary"], open));
+        }
+        if (pg.pages > 1) out.add(Paging.pager("familyLine:" + Lineage.lineIdOf(p), pg.page, pg.pages, label, GenericListType.familyLine));
+        return new GenericListFragmentViewModel(out, header, null);
+    },
+    /** The Life Summary of a life kept only as a record. */
+    archivedSummary(id: string): GenericListFragmentViewModel {
+        const out = new ArrayList<BaseViewModel>();
+        const header = new ArrayList<BaseViewModel>();
+        header.add(new NavigationBarViewModel("Life Summary", false, 2, null));
+        const r = Lineage.find(id);
+        if (r == null) {
+            out.add(new SingleLabelCellViewModel("NoLife", new TextLabelViewModel("This life couldn't be found.", null, false, false, null, null, 62, null)));
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        out.add(new TombstoneViewModel(Lineage.tombstone(r)));
+        if (r.obituary) {
+            out.add(new HeaderTitleViewModel("Obituary"));
+            out.add(new SingleLabelCellViewModel("Obituary", new TextLabelViewModel(r.obituary, null, false, false, null, null, 62, null)));
+            if (r.obituaryRows.length) out.add(Utils.ViewModel.INSTANCE.getPropertyListViewModel(r.obituaryRows.map(([a, b]) => new Pair(a, b))));
+        }
+        out.add(new SingleLabelCellViewModel("Archived", new TextLabelViewModel(
+            "Older lives are kept as a summary so very long family saves stay fast, so this life can't be revived.", null, false, false, null, null, 62, null)));
         return new GenericListFragmentViewModel(out, header, null);
     },
 };

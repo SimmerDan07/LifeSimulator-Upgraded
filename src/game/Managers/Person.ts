@@ -51,6 +51,8 @@ export class Person {
     static INSTANCE: any;
     ageInWeeks: number = 0;
     childJobState: JobState = null;
+    /** v0.18.0: head style, skin tone and hair color (see Social/Appearance). */
+    appearance: { style: number; skin: number; hair: number } = null;
     childSupport: BenefitLevel = null;
     firstName: string = null;
     gender: Gender = null;

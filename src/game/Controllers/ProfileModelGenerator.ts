@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Appearance } from "../Social/Appearance";
 import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
 import { Generations } from "../Managers/Generations";
 import { ArrayList, BigInteger, Integer, Pair, R, SpannableStringBuilder } from "../runtime";
@@ -47,7 +48,7 @@ export class ProfileModelGenerator implements IViewModelGenerator {
         let arrayList: ArrayList = new ArrayList();
         arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.section_header_identity)));
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
-        arrayList.add(new ImageCellViewModel("PersonProfileImage", personState.getAgeGroup().imageId(personState.getSex()), Integer.valueOf(personState.getCountry().getImageId())));
+        arrayList.add(new ImageCellViewModel("PersonProfileImage", Appearance.head(personState), Integer.valueOf(personState.getCountry().getImageId())));
         arrayList.add(Utils.ViewModel.INSTANCE.getPropertyListViewModel([new Pair(Utils.INSTANCE.getString(R.string.ProfileStatus_LifeScenario), String.valueOf(personState.getLifeScenario().getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(personState.getAgeInYears())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_trueAge), String.valueOf(personState.getTrueAgeInYears())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_name), String.valueOf(personState.getFullName())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_sex), String.valueOf(personState.getSex().getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_gender), String.valueOf(personState.getGender().getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_sexuality), String.valueOf(personState.getSexuality().getTitle())), new Pair(Utils.INSTANCE.getString(R.string.Attribute_Country), String.valueOf(personState.getCountry().getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_networth), String.valueOf(ExtensionsKt.numberDisplayString$default(personState.getNetWorth(), false, 1, null))), ...Generations.identityRows(personState)]));
         let totalCashFlowPerWeek: BigInteger = GameStateManager.INSTANCE.getPersonState().getTotalCashFlowPerWeek();
         let append: SpannableStringBuilder = ExtensionsKt.appendBold$default(new SpannableStringBuilder(), Utils.INSTANCE.getString(R.string.SectionHeader_WeeklyCash), null, null, null, 14, null).append("  ");

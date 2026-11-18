@@ -1,4 +1,5 @@
 // Hand-ported from Managers/GameStateManager.java. Loads/saves the whole game via SaveCodec.
+import { Appearance } from "../Social/Appearance";
 import { BigInteger } from "../runtime";
 import { Schooling } from "./Schooling";
 import { GlobalStateManager } from "./GlobalStateManager";
@@ -66,9 +67,13 @@ export class GameStateManager {
     startNewGameFlow(lifeScenario: LifeScenario): void {
         TelemetryManager.INSTANCE.logEvent("New_Game", null);
         this.newGamePlayerState = lifeScenario.getInitialState();
+        // v0.18.0: a random look (skin tone, hair, head style) that can be changed on the customize screen
+        const np: any = this.newGamePlayerState;
+        if (np != null && !Appearance.valid(np.appearance)) Appearance.set(np, Appearance.random(np.getSex()));
     }
     startNewGame(player: Player): void {
         Schooling.fillForAge(player);  // schooling that fits the starting age (preschool…high school)
+        if (!Appearance.valid((player as any).appearance)) Appearance.set(player, Appearance.random(player.getSex()));
         player.applyPerkStateEffects();
         player.applyNameEasternEgg();
         this.globalStateManager.getSaveState().currentSlot().setPersonState(player);

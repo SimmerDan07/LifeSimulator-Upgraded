@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Appearance } from "../Social/Appearance";
 import { Unlocks } from "../Unlocks";
 import { ArrayList, Arrays, Integer, Intrinsics, JEnum, MapsKt, NoWhenBranchMatchedException, R, SpannableStringBuilder, StringCompanionObject, TuplesKt, TypeCastException } from "../runtime";
 import { Achievement } from "../Enums/Achievement";
@@ -148,7 +149,7 @@ export namespace GameSaveSlotState {
         }
         let player: Player = this.personState;
         if (player != null) {
-            let imageId: number = player.getAgeGroup().imageId(player.getSex());
+            let imageId: any = Appearance.head(player);
             let fullName: string = player.getFullName();
             let z: boolean = GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getCurrentSlotId() === this.slotId;
             if (z) {

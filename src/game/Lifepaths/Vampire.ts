@@ -42,12 +42,12 @@ const attr = (p: any, h: number, hap: number, san: number) => p.getAttributeStat
 
 export interface PowerDef { id: string; title: string; cost: number; image: any; blurb: string }
 export const POWERS: PowerDef[] = [
-    { id: "charm", title: "Charm", cost: 1, image: R.drawable.love_propose, blurb: "Dating works more often; relationship gains +25%." },
-    { id: "nightOwl", title: "Night Owl", cost: 1, image: R.drawable.vacation_take_week_off, blurb: "You work night shifts: no sunlight damage at work and 20% more pay." },
-    { id: "bloodBank", title: "Blood Bank Contact", cost: 2, image: R.drawable.health_hospitalstay, blurb: "Unlocks Buy from a Blood Bank." },
-    { id: "mistStep", title: "Mist Step", cost: 2, image: R.drawable.random, blurb: "Hunting no longer risks police trouble." },
-    { id: "sunWard", title: "Sun Ward", cost: 3, image: R.drawable.iap_perk, blurb: "Sunlight does half as much damage." },
-    { id: "mindFog", title: "Mind Fog", cost: 3, image: R.drawable.skill_selfimprovement, blurb: "Suspicion drops by 5 by itself every week." },
+    { id: "charm", title: "Charm", cost: 1, image: R.drawable.icon_power_charm, blurb: "Dating works more often; relationship gains +25%." },
+    { id: "nightOwl", title: "Night Owl", cost: 1, image: R.drawable.icon_power_nightowl, blurb: "You work night shifts: no sunlight damage at work and 20% more pay." },
+    { id: "bloodBank", title: "Blood Bank Contact", cost: 2, image: R.drawable.icon_power_bloodbank, blurb: "Unlocks Buy from a Blood Bank." },
+    { id: "mistStep", title: "Mist Step", cost: 2, image: R.drawable.icon_power_miststep, blurb: "Hunting no longer risks police trouble." },
+    { id: "sunWard", title: "Sun Ward", cost: 3, image: R.drawable.icon_power_sunward, blurb: "Sunlight does half as much damage." },
+    { id: "mindFog", title: "Mind Fog", cost: 3, image: R.drawable.icon_power_mindfog, blurb: "Suspicion drops by 5 by itself every week." },
 ];
 
 /** Leisure that happens in daylight (burns a vampire). */
@@ -66,7 +66,7 @@ export interface BloodDiet {
 }
 /** What a vampire lives on every week (the Health tab's Choose Menu and the Lifepaths Feeding section). */
 export const BLOOD_DIETS: BloodDiet[] = [
-    { id: "hand", title: "Feed by Hand", image: R.drawable.lifepath_vampire, cost: 0, thirst: 15, mods: [0, 0, 0],
+    { id: "hand", title: "Feed by Hand", image: R.drawable.icon_vamp_feedbyhand, cost: 0, thirst: 15, mods: [0, 0, 0],
         blurb: "No plan: you feed yourself with the Feeding actions." },
     { id: "rats", title: "Rats & Strays", image: R.drawable.vdiet_rats, cost: 0, thirst: 8, mods: [0, -3, 0],
         blurb: "Free, but grim and never enough." },
@@ -75,9 +75,9 @@ export const BLOOD_DIETS: BloodDiet[] = [
     { id: "bags", title: "Blood Bank Bags", image: R.drawable.vdiet_bloodbag, cost: 2000, thirst: -10, mods: [1, 0, 0],
         blurb: "Human blood, delivered cold and discreet.",
         lock: (p) => (Vampire.has("bloodBank", p) || Vampire.hasMedicalJob(p) ? null : "Needs the Blood Bank Contact power or a medical job") },
-    { id: "hunting", title: "Nightly Hunting", image: R.drawable.mosquito, cost: 0, thirst: -20, mods: [0, 2, 0], suspicion: 4,
+    { id: "hunting", title: "Nightly Hunting", image: R.drawable.icon_vamp_hunt, cost: 0, thirst: -20, mods: [0, 2, 0], suspicion: 4,
         blurb: "Free and fresh, but people notice. 5% chance of police trouble a week (none with Mist Step)." },
-    { id: "donors", title: "Willing Donors", image: R.drawable.love_nightclub, cost: 8000, thirst: -15, mods: [0, 3, 2], suspicion: 1,
+    { id: "donors", title: "Willing Donors", image: R.drawable.icon_vamp_donors, cost: 8000, thirst: -15, mods: [0, 3, 2], suspicion: 1,
         blurb: "A private club of people who like being bitten." },
     { id: "vintage", title: "Rare Vintage", image: R.drawable.vdiet_vintage, cost: 50000, thirst: -20, mods: [2, 6, 4],
         blurb: "Aged blood from the finest cellars. Only the oldest vampires can afford it." },
@@ -313,7 +313,7 @@ export const Vampire = {
         }
         try {
             AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Vampire Hunters",
-                "Hunters with stakes and garlic have tracked you down. What do you do?", R.drawable.skull, null, null,
+                "Hunters with stakes and garlic have tracked you down. What do you do?", R.drawable.icon_vamp_hunters, null, null,
                 new AlertActionViewModel("Fight", { invoke: () => { Vampire.fight(p); return null; } }),
                 new AlertActionViewModel("Flee to a new city", { invoke: () => { Vampire.flee(p); return null; } }),
                 extra, AlertType.Alert, 0, null), false, 2, null);
@@ -575,9 +575,9 @@ const vs = () => Vampire.state();
 const thirstNote = (n: number, s = 0) => `−${n} thirst${s > 0 ? `, +${s} suspicion` : s < 0 ? `, ${s} suspicion` : ""}\n`;
 
 export const BECOMING: LifeActionDef[] = [
-    { id: "seek", title: "Seek the Ancient", image: R.drawable.tab_lifepaths, cost: 5000, show: (p) => !Vampire.state(p).discovered,
+    { id: "seek", title: "Seek the Ancient", image: R.drawable.icon_vamp_seek, cost: 5000, show: (p) => !Vampire.state(p).discovered,
         lock: (p) => Vampire.canBecome(p), note: () => "Follow the rumours. 1 in 4 chance of finding a vampire willing to meet you.\n", run: (p) => Vampire.seek(p) },
-    { id: "bite", title: "Accept the Bite", image: R.drawable.lifepath_vampire, show: (p) => Vampire.state(p).discovered,
+    { id: "bite", title: "Accept the Bite", image: R.drawable.icon_vamp_bite, show: (p) => Vampire.state(p).discovered,
         lock: (p) => Vampire.canBecome(p),
         note: () => "Become a vampire. Takes a week; your health drops to 50%.\n",
         confirm: () => "You'll never age again, but you'll need blood every week, the sun will burn you, and you can't have biological children. You can only go back with the Vampiric Cure, and you only get one vampire life. Accept the bite?",
@@ -589,11 +589,11 @@ export const FEEDING: LifeActionDef[] = [
         actionTitle: () => "Change",
         note: () => new BloodDietCell(Vampire.chosenDiet(player())).getAdditionalDescription(),
         run: () => Vampire.openDietMenu() },
-    { id: "bloodBank", title: "Buy from a Blood Bank", image: R.drawable.health_hospitalstay, cost: 500,
+    { id: "bloodBank", title: "Buy from a Blood Bank", image: R.drawable.icon_vamp_bloodbank, cost: 500,
         lock: (p) => (Vampire.has("bloodBank", p) || Vampire.hasMedicalJob(p) ? null : "Needs the Blood Bank Contact power or a medical job"),
         note: () => thirstNote(40, 2), run: (p) => Vampire.feed(p, 40, 2) },
-    { id: "animal", title: "Animal Blood", image: R.drawable.pet_turkey, cost: 50, mods: [0, -5, 0], note: () => thirstNote(20), run: (p) => Vampire.feed(p, 20, 0) },
-    { id: "hunt", title: "Hunt at Night", image: R.drawable.mosquito,
+    { id: "animal", title: "Animal Blood", image: R.drawable.icon_vamp_animal, cost: 50, mods: [0, -5, 0], note: () => thirstNote(20), run: (p) => Vampire.feed(p, 20, 0) },
+    { id: "hunt", title: "Hunt at Night", image: R.drawable.icon_vamp_hunt,
         note: () => thirstNote(60, 10) + (Vampire.has("mistStep") ? "" : "10% chance of police trouble.\n"),
         run: (p) => {
             Vampire.feed(p, 60, 10);
@@ -603,27 +603,27 @@ export const FEEDING: LifeActionDef[] = [
                 Vampire.alert("Police Trouble", `Someone saw you. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
             }
         } },
-    { id: "partner", title: () => `Feed on ${Vampire.willingPartner(player())?.getFirstName() ?? "a Willing Partner"}`, image: R.drawable.love_romantic_dinner,
+    { id: "partner", title: () => `Feed on ${Vampire.willingPartner(player())?.getFirstName() ?? "a Willing Partner"}`, image: R.drawable.icon_vamp_feedpartner,
         lock: (p) => (Vampire.willingPartner(p) ? null : "Your partner must know your secret"),
         note: () => thirstNote(30) + "−20 relationship with your partner.\n",
         run: (p) => { Vampire.feed(p, 30, 0); const w = Vampire.willingPartner(p); if (w) w.setRelationshipProgress(w.getRelationshipProgress() - 20); } },
 ];
 
 export const HIDING: LifeActionDef[] = [
-    { id: "layLow", title: "Lay Low", image: R.drawable.menu_coffin, mods: [0, -3, 0], note: () => "−15 suspicion\n", run: (p) => { const s = Vampire.state(p); s.suspicion = Math.max(0, s.suspicion - 15); } },
-    { id: "fakeDeath", title: "Fake Your Death", image: R.drawable.grave, cost: 20000, note: () => "Suspicion back to 0 with a new name. You lose your job, and friends who don't know your secret think you died.\n",
+    { id: "layLow", title: "Lay Low", image: R.drawable.icon_vamp_laylow, mods: [0, -3, 0], note: () => "−15 suspicion\n", run: (p) => { const s = Vampire.state(p); s.suspicion = Math.max(0, s.suspicion - 15); } },
+    { id: "fakeDeath", title: "Fake Your Death", image: R.drawable.icon_vamp_fakedeath, cost: 20000, note: () => "Suspicion back to 0 with a new name. You lose your job, and friends who don't know your secret think you died.\n",
         confirm: () => "Start over with a new name? You'll lose your job and the friends who don't know your secret.", run: (p) => Vampire.fakeDeath(p) },
-    { id: "moveCity", title: "Move to a New City", image: R.drawable.vacation_international, cost: 5000, note: () => "−50 suspicion. You quit your job and friends you leave behind feel distant.\n",
+    { id: "moveCity", title: "Move to a New City", image: R.drawable.icon_vamp_movecity, cost: 5000, note: () => "−50 suspicion. You quit your job and friends you leave behind feel distant.\n",
         confirm: () => "Move away? You'll quit your job.", run: (p) => Vampire.moveCity(p) },
-    { id: "coven", title: "Find Your Coven", image: R.drawable.waving_hand, note: () => "Look for other vampires (about a 1 in 3 chance).\n", run: (p) => Vampire.findCoven(p) },
+    { id: "coven", title: "Find Your Coven", image: R.drawable.icon_vamp_coven, note: () => "Look for other vampires (about a 1 in 3 chance).\n", run: (p) => Vampire.findCoven(p) },
 ];
 
 export const ENDINGS: LifeActionDef[] = [
-    { id: "cure", title: Vampire.cureName, image: R.drawable.health_youthelixir, cost: Vampire.curePrice,
+    { id: "cure", title: Vampire.cureName, image: R.drawable.icon_vamp_cure, cost: Vampire.curePrice,
         show: (p) => Vampire.state(p).cureWeeks === 0,
         note: () => `The rarest thing in the world. Become human again over ${Vampire.cureWeeks} weeks and start ageing from your frozen age. You get one vampire life: you can never become one again.\n`,
         confirm: () => "Drink the Vampiric Cure and become human again? Your powers and blood power will be gone, and you can never become a vampire again in this life.", run: (p) => Vampire.startCure(p) },
-    { id: "finalRest", title: "Final Rest", image: R.drawable.grave2, instant: true,
+    { id: "finalRest", title: "Final Rest", image: R.drawable.icon_vamp_finalrest, instant: true,
         note: () => "End your eternal life peacefully. The game continues with your heirs, as with any death.\n",
         confirm: () => "Watch one last sunrise and end this life?", run: (p) => Vampire.finalRest(p) },
 ];

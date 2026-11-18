@@ -1,3 +1,4 @@
+import { Lineage } from "../src/game/Managers/Lineage";
 import { UIBridge, MainGameFragment } from "../src/game/ui/bridge";
 import { GameStateManager } from "../src/game/Managers/GameStateManager";
 import { AlertManager } from "../src/game/Managers/AlertManager";
@@ -71,7 +72,7 @@ heirBtns[0].getAction().invoke();
 // --- verify heir
 const h = GameStateManager.INSTANCE.getPersonState();
 check("now playing the heir", h.getFirstName() === "Ava" && h.getAgeInYears() === 24 && gsm.getSaveState().getHasGameStarted(), `${h.getFullName()}, ${h.getAgeInYears()}`);
-check("generation 2", h.getGeneration() === 2 && h.getAncestors().length === 1, h.getAncestors().join(";"));
+check("generation 2 (the parent is in the family line)", h.getGeneration() === 2 && Lineage.line(h).length === 1 && Lineage.line(h)[0].generation === 1, Lineage.line(h).map((r) => r.name).join(";"));
 check("inherited estate", h.getMoneyState().getCash().compareTo(BigInteger.ZERO) > 0, `parent had ${cashBefore}, heir has ${h.getMoneyState().getCash()}`);
 check("inherited the house", h.getHousingState() === (gsm.getCemetaryState().getPastLives().find((x: any) => x.getId() === parentId) ? h.getHousingState() : null));
 check("schooling filled in", h.getCompletableActionState().isCompleted(CompletableAction.highSchool));

@@ -6,10 +6,13 @@ import { AchievementBadgeState } from "./AchievementBadgeState";
 import { GameStateManager } from "./GameStateManager";
 import { GoogleLeaderboardManager } from "./GoogleLeaderboardManager";
 import { Player } from "./Player";
+import { Lineage } from "./Lineage";
 
 export class CemetaryState {
     static INSTANCE: any;
     pastLives: ArrayList<Player> = null;
+    /** v0.18.0: a small record of every past life (see Lineage); only the newest lives keep a full snapshot. */
+    records: any[] = [];
     constructor() {
         this.pastLives = new ArrayList();
     }
@@ -39,6 +42,7 @@ export class CemetaryState {
             }
             GoogleLeaderboardManager.INSTANCE.reportLeaderboard(person);
         }
+        Lineage.afterAddLife(this, person);
     }
     removeLife(personId: string): void {
         Intrinsics.checkParameterIsNotNull(personId, "personId");

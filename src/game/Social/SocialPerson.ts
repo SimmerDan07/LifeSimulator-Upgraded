@@ -48,6 +48,8 @@ export class SocialPerson {
     side: string = null;
     /** v0.17.0: week (your true age) they were born into the family, for "New baby" badges. */
     bornWeek: number = null;
+    /** v0.18.0: head style, skin tone and hair color (see Appearance). */
+    appearance: { style: number; skin: number; hair: number } = null;
 
     static make(kind: SocialKind, sex: Sex, lastName: string | null, ageInWeeks: number): SocialPerson {
         const p = new SocialPerson();

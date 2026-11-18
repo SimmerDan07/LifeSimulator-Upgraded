@@ -121,7 +121,7 @@ const hs = headers(rows);
 check("tab groups in order: Partner, Parents, Children, Siblings, Friends, Pets", ["Partner", "Parents", "Children", "Siblings", "Friends", "Pets"].every((h, i, a) => hs.indexOf(h) >= 0 && (i === 0 || hs.indexOf(a[i - 1]) < hs.indexOf(h))), hs.join(" › "));
 check("no Past Relationships group yet", !hs.includes("Past Relationships"));
 const cs = cards(rows);
-check("every person is a card with a head picture and a score", cs.length >= 7 && cs.every((c) => /^head_|^pet_/.test(String(c.imageId)) && c.score != null), cs.map((c) => c.imageId).join(","));
+check("every person is a card with a head picture and a score", cs.length >= 7 && cs.every((c) => /^head_|^hv_|^pet_/.test(String(c.imageId)) && c.score != null), cs.map((c) => c.imageId).join(","));
 const marcene = cs.find((c) => c.name.startsWith("Marcene"))!;
 check("card reads like the concept: 'Daughter - Marcene …', 'Age: 9'", marcene.relation === "Daughter" && marcene.ageText === "Age: 9", `${marcene.relation} / ${marcene.ageText}`);
 const childOrder = cs.filter((c) => c.relation === "Daughter" || c.relation === "Son").map((c) => c.name.split(" ")[0]);

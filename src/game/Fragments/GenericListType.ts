@@ -40,7 +40,8 @@ export class GenericListType extends JEnum {
     static readonly pastRelationships: GenericListType = new GenericListType("pastRelationships", 33);
     static readonly relatives: GenericListType = new GenericListType("relatives", 34);
     static readonly familyTree: GenericListType = new GenericListType("familyTree", 35);
-    static values(): GenericListType[] { return [GenericListType.weeklyModifiers, GenericListType.cashFlow, GenericListType.traits, GenericListType.childDetails, GenericListType.petDetails, GenericListType.choosePet, GenericListType.chooseDiet, GenericListType.sideHustleProjects, GenericListType.settingsMenu, GenericListType.parentDetails, GenericListType.store, GenericListType.scenarioSelection, GenericListType.customizeGame, GenericListType.perkSelection, GenericListType.perkList, GenericListType.traitList, GenericListType.badgeList, GenericListType.achivementList, GenericListType.saveSlots, GenericListType.gameSettings, GenericListType.gameSummary, GenericListType.cemetery, GenericListType.help, GenericListType.credits, GenericListType.businessDetails, GenericListType.chooseHeir, GenericListType.realEstate, GenericListType.propertyDetails, GenericListType.propertyMarket, GenericListType.propertyRenovations, GenericListType.propertyFamily, GenericListType.rentalMarket, GenericListType.personDetails, GenericListType.pastRelationships, GenericListType.relatives, GenericListType.familyTree]; }
+    static readonly familyLine: GenericListType = new GenericListType("familyLine", 36);
+    static values(): GenericListType[] { return [GenericListType.weeklyModifiers, GenericListType.cashFlow, GenericListType.traits, GenericListType.childDetails, GenericListType.petDetails, GenericListType.choosePet, GenericListType.chooseDiet, GenericListType.sideHustleProjects, GenericListType.settingsMenu, GenericListType.parentDetails, GenericListType.store, GenericListType.scenarioSelection, GenericListType.customizeGame, GenericListType.perkSelection, GenericListType.perkList, GenericListType.traitList, GenericListType.badgeList, GenericListType.achivementList, GenericListType.saveSlots, GenericListType.gameSettings, GenericListType.gameSummary, GenericListType.cemetery, GenericListType.help, GenericListType.credits, GenericListType.businessDetails, GenericListType.chooseHeir, GenericListType.realEstate, GenericListType.propertyDetails, GenericListType.propertyMarket, GenericListType.propertyRenovations, GenericListType.propertyFamily, GenericListType.rentalMarket, GenericListType.personDetails, GenericListType.pastRelationships, GenericListType.relatives, GenericListType.familyTree, GenericListType.familyLine]; }
     static valueOf(n: string): GenericListType { return (GenericListType as any)[n]; }
     constructor(name: string, ordinal: number) { super(name, ordinal); }
     getNavBarTitle(): string {
@@ -55,6 +56,7 @@ export class GenericListType extends JEnum {
         if (this === GenericListType.pastRelationships) return "Past Relationships";
         if (this === GenericListType.relatives) return "";
         if (this === GenericListType.familyTree) return "Family Tree";
+        if (this === GenericListType.familyLine) return "Family Line";
         switch (this) {
             case GenericListType.weeklyModifiers:
                 return Utils.INSTANCE.getString(R.string.ProfileSection_WeeklyModifiers);

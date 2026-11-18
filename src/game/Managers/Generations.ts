@@ -1,6 +1,7 @@
 // Generational play (Life Sim Upgraded): when you die, continue the family line as one of your children.
 // The heir inherits the estate (money after debts, homes, possessions, businesses, stocks, pets),
 // keeps their own job, gets schooling that matches their age/job, and remembers their parents.
+import { Appearance } from "../Social/Appearance";
 import { ArrayList, BigInteger, Pair } from "../runtime";
 import { Schooling } from "./Schooling";
 import { GameStateManager } from "./GameStateManager";
@@ -29,6 +30,7 @@ import { Utils } from "../Utils/Utils";
 import { Relationships } from "../Social/Relationships";
 import { ExtendedFamily } from "../Social/ExtendedFamily";
 import { SaveCodec } from "../save/SaveCodec";
+import { Lineage } from "./Lineage";
 
 export class Generations {
     /** Youngest age you can take over as (same minimum age the game uses for players). */
@@ -67,7 +69,7 @@ export class Generations {
         }
         for (const child of heirs) {
             const sub = new TextLabelViewModel(`${child.getAgeInYears()} years old · ${child.getChildStatus()}`, null, false, false, null, null, 62, null);
-            content.add(new ActionCellSingleViewModel(child.getAgeGroup().imageId(child.getSex()), child.getFullName(), sub,
+            content.add(new ActionCellSingleViewModel(Appearance.head(child), child.getFullName(), sub,
                 new ButtonViewModel("Play as " + child.getFirstName(), null, true, false, false, true, false,
                     { invoke: () => Generations.continueAs(child) }, 122, null), null, null, 48, null));
         }
@@ -83,6 +85,9 @@ export class Generations {
         const parent = GameStateManager.INSTANCE.getPersonState();
         const estate = Generations.estate(parent);
 
+        // v0.18.0: make sure the parent has a family line (and older saves' ancestor names are records) first
+        Lineage.lineIdOf(parent);
+        Lineage.migrate(parent);
         // Keep a frozen copy of the parent in the cemetery before their belongings move on.
         const snapshot = SaveCodec.decode(SaveCodec.encode(parent)) as Player;
         gsm.getCemetaryState().removeLife(parent.getId());
@@ -97,7 +102,11 @@ export class Generations {
         heir.initializeRandomTraits();
         heir.getPerkState().setPerks(new ArrayList(parent.getPerkState().getPerks()));
         heir.generation = parent.getGeneration() + 1;
-        heir.ancestors = [...parent.getAncestors(), `${parent.getFullName()} (died at ${parent.getAgeInYears()})`];
+        // v0.18.0: the family line lives in the cemetery's life records (no ever-growing name list on the player)
+        heir.lineId = Lineage.lineIdOf(parent);
+        heir.appearance = { ...Appearance.of(child) };   // v0.18.0: same face as before
+        heir.lineageMigrated = true;
+        heir.ancestors = [];
 
         // Keep the calendar month the same when play passes to the heir (their birthday is in their own month).
         const weeksPerMonth = Constants.Time.INSTANCE.getWeeksPerMonth(), weeksPerYear = Constants.Time.INSTANCE.getWeeksPerYear();
@@ -134,6 +143,7 @@ export class Generations {
         const fam = new FamilyState();
         const dead = new Person(Relationship.parent, parent.getSex(), parent.getLastName(), parent.getAgeInWeeks());
         dead.setFirstName(parent.getFirstName());
+        (dead as any).appearance = { ...Appearance.of(parent) };
         dead.setAlive(false);
         dead.setBuried(true);
         dead.setRelationshipProgress(child.getRelationshipProgress());
@@ -178,7 +188,8 @@ export class Generations {
 
     /** Extra rows for the profile identity card. */
     static identityRows(p: Player): Pair<string, string>[] {
-        if (p.getGeneration() <= 1) return [];
-        return [new Pair("Generation", String(p.getGeneration()))];
+        const rows = [new Pair("Look", Appearance.describe(p))];   // v0.18.0
+        if (p.getGeneration() > 1) rows.push(new Pair("Generation", String(p.getGeneration())));
+        return rows;
     }
 }

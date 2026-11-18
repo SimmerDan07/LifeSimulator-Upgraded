@@ -1,4 +1,5 @@
 // Renders the game's view models (the same "cells" the Android list adapter showed) to DOM.
+import { ART_FALLBACK } from "../game/data/ArtSlots";
 import { richToHtml, textToHtml, colorOf } from "./rich";
 import images from "./images.json";
 import { SoundManager } from "../game/Managers/SoundManager";
@@ -30,7 +31,7 @@ import { TextLabelViewModel } from "../game/Models/TextLabelViewModel";
 import { TombstoneViewModel } from "../game/Models/TombstoneViewModel";
 import { WorkButtonsViewModel } from "../game/Models/WorkButtonsViewModel";
 import { EditableTextFieldViewModel } from "../game/Models/EditableTextFieldViewModel";
-import { PersonCardViewModel, SubHeaderViewModel, MeterViewModel, FamilyTreeViewModel } from "../game/Models/PersonCardViewModel";
+import { PersonCardViewModel, SubHeaderViewModel, MeterViewModel, FamilyTreeViewModel, PagerViewModel } from "../game/Models/PersonCardViewModel";
 
 const IMG: Record<string, string> = images as any;
 
@@ -41,7 +42,8 @@ export function setAfterAction(f: AfterAction) { afterAction = f; }
 
 export function imageUrl(id: any): string | null {
     if (id == null) return null;
-    const f = IMG[String(id)];
+    // v0.18.0 art slots: a row's own icon if you've drawn it, otherwise the stand-in
+    const f = IMG[String(id)] ?? IMG[ART_FALLBACK[String(id)]];
     return f ? "assets/images/" + f : null;
 }
 
@@ -52,6 +54,27 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: 
     return e;
 }
 
+/** v0.18.0 family tree row pages (session only). */
+const TREE_ROW_MAX = 14;
+const treeRowPage = new Map<string, number>();
+function treeRowPages(groups: any[]): any[][] {
+    const pages: any[][] = [];
+    let cur: any[] = [], count = 0;
+    const flush = () => { if (cur.length) { pages.push(cur); cur = []; count = 0; } };
+    for (const g of groups) {
+        if (g.nodes.length > TREE_ROW_MAX) {
+            // one big family: split it, keeping the label ("Ava's children (2/3)")
+            flush();
+            const n = Math.ceil(g.nodes.length / TREE_ROW_MAX);
+            for (let i = 0; i < n; i++) pages.push([{ ...g, label: `${g.label} (${i + 1}/${n})`, nodes: g.nodes.slice(i * TREE_ROW_MAX, (i + 1) * TREE_ROW_MAX) }]);
+            continue;
+        }
+        if (count + g.nodes.length > TREE_ROW_MAX) flush();
+        cur.push(g); count += g.nodes.length;
+    }
+    flush();
+    return pages.length ? pages : [[]];
+}
 function runAction(fn: () => void) {
     try {
         fn();
@@ -204,14 +227,56 @@ export function renderCell(vm: any): HTMLElement | null {
     if (vm == null) return null;
     if (vm instanceof PersonCardViewModel) return personCard(vm);
     if (vm instanceof SubHeaderViewModel) return el("div", "memory-label", textToHtml(vm.title));
+    if (vm instanceof PagerViewModel) {
+        const c = el("div", "card pager");
+        const btn = (label: string, to: number, title: string) => {
+            const b = el("button", "btn pager-btn", textToHtml(label)) as HTMLButtonElement;
+            b.title = title;
+            b.disabled = to < 1 || to > vm.pages || to === vm.page;
+            b.addEventListener("click", () => runAction(() => vm.go(to)));
+            return b;
+        };
+        c.appendChild(btn("«", 1, "First page"));
+        if (vm.pages > 10) c.appendChild(btn("−10", vm.page - 10, "Back 10 pages"));
+        c.appendChild(btn("‹", vm.page - 1, "Previous page"));
+        const mid = el("div", "pager-mid");
+        mid.appendChild(el("div", "pager-label", textToHtml(vm.label)));
+        const line = el("div", "pager-line");
+        line.appendChild(el("span", "", textToHtml("Page ")));
+        const input = el("input", "pager-input") as HTMLInputElement;
+        input.type = "number"; input.min = "1"; input.max = String(vm.pages); input.value = String(vm.page);
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") runAction(() => vm.go(Number(input.value) || vm.page)); e.stopPropagation(); });
+        input.addEventListener("change", () => runAction(() => vm.go(Number(input.value) || vm.page)));
+        line.appendChild(input);
+        line.appendChild(el("span", "", textToHtml(` of ${vm.pages}`)));
+        mid.appendChild(line);
+        c.appendChild(mid);
+        c.appendChild(btn("›", vm.page + 1, "Next page"));
+        if (vm.pages > 10) c.appendChild(btn("+10", vm.page + 10, "Forward 10 pages"));
+        c.appendChild(btn("»", vm.pages, "Last page"));
+        return c;
+    }
     if (vm instanceof FamilyTreeViewModel) {
         const c = el("div", "card tree-card");
         vm.rows.forEach((row, i) => {
             if (i > 0) c.appendChild(el("div", "tree-link"));
             const r = el("div", "tree-row");
-            r.appendChild(el("div", "tree-row-title", textToHtml(row.title)));
+            // v0.18.0: a row with lots of people is split into pages of about TREE_ROW_MAX people
+            const pages = treeRowPages(row.groups);
+            const pkey = row.title;
+            const page = Math.min(pages.length - 1, treeRowPage.get(pkey) ?? 0);
+            const title = el("div", "tree-row-title", textToHtml(row.title));
+            if (pages.length > 1) {
+                const nav = el("span", "tree-row-pager");
+                const go = (n: number) => { treeRowPage.set(pkey, n); const fresh = renderCell(vm); if (fresh) c.replaceWith(fresh); };
+                const prev = el("button", "tree-page-btn", "‹") as HTMLButtonElement; prev.disabled = page === 0; prev.addEventListener("click", () => go(page - 1));
+                const next = el("button", "tree-page-btn", "›") as HTMLButtonElement; next.disabled = page >= pages.length - 1; next.addEventListener("click", () => go(page + 1));
+                nav.appendChild(prev); nav.appendChild(el("span", "tree-page-label", `${page + 1} / ${pages.length}`)); nav.appendChild(next);
+                title.appendChild(nav);
+            }
+            r.appendChild(title);
             const groups = el("div", "tree-groups");
-            for (const g of row.groups) {
+            for (const g of pages[page]) {
                 const ge = el("div", "tree-group" + (g.you ? " you-group" : ""));
                 ge.appendChild(el("div", "tree-group-label", textToHtml(g.label)));
                 const nodes = el("div", "tree-nodes");

@@ -60,3 +60,10 @@ export interface TreeRow { title: string; groups: TreeGroup[] }
 export class FamilyTreeViewModel extends BaseViewModel {
     constructor(public rows: TreeRow[]) { super(); this.identifier = "FamilyTree"; }
 }
+
+/** v0.18.0: page controls (« ‹ Page 3 of 90 › ») for long lists. */
+export class PagerViewModel extends BaseViewModel {
+    constructor(public key: string, public page: number, public pages: number, public label: string, public go: (page: number) => void) {
+        super(); this.identifier = "Pager." + key;
+    }
+}

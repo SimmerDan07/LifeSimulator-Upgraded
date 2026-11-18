@@ -16,6 +16,9 @@ export interface UIImpl {
     showAlert(vm: AlertViewModel): void;
     readFile(name: string): string | null;
     writeFile(name: string, text: string): void;
+    /** v0.18.0: where saves are kept (null in the browser), and open that folder. */
+    saveFolder?(): string | null;
+    openSaveFolder?(): boolean;
 }
 
 let impl: UIImpl | null = null;
@@ -29,6 +32,8 @@ export const UIBridge = {
     showAlert(vm: AlertViewModel) { impl?.showAlert(vm); },
     readFile(name: string): string | null { return impl ? impl.readFile(name) : null; },
     writeFile(name: string, text: string) { impl?.writeFile(name, text); },
+    saveFolder(): string | null { return impl?.saveFolder?.() ?? null; },
+    openSaveFolder(): boolean { return impl?.openSaveFolder?.() ?? false; },
     GenericListType() { return GenericListType; },
     makePropertyList(sb: SpannableStringBuilder) {
         return new SingleLabelCellViewModel("PropertyListModel", new TextLabelViewModel("", null, false, false, null, sb, 30, null));
