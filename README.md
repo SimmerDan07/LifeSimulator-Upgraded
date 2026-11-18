@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, old-save loading (337 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, old-save loading (360 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -100,6 +100,18 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     and Hilltop Mansion in v0.12.1).
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Subscriptions (v0.13.0)** (Profile tab, `src/game/Managers/Subscriptions.ts`): pay every week, benefit every week.
+
+  | Subscription | Cost | Every week | Needs |
+  |---|---|---|---|
+  | Gym Membership | $50 | +2 health | 14+ |
+  | Gym Coach | $150 | +3 health | 14+, a Gym Membership |
+  | Therapist | $200 | +4 sanity | 12+ |
+
+  Subscribing or cancelling is instant; the first payment comes at the end of the week. They show in the weekly cash
+  flow and weekly modifiers, pause while you're in jail, and are all cancelled if you end a week in debt. Cancelling the
+  gym also cancels the coach. Saved in `Player.subscriptions` (empty in older saves). Prices and effects are in
+  `SUBSCRIPTIONS` at the top of the file.
 - **Relationship drift (v0.12.1)** (`Relationships.drift`): scores drift 1 a week when you do nothing with someone
   (was 2; Apathetic 2, Emotional Intelligence 0). While you're under 18 your parents and siblings don't drift at all,
   and as an adult time alone never takes them below 400 (Good). Older saves get a one-time repair: parents and siblings

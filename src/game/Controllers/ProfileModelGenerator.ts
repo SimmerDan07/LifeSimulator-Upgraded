@@ -24,6 +24,7 @@ import { Player } from "../Managers/Player";
 import { Possession } from "../Enums/Possession";
 import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
+import { Subscriptions } from "../Managers/Subscriptions";
 
 export class ProfileModelGenerator implements IViewModelGenerator {
     gameTab: MainGameTab = MainGameTab.Profile;
@@ -34,6 +35,9 @@ export class ProfileModelGenerator implements IViewModelGenerator {
         let arrayList: ArrayList = new ArrayList();
         arrayList.addAll(this.getIdentityViewModels());
         arrayList.addAll(this.getHousingViewModels());
+        // v0.13.0: weekly subscriptions (gym, coach, therapist)
+        arrayList.add(new HeaderTitleViewModel("Subscriptions"));
+        for (const c of Subscriptions.cells()) arrayList.add(c);
         arrayList.addAll(this.getItemsViewModels());
         return new GenericListFragmentViewModel(arrayList);
     }

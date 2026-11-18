@@ -1,0 +1,95 @@
+// Subscriptions (v0.13.0, Profile tab): Gym Membership, Gym Coach (needs the gym), Therapist.
+import { UIBridge, MainGameFragment } from "../src/game/ui/bridge";
+import { GameStateManager } from "../src/game/Managers/GameStateManager";
+import { AlertManager } from "../src/game/Managers/AlertManager";
+import { LifeScenario } from "../src/game/Enums/LifeScenario";
+import { MainGameTab } from "../src/game/Enums/MainGameTab";
+import { ProfileModelGenerator } from "../src/game/Controllers/ProfileModelGenerator";
+import { HeaderTitleViewModel } from "../src/game/Models/HeaderTitleViewModel";
+import { PersonAttribute } from "../src/game/Enums/PersonAttribute";
+import { Modifiers } from "../src/game/Managers/Modifiers";
+import { MoneyState } from "../src/game/Managers/MoneyState";
+import { MoneyUpdateType } from "../src/game/Enums/MoneyUpdateType";
+import { SaveCodec } from "../src/game/save/SaveCodec";
+import { BigInteger } from "../src/game/runtime";
+import { Subscriptions } from "../src/game/Managers/Subscriptions";
+import fs from "fs";
+
+let fixture: string | null = fs.readFileSync("test/fixtures/save-v0.3-landlord.txt", "utf8");
+const alerts: any[] = [];
+UIBridge.install({ broadcast() {}, reloadGenericList() {}, navigateTo() {}, backToMainGame() {}, showAlert(vm) { alerts.push(vm); }, readFile: () => fixture, writeFile() {} });
+class M extends MainGameFragment { updateUI() {} updateHUD() {} reloadTab() {} getSelectedTab() { return MainGameTab.Profile; } }
+let failures = 0;
+const check = (n: string, ok: boolean, x = "") => { if (!ok) failures++; console.log((ok ? "PASS " : "FAIL ") + n + (x ? "  (" + x + ")" : "")); };
+const clear = () => { while (alerts.length) AlertManager.INSTANCE.alertDismissed(alerts.shift()); };
+const profile = () => Array.from(new ProfileModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
+const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return i < 0 ? [] : r.slice(i + 1, i + 4); };
+const delta = (p: any, attr: any, key: string) => { p.collectWeeklyValues(); const list = Array.from(p.getAttributeState().getDeltaThisWeek(attr) as any) as any[]; p.resetValuesThisWeek(); const hit = list.find((x) => x.getFirst() === key); return hit ? Number(hit.getSecond()) : 0; };
+const flow = (p: any) => p.getTotalCashFlowPerWeek().intValue();
+const start = (sc: any, tweak?: (np: any) => void) => {
+    GameStateManager.INSTANCE.startNewGameFlow(sc);
+    const np: any = GameStateManager.INSTANCE.getNewGamePlayerState();
+    tweak?.(np);
+    GameStateManager.INSTANCE.startNewGame(np); clear();
+    return GameStateManager.INSTANCE.getPersonState() as any;
+};
+
+// ---------------------------------------------------------------- old save
+GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(new M());
+{
+    const p: any = GameStateManager.INSTANCE.getPersonState();
+    check("old save: no subscriptions", Subscriptions.active(p).length === 0);
+    const rows = subRows();
+    check("Profile tab: a Subscriptions section with Gym Membership, Gym Coach, Therapist", rows.map((r) => r.title).join(",") === "Gym Membership,Gym Coach,Therapist", rows.map((r) => r.title).join(","));
+    check("rows have their pictures and weekly prices", rows.every((r) => r.imageId != null) && /\$50\/wk/.test(JSON.stringify(rows[0])));
+}
+
+// ---------------------------------------------------------------- an adult
+fixture = null;
+GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(new M());
+let p = start(LifeScenario.educatedAndInDebt);
+MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), MoneyUpdateType.workIncome, null, null, 12, null);
+{
+    check("Gym Coach needs a Gym Membership", Subscriptions.blocked(Subscriptions.def("coach"), p) === "Needs a Gym Membership" && !Subscriptions.subscribe("coach", p));
+    const f0 = flow(p);
+    const cash0 = p.getMoneyState().getCash().intValue();
+    const wk0 = p.getAgeInWeeks();
+    const btn = subRows()[0].actionButton;
+    check("the Gym row's button reads $50/wk and is enabled", btn.title === "$50/wk" && btn.enabled, `${btn.title} ${btn.enabled}`);
+    btn.action.invoke();
+    check("subscribing is instant (no week passes, nothing paid yet)", Subscriptions.has("gym", p) && p.getAgeInWeeks() === wk0 && p.getMoneyState().getCash().intValue() === cash0);
+    check("Gym Membership: −$50 a week in your cash flow", f0 - flow(p) === 50, `${f0} → ${flow(p)}`);
+    check("…and +2 health a week", delta(p, PersonAttribute.health, "Gym Membership") === 2);
+    check("Gym Coach unlocks", Subscriptions.subscribe("coach", p));
+    check("Coach: another −$150 and +3 health", f0 - flow(p) === 200 && delta(p, PersonAttribute.health, "Gym Coach") === 3, `${f0 - flow(p)} ${delta(p, PersonAttribute.health, "Gym Coach")}`);
+    check("Therapist: −$200 and +4 sanity (mental health)", Subscriptions.subscribe("therapist", p) && f0 - flow(p) === 400 && delta(p, PersonAttribute.sanity, "Therapist") === 4);
+    p.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100));
+    p.applyWeekly(); clear();
+    check("still active after a week", Subscriptions.active(p).length === 3);
+    const rows = subRows();
+    check("active rows say Active and offer Cancel", rows.every((r) => /Cancel/.test(JSON.stringify(r)) && /Active/.test(JSON.stringify(r))));
+    const gone = Subscriptions.cancel("gym", p);
+    check("cancelling the gym also cancels the coach", gone.join(",") === "gym,coach" && !Subscriptions.has("coach", p) && Subscriptions.has("therapist", p));
+    p.getCrimeState().isInJail = true;
+    const fj = flow(p);
+    p.getCrimeState().isInJail = false;
+    check("paused (no cost, no benefit) while in jail", flow(p) - fj === -200 && delta(p, PersonAttribute.sanity, "Therapist") === 4);
+    const round: any = SaveCodec.decode(SaveCodec.encode(GameStateManager.INSTANCE.getGlobalStateManager()));
+    check("saved and loaded", JSON.stringify(round.getSaveState().currentSlot().getPersonState().subscriptions) === JSON.stringify(["therapist"]));
+    // run out of money
+    Subscriptions.subscribe("gym", p);
+    MoneyState.updateMoney$default(p.getMoneyState(), p.getMoneyState().getCash().add(BigInteger.valueOf(10)), MoneyUpdateType.directSpend, null, null, 12, null);
+    p.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100));
+    p.applyWeekly();
+    const cancelled = alerts.some((a) => a.getTitle?.() === "Subscriptions Cancelled");
+    clear();
+    check("ending a week in debt cancels them all (with a message)", p.getMoneyState().getCash().intValue() >= 0 || (Subscriptions.active(p).length === 0 && cancelled), `cash ${p.getMoneyState().getCash()} subs ${Subscriptions.active(p)}`);
+}
+
+// ---------------------------------------------------------------- a child
+p = start(LifeScenario.youngChild);
+MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), MoneyUpdateType.workIncome, null, null, 12, null);
+check("a young child can't subscribe (gym 14+, therapist 12+)", Subscriptions.blocked(Subscriptions.def("gym"), p) === "Must be at least 14 years old" && Subscriptions.blocked(Subscriptions.def("therapist"), p) === "Must be at least 12 years old" && !Subscriptions.subscribe("gym", p));
+
+console.log(failures ? `${failures} FAILED` : "ALL PASSED");
+if (failures) process.exit(1);

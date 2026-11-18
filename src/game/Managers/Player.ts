@@ -75,6 +75,7 @@ import { TraitState } from "./TraitState";
 import { Utils } from "../Utils/Utils";
 import { WorkType } from "../Enums/WorkType";
 import { SocialCircle } from "../Social/SocialCircle";
+import { Subscriptions } from "./Subscriptions";
 import { Relationships } from "../Social/Relationships";
 
 export class Player {
@@ -106,6 +107,8 @@ export class Player {
     realEstate: RealEstatePortfolio = null;
     /** Love tab remodel: siblings, friends, exes, moods and per-person notes. */
     social: SocialCircle = null;
+    /** Subscriptions (Profile tab): active ids. Undefined in older saves. */
+    subscriptions: string[] = null;
     id: string = null;
     itemState: ItemState = null;
     jobState: JobState = null;
@@ -841,6 +844,7 @@ export class Player {
         this.applyWeeklyValues();
         this.setAgeInWeeks(this.ageInWeeks + 1);
         Retirement.countWeek(this);
+        Subscriptions.afterWeek(this);
         let miscState: MiscState = this.miscState;
         miscState.setTotalWeekInLife(miscState.getTotalWeekInLife() + 1);
         let miscState2: MiscState = this.miscState;
@@ -1001,6 +1005,7 @@ export class Player {
         // Rent you pay or earn, property tax, upkeep, utilities, mortgages and how your home feels.
         realEstate.collectWeeklyValues(this);
         Retirement.collectWeeklyValues(this);
+        Subscriptions.collectWeeklyValues(this);
         this.attributeState.setDeltaValue(PersonAttribute.health, Utils.INSTANCE.getString(R.string.identity_name_age), this.getHealthStatus().getHealthModifier());
         let effectiveInterestRate: number = this.moneyState.getEffectiveInterestRate();
         let weeksPerYear: number = Constants.Time.INSTANCE.getWeeksPerYear();
