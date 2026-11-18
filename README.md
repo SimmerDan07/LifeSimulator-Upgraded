@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, old-save loading (436 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, old-save loading (510 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -100,6 +100,30 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     and Hilltop Mansion in v0.12.1).
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Extended family & Family Tree (v0.17.0)** (`src/game/Social/ExtendedFamily.ts`, `FamilyTree.ts`):
+  - New relatives in the SocialCircle (`SocialPerson.kind`): grandparents, aunts & uncles, cousins, nieces & nephews,
+    grandchildren and great-grandchildren, linked by `parentId` (whose child) and `side` (which parent's family).
+  - New games and older saves roll both parents' families once (4 grandparents, 0–3 aunts/uncles a side, their kids;
+    plus kids for adult siblings, children and grandchildren). Mom's side gets her maiden name.
+  - The family grows: your parents have more children until your mother (or the younger parent) turns **55**
+    (6% a year, up to 8 siblings); adults aged 20–49 have babies: your children (grandchildren, 9%/yr, up to 4),
+    grandchildren (great-grandchildren, 9%/yr, up to 3), siblings (nieces/nephews, 8%/yr) and aunts/uncles (cousins,
+    6%/yr). Vampires don't. Relatives age, can die (alert or banner), get a funeral, and drift gently like parents.
+  - Love tab: an Extended Family section (Family Tree row + one row per kind, "New baby!") opens lists grouped by side
+    or parent (`GenericListType.relatives` 34). Person screens show their family and their children; new actions: Call,
+    Visit, Give a Gift, Listen to Their Stories, Babysit, Spoil Them, Tell Them Family Stories, Pay for College.
+  - **Family Tree** screen (`GenericListType.familyTree` 35, `FamilyTreeViewModel`): generations from grandparents to
+    great-grandchildren, grouped by family; tap anyone.
+  - **Heirs** inherit the tree one generation down (grandparents ← your parents, aunts/uncles ← your siblings, cousins ←
+    your nieces/nephews, their own kids ← your grandchildren, and so on); the other parent's family is rolled fresh.
+- **Obituary (v0.17.0)** (`src/game/Managers/Obituary.ts`): the cause of death is recorded with the death alert
+  (`Player.deathCause`); the Life Summary (and cemetery) shows a written obituary plus cause, age, vampire years, net
+  worth, career and living family.
+- **Eternal Bond (v0.17.0)**: when you and your partner are both vampires — you never drift apart, fight hunters
+  together (70% to win), your partner shares your blood diet (double cost; with Feed by Hand they hunt alone, +2
+  suspicion a week), and you get Hunt Together, Dance Through the Night and Eternal Vows (once every 10 years).
+  Other loved ones you turn add 2 suspicion a year each.
+- Fixed the "Renowed Actor" typo (now "Renowned Actor").
 - **Vampire update 2 (v0.16.0)** (`src/game/Lifepaths/Vampire.ts`):
   - The Cure is now the **Vampiric Cure** and costs **$300 billion**.
   - **One vampire life per lifetime**: once cured you can never become a vampire again (no pale stranger, no Seek, no

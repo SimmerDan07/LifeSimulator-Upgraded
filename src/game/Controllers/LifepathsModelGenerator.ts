@@ -73,6 +73,16 @@ export class LifepathsModelGenerator {
             out.add(new HeaderTitleViewModel(`Powers · ${s.bloodPower} blood power`));
             for (const c of LifeActions.cells(powerDefs(), p)) out.add(c);
         }
+        // v0.17.0 Eternal Bond
+        const bond = Vampire.bondedPartner(p);
+        if (bond != null) {
+            out.add(new HeaderTitleViewModel("Eternal Bond"));
+            const married = bond.marriedSinceWeek != null;
+            const since = bond.marriedSinceWeek ?? bond.togetherSinceWeek;
+            const yrs = since != null ? Math.floor((p.getTrueAgeInWeeks() - since) / 48) : null;
+            out.add(info(R.drawable.love_propose, `Eternal Bond with ${bond.getFirstName()}`,
+                (yrs != null ? `${married ? "Married" : "Together"} ${yrs} year${yrs === 1 ? "" : "s"}. ` : "") + "You never drift apart, fight hunters side by side (70% to win) and share your blood diet (it costs double; with no diet, they hunt alone: +2 suspicion a week). Hunt Together, Dance Through the Night and Eternal Vows are on their Love tab screen."));
+        }
         out.add(new HeaderTitleViewModel("Coven"));
         const coven = Vampire.coven(p);
         if (!coven.length) out.add(new SingleLabelCellViewModel("NoCoven", text("No other vampires yet. Find Your Coven, or turn someone close to you from their Love tab screen.")));

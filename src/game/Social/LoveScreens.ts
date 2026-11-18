@@ -30,7 +30,8 @@ import { Constants } from "../Utils/Constants";
 import { Pair } from "../runtime";
 import { Relationships, MOOD_TITLE } from "./Relationships";
 import { LoveActions, LoveActionCell, loveAction, Section } from "./LoveActions";
-import { SocialPerson } from "./SocialPerson";
+import { SocialPerson, RELATIVE_KINDS } from "./SocialPerson";
+import { ExtendedFamily, RELATIVE_TITLES } from "./ExtendedFamily";
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
 const S = (k: string) => Utils.INSTANCE.getString((R.string as any)[k]);
@@ -145,6 +146,26 @@ export const LoveScreens = {
         const siblings = Relationships.siblings(p);
         if (siblings.length) { out.add(new HeaderTitleViewModel("Siblings")); LoveScreens.group(siblings, out); }
 
+        // Extended family (v0.17.0): the family tree, then one row per kind of relative
+        ExtendedFamily.ensure(p);
+        out.add(new HeaderTitleViewModel("Extended Family"));
+        const tree = new LeftRightCellViewModel("FamilyTreeRow", boldText("Family Tree", ""), text("See everyone"), null, 8, null);
+        tree.setOnClick({ invoke: () => Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.familyTree, null, false, 6, null) });
+        out.add(tree);
+        for (const kind of RELATIVE_KINDS) {
+            const list = ExtendedFamily.relatives(kind, p);
+            if (!list.length) continue;
+            const living = Relationships.byAge(list.filter((x) => x.getIsAlive()));
+            const dead = list.length - living.length;
+            const newborn = living.some((x) => ExtendedFamily.isNewborn(x));
+            const names = living.map((x) => x.getFirstName()).slice(0, 4).join(", ") + (living.length > 4 ? "…" : "");
+            const row = new LeftRightCellViewModel("Relatives." + kind,
+                boldText(`${RELATIVE_TITLES[kind]} (${living.length})`, dead ? `  · ${dead} in memory` : ""),
+                text((newborn ? "New baby! " : "") + (names || "In memory")), null, 8, null);
+            row.setOnClick({ invoke: () => Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.relatives, kind, false, 4, null) });
+            out.add(row);
+        }
+
         // Friends
         const friends = Relationships.friends(p);
         if (friends.length || p.getAgeInYears() >= 4) {
@@ -171,6 +192,25 @@ export const LoveScreens = {
         const comingOut = ComingOut.cell();
         if (comingOut != null) { out.add(new HeaderTitleViewModel("More")); out.add(comingOut); }
         return new GenericListFragmentViewModel(out);
+    },
+
+    /** v0.17.0: one kind of relative, grouped by family (side or parent). */
+    relatives(kind: string): GenericListFragmentViewModel {
+        const p = player();
+        const out = new ArrayList<BaseViewModel>();
+        const header = new ArrayList<BaseViewModel>();
+        header.add(new NavigationBarViewModel(RELATIVE_TITLES[kind] ?? "Family", false, 2, null));
+        const list = ExtendedFamily.relatives(kind, p);
+        if (!list.length) out.add(new SingleLabelCellViewModel("NoRelatives", text("Nobody yet.")));
+        const bySide = kind === "grandparent" || kind === "auntUncle";
+        const keys: string[] = [];
+        for (const x of Relationships.byAge(list)) { const k = (bySide ? x.side : x.parentId) ?? ""; if (!keys.includes(k)) keys.push(k); }
+        for (const k of keys) {
+            const members = list.filter((x) => ((bySide ? x.side : x.parentId) ?? "") === k);
+            out.add(new HeaderTitleViewModel(bySide ? ExtendedFamily.sideTitle(k || null, p) : ExtendedFamily.groupLabel(k || null, p)));
+            LoveScreens.group(members, out);
+        }
+        return new GenericListFragmentViewModel(out, header, null);
     },
 
     pastRelationships(): GenericListFragmentViewModel {
@@ -208,7 +248,15 @@ export const LoveScreens = {
             }
         }
         if (kind === "child" && t.getIsAlive()) { try { rows.push([S("Common_Status"), t.getChildStatus()]); } catch { /* none */ } }
-        if (kind === "sibling" && t.getIsAlive()) { const o = Relationships.occupationOf(t); if (o) rows.push(["Occupation", o]); }
+        if ((kind === "sibling" || RELATIVE_KINDS.includes(kind)) && t.getIsAlive()) { const o = Relationships.occupationOf(t); if (o) rows.push(["Occupation", o]); }
+        // v0.17.0: where they sit in the family
+        if (kind === "grandparent" || kind === "auntUncle") rows.push(["Family", ExtendedFamily.sideTitle(t.side, p)]);
+        else if (t instanceof SocialPerson && t.parentId) {
+            const par = ExtendedFamily.parentOf(t, p);
+            if (par != null) rows.push([par.getSex()?.name?.() === "female" ? "Mother" : "Father", par.getFullName()]);
+        }
+        const kids = ExtendedFamily.childrenOf(t.getId(), p);
+        if (kids.length) rows.push(["Children", String(kids.length)]);
         if (kind === "friend") { rows.push(["How you met", Relationships.metAtText(t)]); rows.push(["Friends for", span(Relationships.now() - t.sinceWeek)]); }
         if (kind === "ex") {
             rows.push(["You were", t.exStatus === "married" ? "Married" : t.exStatus === "engaged" ? "Engaged" : "Dating"]);
@@ -284,6 +332,10 @@ export const LoveScreens = {
             out.add(new LeftRightCellViewModel("PartnerEffects", new TextLabelViewModel(ExtensionsKt.appendBold$default(new SpannableStringBuilder(), "Weekly effect", null, null, null, 14, null), false, false, null, 14, null), new TextLabelViewModel(sb, false, false, null, 14, null), null, 8, null));
         }
         if (kind === "child" && t.getIsAlive() && t.getSupportedByParent()) out.add(t.getChildSupport().getViewModelForChildSupport(t));
+
+        // v0.17.0: their children (your grandchildren, nieces and nephews, cousins, great-grandchildren)
+        const theirKids = ExtendedFamily.childrenOf(t.getId(), p);
+        if (theirKids.length) { out.add(new HeaderTitleViewModel(`${kind === "pet" ? "" : t.getFirstName() + "'s "}Children`)); LoveScreens.group(theirKids, out); }
 
         // Actions
         const existing = LoveScreens.existing(t);

@@ -2,6 +2,8 @@
 /* eslint-disable */
 import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
 import { FamilyExtras } from "../Managers/FamilyExtras";
+import { FamilyTree } from "../Social/FamilyTree";
+import { Obituary } from "../Managers/Obituary";
 import { LoveScreens } from "../Social/LoveScreens";
 import { Generations } from "../Managers/Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
@@ -84,6 +86,8 @@ export class GenericListModelGenerator {
         // Love tab remodel: one shared person screen for partners, parents, children, pets, siblings, friends and exes.
         if (type === GenericListType.personDetails || type === GenericListType.childDetails || type === GenericListType.parentDetails || type === GenericListType.petDetails) return LoveScreens.person(key);
         if (type === GenericListType.pastRelationships) return LoveScreens.pastRelationships();
+        if (type === GenericListType.relatives) return LoveScreens.relatives(key);
+        if (type === GenericListType.familyTree) return FamilyTree.screen();
         let hidden: SwitchViewModel;
         let additionalDescription: string;
         let obj: any;
@@ -547,6 +551,7 @@ export class GenericListModelGenerator {
                     personState = (CollectionsKt.first((arrayList13 as unknown as ArrayList)) as unknown as Player);
                 }
                 arrayList.add(new TombstoneViewModel(personState.getGetDeathTombstoneString()));
+                for (const vm of Obituary.viewModels(personState)) arrayList.add(vm);   // v0.17.0
                 let singleButtonViewModel: SingleButtonViewModel = new SingleButtonViewModel(new ButtonViewModel(ExtensionsKt.appendFontAwesomeCharacter$default(ExtensionsKt.appendBold$default(ExtensionsKt.appendFontAwesomeCharacter$default(new SpannableStringBuilder(), Utils.INSTANCE.getString(R.string.fa_star_solid), R.color.flatYellow, null, 4, null), ("  " + Utils.INSTANCE.getString(R.string.DeathLifeSummaryButtonShare)) + "  ", R.color.flatWhite, null, null, 12, null), Utils.INSTANCE.getString(R.string.fa_star_solid), R.color.flatYellow, null, 4, null), false, false, false, false, false, {
                     invoke: () => {
                     TelemetryManager.logEvent$default(TelemetryManager.INSTANCE, "DeathSummaryShareTapped", null, 2, null);

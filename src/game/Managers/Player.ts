@@ -114,6 +114,8 @@ export class Player {
     subscriptions: string[] = null;
     /** The Vampire lifepath (v0.15.0). Undefined in older saves: human. */
     vampire: VampireState = null;
+    /** v0.17.0: how this life ended (for the obituary). */
+    deathCause: string = null;
     id: string = null;
     itemState: ItemState = null;
     jobState: JobState = null;

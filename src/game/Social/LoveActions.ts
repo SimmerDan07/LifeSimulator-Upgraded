@@ -47,6 +47,9 @@ const adult = (_t: any, p: any) => (age(p) < 18 ? "Must be 18 or older" : null);
 const isDog = (t: any) => t.getPetType() === Pet.dog;
 const isCat = (t: any) => t.getPetType() === Pet.cat;
 const childAge = (min: number, max: number) => (t: any) => alive(t) && age(t) >= min && age(t) <= max;
+/** v0.17.0 extended family kinds. */
+const REL = ["grandparent", "auntUncle", "cousin", "nibling", "grandchild", "greatGrandchild"];
+const YOUNGER = ["grandchild", "greatGrandchild", "nibling"];
 
 export const LOVE_ACTIONS: LoveActionDef[] = [
     // ---------------------------------------------------------------- partner
@@ -68,7 +71,7 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
     // ---------------------------------------------------------------- parents
     { id: "parentCall", title: "Call", image: R.drawable.childaction_call, who: ["parent", "sibling"], section: "time", bond: 20, lifts: true, show: (t, p) => apart(t, p) },
     { id: "parentVisit", title: "Visit", image: R.drawable.childaction_visit, who: ["parent", "sibling"], section: "time", bond: 60, mods: [0, 5, 2], show: (t, p) => apart(t, p) },
-    { id: "advice", title: "Ask for Advice", image: R.drawable.skill_selfhelp, who: ["parent"], section: "time", bond: 10, mods: [0, 0, 3], lifts: true },
+    { id: "advice", title: "Ask for Advice", image: R.drawable.skill_selfhelp, who: ["parent", "grandparent"], section: "time", bond: 10, mods: [0, 0, 3], lifts: true },
     { id: "chores", title: "Help Around the House", image: R.drawable.skill_hygieneexpert, who: ["parent"], section: "time", bond: 25, mods: [0, -1, 0], show: (_t, p) => Relationships.livesWithParents(p) },
     { id: "parentVacation", title: "Take Them on Vacation", image: R.drawable.vacation_international, who: ["parent"], section: "big", cost: 2000, bond: 100, mods: [0, 10, 5], lock: adult },
     { id: "askMoney", title: "Ask for Money", image: R.drawable.bank_withdrawal, who: ["parent"], section: "big", bond: -20,
@@ -118,7 +121,8 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
         run: (t) => { Relationships.meta(t).vetUntil = Relationships.now() + Relationships.WPY(); } },
 
     // ---------------------------------------------------------------- siblings
-    { id: "hangOut", title: "Hang Out", image: R.drawable.vacation_park, who: ["sibling", "friend"], section: "time", bond: 15, mods: [0, 4, 2] },
+    { id: "hangOut", title: "Hang Out", image: R.drawable.vacation_park, who: ["sibling", "friend", "cousin"], section: "time", bond: 15, mods: [0, 4, 2],
+        show: (t, p) => alive(t) && (Relationships.kindOf(t) !== "cousin" || (age(t) >= 4 && age(p) >= 4)) },
     { id: "videoGames", title: "Play Video Games", image: R.drawable.vacation_videogames, who: ["sibling"], section: "time", bond: 12, mods: [0, 4, 1],
         show: (t, p) => age(t) < 18 && age(p) < 18 },
     { id: "prank", title: "Prank Them", image: R.drawable.random, who: ["sibling"], section: "time", mods: [0, 3, 0], show: (t, p) => age(t) < 18 && age(p) < 18,
@@ -132,8 +136,26 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
         lock: (t, p) => (age(p) < 18 || age(t) < 18 ? "You both need to be 18 or older" : Relationships.meta(t).loanDue != null ? "They still owe you $1,000" : null),
         note: () => "They may pay you back in a few months.\n",
         run: (t) => { Relationships.meta(t).loanDue = Relationships.now() + Relationships.rnd(8, 24); } },
-    { id: "siblingFuneral", title: "Attend Funeral", image: R.drawable.love_funeral, who: ["sibling", "parent"], section: "big", cost: 1000, mods: [0, -10, -5],
+    { id: "siblingFuneral", title: "Attend Funeral", image: R.drawable.love_funeral, who: ["sibling", "parent", ...REL], section: "big", cost: 1000, mods: [0, -10, -5],
         show: (t) => !t.getIsAlive() && !t.getIsBuried(), run: (t) => t.setBuried(true) },
+
+    // ---------------------------------------------------------------- extended family (v0.17.0)
+    { id: "relCall", title: "Call", image: R.drawable.childaction_call, who: REL, section: "time", bond: 15, lifts: true,
+        show: (t, p) => alive(t) && age(t) >= 6 && age(p) >= 6 },
+    { id: "relVisit", title: "Visit", image: R.drawable.childaction_visit, who: REL, section: "time", bond: 40, mods: [0, 4, 2] },
+    { id: "relGift", title: "Give a Gift", image: R.drawable.inappnotification_gift, who: REL, section: "time", cost: 100, bond: 20, mods: [0, 2, 0],
+        show: (t, p) => alive(t) && age(p) >= 12 },
+    { id: "stories", title: "Listen to Their Stories", image: R.drawable.childaction_tellstory, who: ["grandparent"], section: "time", bond: 30, mods: [0, 2, 4] },
+    { id: "babysit", title: "Babysit", image: R.drawable.childaction_playground, who: YOUNGER, section: "time", bond: 30, mods: [0, 4, -2],
+        show: (t, p) => alive(t) && age(t) <= 10 && age(p) >= 16 },
+    { id: "familyStories", title: "Tell Them Family Stories", image: R.drawable.childaction_tellstory, who: ["grandchild", "greatGrandchild"], section: "time", bond: 25, mods: [0, 3, 3],
+        show: (t) => alive(t) && age(t) >= 4 },
+    { id: "spoil", title: "Spoil Them", image: R.drawable.childaction_carnival, who: YOUNGER, section: "time", cost: 300, bond: 40, mods: [0, 5, 0],
+        show: (t, p) => alive(t) && age(t) < 18 && age(p) >= 18 },
+    { id: "payCollege", title: "Pay for College", image: R.drawable.education_college_business, who: YOUNGER, section: "big", cost: 20000, bond: 150, mods: [0, 8, 0],
+        show: (t, p) => alive(t) && age(t) >= 17 && age(t) <= 22 && age(p) >= 18 && !Relationships.meta(t).collegePaid,
+        note: () => "Pay their college tuition. Once only.\n",
+        run: (t) => { Relationships.meta(t).collegePaid = true; } },
 
     // ---------------------------------------------------------------- friends
     { id: "friendCall", title: "Call", image: R.drawable.childaction_call, who: ["friend"], section: "time", bond: 20, lifts: true, show: (_t, p) => age(p) >= 8 },
@@ -175,15 +197,28 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
         run: (_t, p) => Babies.announce(Babies.startPregnancy(p, Babies.inseminationCarrier(p) ?? "you")) },
 
     // ---------------------------------------------------------------- vampires (v0.15.0)
-    { id: "tellSecret", title: "Tell Them You're a Vampire", image: R.drawable.lifepath_vampire, who: ["partner", "parent", "child", "sibling", "friend"], section: "big",
+    { id: "tellSecret", title: "Tell Them You're a Vampire", image: R.drawable.lifepath_vampire, who: ["partner", "parent", "child", "sibling", "friend", ...REL], section: "big",
         show: (t, p) => alive(t) && Vampire.isVampire(p) && !Vampire.knows(t) && !Vampire.isTurned(t) && (Relationships.kindOf(t) !== "child" || age(t) >= 12),
         note: () => "Close people (600+) take it well. Others may be scared, talk, or leave.\n",
         run: (t, p) => Vampire.tell(p, t) },
-    { id: "turn", title: "Turn Them into a Vampire", image: R.drawable.lifepath_vampire, who: ["partner", "parent", "child", "sibling", "friend"], section: "big",
+    { id: "turn", title: "Turn Them into a Vampire", image: R.drawable.lifepath_vampire, who: ["partner", "parent", "child", "sibling", "friend", ...REL], section: "big",
         show: (t, p) => alive(t) && Vampire.isVampire(p) && Vampire.knows(t) && !Vampire.isTurned(t),
         lock: (t, p) => (age(t) < 18 ? "They must be 18 or older" : Vampire.state(p).bloodPower < Vampire.turnCost ? `Needs ${Vampire.turnCost} blood power` : null),
         note: () => `They stop ageing and join your coven. Costs ${Vampire.turnCost} blood power.\n`,
         run: (t, p) => Vampire.turn(p, t) },
+
+    // ---------------------------------------------------------------- Eternal Bond (v0.17.0): you and your partner are both vampires
+    { id: "huntTogether", title: "Hunt Together", image: R.drawable.mosquito, who: ["partner"], section: "time", bond: 40, mods: [0, 6, 0],
+        show: (t, p) => alive(t) && Vampire.bonded(p),
+        note: (_t) => `−50 thirst, +6 suspicion${Vampire.has("mistStep") ? "" : ", 10% chance of police trouble"}.\n`,
+        run: (_t, p) => Vampire.huntTogether(p) },
+    { id: "nightDance", title: "Dance Through the Night", image: R.drawable.love_nightclub, who: ["partner"], section: "time", cost: 100, bond: 30, mods: [0, 7, 3],
+        show: (t, p) => alive(t) && Vampire.bonded(p) },
+    { id: "eternalVows", title: "Eternal Vows", image: R.drawable.love_propose, who: ["partner"], section: "big", cost: 10000, bond: 200, mods: [0, 20, 5],
+        show: (t, p) => alive(t) && Vampire.bonded(p),
+        lock: (t) => { const w = Relationships.meta(t).eternalVowsWeek; return w != null && Relationships.now() - w < 10 * Relationships.WPY() ? "Once every 10 years" : null; },
+        note: () => "A midnight ceremony to bind you for eternity. Once every 10 years.\n",
+        run: (t) => { Relationships.meta(t).eternalVowsWeek = Relationships.now(); } },
 
     // ---------------------------------------------------------------- everyone (Love tab)
     { id: "gathering", title: "Family Gathering", image: R.drawable.achievement_bigfamily, who: ["group"], section: "big", cost: 250, mods: [0, 6, 3],

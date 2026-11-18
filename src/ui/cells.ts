@@ -30,7 +30,7 @@ import { TextLabelViewModel } from "../game/Models/TextLabelViewModel";
 import { TombstoneViewModel } from "../game/Models/TombstoneViewModel";
 import { WorkButtonsViewModel } from "../game/Models/WorkButtonsViewModel";
 import { EditableTextFieldViewModel } from "../game/Models/EditableTextFieldViewModel";
-import { PersonCardViewModel, SubHeaderViewModel, MeterViewModel } from "../game/Models/PersonCardViewModel";
+import { PersonCardViewModel, SubHeaderViewModel, MeterViewModel, FamilyTreeViewModel } from "../game/Models/PersonCardViewModel";
 
 const IMG: Record<string, string> = images as any;
 
@@ -204,6 +204,37 @@ export function renderCell(vm: any): HTMLElement | null {
     if (vm == null) return null;
     if (vm instanceof PersonCardViewModel) return personCard(vm);
     if (vm instanceof SubHeaderViewModel) return el("div", "memory-label", textToHtml(vm.title));
+    if (vm instanceof FamilyTreeViewModel) {
+        const c = el("div", "card tree-card");
+        vm.rows.forEach((row, i) => {
+            if (i > 0) c.appendChild(el("div", "tree-link"));
+            const r = el("div", "tree-row");
+            r.appendChild(el("div", "tree-row-title", textToHtml(row.title)));
+            const groups = el("div", "tree-groups");
+            for (const g of row.groups) {
+                const ge = el("div", "tree-group" + (g.you ? " you-group" : ""));
+                ge.appendChild(el("div", "tree-group-label", textToHtml(g.label)));
+                const nodes = el("div", "tree-nodes");
+                for (const n of g.nodes) {
+                    const ne = el("div", "tree-node" + (n.dead ? " dead" : "") + (n.you ? " you" : ""));
+                    const url = imageUrl(n.imageId);
+                    if (url) { const im = el("img"); im.src = url; im.alt = ""; im.draggable = false; ne.appendChild(im); }
+                    ne.appendChild(el("div", "tn-name", textToHtml(n.name)));
+                    ne.appendChild(el("div", "tn-rel", textToHtml(n.relation)));
+                    ne.appendChild(el("div", "tn-sub", textToHtml(n.sub)));
+                    if (n.badge) ne.appendChild(el("span", "tn-badge", textToHtml(n.badge)));
+                    const click = n.onClick;
+                    if (click) { ne.classList.add("tappable"); ne.addEventListener("click", () => runAction(() => click.invoke())); }
+                    nodes.appendChild(ne);
+                }
+                ge.appendChild(nodes);
+                groups.appendChild(ge);
+            }
+            r.appendChild(groups);
+            c.appendChild(r);
+        });
+        return c;
+    }
     if (vm instanceof MeterViewModel) {
         const c = el("div", "card meter-card tone-" + vm.tone);
         const top = el("div", "meter-top");

@@ -244,3 +244,25 @@ body.no-life #hud .who, body.no-life #hud .stats, body.no-life #hud .money { vis
 .meter-note { color: var(--muted); font-size: 13px; margin-top: 5px; }
 #hud .stat.thirst { display: none; }
 body.vampire #hud .stat.thirst { display: grid; }
+
+/* v0.17.0 family tree */
+.tree-card { padding: 14px 10px; }
+.tree-row-title { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8a96a0; margin-bottom: 8px; }
+.tree-groups { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.tree-group { border: 1px solid #e1e6ea; background: #f6f8fa; border-radius: 12px; padding: 6px 8px 8px; position: relative; }
+.tree-group::before { content: ""; position: absolute; left: 50%; top: -9px; width: 2px; height: 8px; background: #cfd7dd; }
+.tree-group.you-group { background: #eaf3fd; border-color: #9cc7f0; }
+.tree-group-label { text-align: center; font-size: 10.5px; color: #7d8a94; margin-bottom: 4px; white-space: nowrap; }
+.tree-nodes { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.tree-node { position: relative; width: 76px; text-align: center; border-radius: 9px; padding: 4px 2px 5px; }
+.tree-node.tappable { cursor: pointer; }
+.tree-node.tappable:hover { background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.tree-node img { width: 40px; height: 40px; object-fit: contain; display: block; margin: 0 auto 2px; }
+.tree-node .tn-name { font-weight: 700; font-size: 12px; line-height: 1.15; overflow-wrap: anywhere; }
+.tree-node .tn-rel { font-size: 10px; color: #6f7c86; line-height: 1.2; }
+.tree-node .tn-sub { font-size: 10px; color: #9aa5ad; }
+.tree-node.dead { opacity: .5; filter: grayscale(1); }
+.tree-node.you { background: #2f80d1; color: #fff; }
+.tree-node.you .tn-rel, .tree-node.you .tn-sub { color: #dbeafb; }
+.tree-node .tn-badge { position: absolute; top: 2px; right: 4px; background: #e8505b; color: #fff; font-size: 8.5px; font-weight: 700; border-radius: 6px; padding: 1px 4px; }
+.tree-link { width: 2px; height: 14px; background: #cfd7dd; margin: 4px auto 6px; }

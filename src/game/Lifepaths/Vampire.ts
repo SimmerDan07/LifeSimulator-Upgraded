@@ -119,6 +119,32 @@ export const Vampire = {
         try { return !!GameStateManager.INSTANCE.getPersonState()?.getSocial?.()?.metaFor(person.getId()).vampire; } catch { return false; }
     },
     /** Coven: vampire friends you met plus everyone you turned. */
+    // ------------------------------------------------------------------ Eternal Bond (v0.17.0)
+    /** You and your partner are both vampires: an Eternal Bond. */
+    bondedPartner(p: any = player()): any {
+        if (!Vampire.isVampire(p)) return null;
+        const partner = p.getFamilyState?.()?.getPartner?.();
+        return partner != null && partner.getIsAlive() && Vampire.isTurned(partner) ? partner : null;
+    },
+    bonded(p: any = player()): boolean { return Vampire.bondedPartner(p) != null; },
+    /** Hunt Together (a partner action): −50 thirst, +6 suspicion, 10% police trouble unless Mist Step. */
+    huntTogether(p: any) {
+        const s = Vampire.state(p);
+        s.thirst = Math.max(0, s.thirst - 50);
+        s.suspicion = Math.min(100, s.suspicion + 6);
+        if (!Vampire.has("mistStep", p) && roll(0.1)) {
+            pay(p, 2000);
+            s.suspicion = Math.min(100, s.suspicion + 10);
+            Vampire.alert("Police Trouble", `Someone saw the two of you. You paid ${money(2000)} in "fines" (suspicion +10).`, R.drawable.police_badge);
+        }
+    },
+    /** Chance of beating the hunters (better with your bonded partner at your side). */
+    fightWinChance(p: any = player()): number { return Vampire.bonded(p) ? 0.7 : 0.5; },
+    /** Vampires you turned (not your partner, not coven friends): each one raises suspicion by 2 a year. */
+    turnedLovedOnes(p: any = player()): any[] {
+        const partner = p.getFamilyState?.()?.getPartner?.();
+        return Vampire.coven(p).filter((x: any) => x !== partner && x.metAt !== "coven");
+    },
     coven(p: any = player()): any[] {
         const out: any[] = [];
         for (const x of Array.from(p.getFamilyState().getFamilyMembers() as any) as any[]) if (x.getIsAlive() && Vampire.isTurned(x)) out.push(x);
@@ -181,8 +207,9 @@ export const Vampire = {
         if (s.weeksAtMaxThirst >= 4) p.getAttributeState().setDeltaValue(new Modifiers(-25, 0, 0), STARVING);
         // the blood diet: weekly cost and how it makes you feel
         const d = Vampire.diet(p);
-        const label = "Blood Diet - " + d.title;
-        if (d.cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.cost), MoneyUpdateType.expense, label, null, 8, null);
+        const two = Vampire.bonded(p);
+        const label = "Blood Diet - " + d.title + (two && d.cost > 0 ? " (for two)" : "");
+        if (d.cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.cost * (two ? 2 : 1)), MoneyUpdateType.expense, label, null, 8, null);
         p.getAttributeState().setDeltaValue(new Modifiers(d.mods[0], d.mods[1], d.mods[2]), label);
     },
     /** A vampire's health never decays: only vampire dangers (starving, sunlight, hunters, frenzy) can lower it. */
@@ -234,7 +261,7 @@ export const Vampire = {
             s.cureWeeks--;
             if (s.cureWeeks === 0) {
                 s.isVampire = false; s.cured = true; s.thirst = 0; s.suspicion = 0; s.weeksAtMaxThirst = 0; s.diet = "hand";
-                Vampire.alert("Human Again", `The Vampiric Cure has done its work. Your heart beats again, and you'll start ageing from ${p.getAgeInYears()}. The vampire's path is closed to you for the rest of this life.`, R.drawable.health_youthelixir);
+                Vampire.alert("Human Again", `The Vampiric Cure has done its work. Your heart beats again, and you'll start ageing from ${p.getAgeInYears()}. The vampire's path is closed to you for the rest of this life.` + (() => { const pt = p.getFamilyState?.()?.getPartner?.(); return pt != null && pt.getIsAlive() && Vampire.isTurned(pt) ? ` ${pt.getFirstName()} is still a vampire; your Eternal Bond is broken.` : ""; })(), R.drawable.health_youthelixir);
             }
             return;
         }
@@ -247,13 +274,15 @@ export const Vampire = {
             s.suspicion = Math.min(100, s.suspicion + 10);
             Vampire.alert("Police Trouble", `Someone saw you on one of your nightly hunts. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
         }
+        // Eternal Bond: with no blood diet, your partner hunts on their own and people notice
+        if (Vampire.bonded(p) && d.id === "hand") s.suspicion = Math.min(100, s.suspicion + 2);
         if (Vampire.has("mindFog", p)) s.suspicion = Math.max(0, s.suspicion - 5);
         // a year of not ageing: blood power, and people start to wonder
         const years = Math.floor(s.vampireWeeks / WPY());
         while (s.yearsAwarded < years) {
             s.yearsAwarded++;
             s.bloodPower += 1 + (s.yearsAwarded % 10 === 0 ? 1 : 0);
-            s.suspicion = Math.min(100, s.suspicion + 1);
+            s.suspicion = Math.min(100, s.suspicion + 1 + 2 * Vampire.turnedLovedOnes(p).length);
         }
         if (s.thirst >= 100) Vampire.frenzy(p);
         else if (s.suspicion >= 80 && roll(0.2)) Vampire.hunters(p);
@@ -293,10 +322,12 @@ export const Vampire = {
     fight(p: any) {
         const s = Vampire.state(p);
         const r = Math.random();
-        if (r < 0.5) {
+        const win = Vampire.fightWinChance(p);
+        const partner = Vampire.bondedPartner(p);
+        if (r < win) {
             s.suspicion = Math.max(0, s.suspicion - 40);
-            Vampire.alert("You Won", "The hunters fled into the night. They won't be back for a while.");
-        } else if (r < 0.75) {
+            Vampire.alert("You Won", partner != null ? `You and ${partner.getFirstName()} fought side by side. The hunters fled into the night.` : "The hunters fled into the night. They won't be back for a while.");
+        } else if (r < win + (1 - win) / 2) {
             s.suspicion = Math.max(0, s.suspicion - 20);
             attr(p, -40, 0, -10);
             Vampire.alert("Barely Escaped", "You got away, but a stake grazed your heart (−40 health).");

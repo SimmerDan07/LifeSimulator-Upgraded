@@ -42,3 +42,21 @@ export class MeterViewModel extends BaseViewModel {
         this.identifier = "Meter." + title;
     }
 }
+
+/** v0.17.0: the family tree, drawn as generations (rows) of family groups. */
+export interface TreeNode {
+    id: string;
+    name: string;
+    relation: string;
+    sub: string;
+    imageId: any;
+    dead: boolean;
+    you: boolean;
+    badge: string | null;
+    onClick: { invoke: () => any } | null;
+}
+export interface TreeGroup { label: string; nodes: TreeNode[]; you: boolean }
+export interface TreeRow { title: string; groups: TreeGroup[] }
+export class FamilyTreeViewModel extends BaseViewModel {
+    constructor(public rows: TreeRow[]) { super(); this.identifier = "FamilyTree"; }
+}

@@ -140,7 +140,7 @@ for (const [who, x] of [["partner", ana], ["parent", fam.getAliveParents().get(0
     let r: any[] = [];
     try { r = screen(x.getId()); } catch (e: any) { ok = false; msg = e.message; }
     const h = headers(r);
-    check(`${who} screen: large card, About, Spend time`, ok && cards(r)[0]?.large === true && h[0] === "About" && h[1] === "Spend time", msg || h.join(" › "));
+    check(`${who} screen: large card, About, Spend time`, ok && cards(r)[0]?.large === true && h[0] === "About" && h.filter((x: string) => !/Children$/.test(x))[1] === "Spend time", msg || h.join(" › "));
 }
 const partnerRows = screen(ana.getId());
 check("partner screen: dates under Spend time, Propose under Big moments, Break Up under Hard choices", (() => {

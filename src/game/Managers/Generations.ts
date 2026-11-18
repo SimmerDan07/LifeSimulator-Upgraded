@@ -27,6 +27,7 @@ import { Constants } from "../Utils/Constants";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Utils } from "../Utils/Utils";
 import { Relationships } from "../Social/Relationships";
+import { ExtendedFamily } from "../Social/ExtendedFamily";
 import { SaveCodec } from "../save/SaveCodec";
 
 export class Generations {
@@ -147,6 +148,9 @@ export class Generations {
         heir.familyState = fam;
         // Your brothers and sisters: the deceased's other children.
         Relationships.inheritSiblings(parent, heir, child);
+        // v0.17.0: the rest of the family tree, one generation down (grandparents, aunts/uncles, cousins,
+        // nieces/nephews, the heir's own children and grandchildren).
+        ExtendedFamily.inherit(parent, heir, child);
 
         // Real estate: every property (with its mortgage) passes to the heir; gifts they received come back,
         // and if they were living in one of the family's properties they stay there.

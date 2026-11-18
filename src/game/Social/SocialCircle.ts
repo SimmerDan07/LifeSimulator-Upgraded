@@ -19,6 +19,9 @@ export interface PersonMeta {
     loanDue?: number;       // sibling loan: week it may be paid back
     knows?: boolean;        // knows you're a vampire
     vampire?: boolean;      // a vampire (you turned them, or met them in your coven)
+    collegePaid?: boolean;
+    eternalVowsWeek?: number; // v0.17.0 Eternal Bond vows
+  // v0.17.0: you paid a grandchild's / niece's college
 }
 
 export class SocialCircle {
@@ -28,6 +31,8 @@ export class SocialCircle {
     moodWeek: number = -1;
     /** v0.12.1 one-time repair of family scores that drifted away while you were a kid. */
     driftFixed: boolean = false;
+    /** v0.17.0: the extended family (grandparents, aunts, uncles, cousins, nieces, nephews, grandchildren) was rolled. */
+    extendedRolled: boolean = false;
 
     list(kind?: string): SocialPerson[] {
         const all = this.people ?? (this.people = []);

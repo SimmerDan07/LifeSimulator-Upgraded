@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Obituary } from "./Obituary";
 import { Generations } from "./Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Function0, HashMap, Integer, Intrinsics, MapsKt, R, Ref, SpannableStringBuilder, StringBuilder, StringCompanionObject, StringsKt, TuplesKt, TypeCastException } from "../runtime";
@@ -170,6 +171,7 @@ export class AlertManager {
     }
     showBankruptAlert(): void {
         TelemetryManager.INSTANCE.logEvent("Death_Alert", MapsKt.mapOf(TuplesKt.to("Reason", "Bankruptcy")));
+        Obituary.record(GameStateManager.INSTANCE.getPersonState(), "Bankruptcy");
         let alertViewModel: AlertViewModel = new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_Bankrupt), Utils.INSTANCE.getString(R.string.Alert_BankruptMessage), R.drawable.bank_deposit, null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.DeathTombstoneLifeSummary), {
             invoke: () => {
             Utils.INSTANCE.navigateTo(GenericListType.gameSummary, Constants.ViewModel.INSTANCE.getTombstoneModeDeath(), false);
@@ -190,6 +192,7 @@ export class AlertManager {
     /** Death pop-up with any message (used for attribute deaths and Assisted Dying). */
     showDeathAlertWithMessage(message: string, reason: string, image: any = R.drawable.skull): void {
         TelemetryManager.INSTANCE.logEvent("Death_Alert", MapsKt.mapOf(TuplesKt.to("Reason", reason)));
+        Obituary.record(GameStateManager.INSTANCE.getPersonState(), reason);
         if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) {
             const heirButtons = new ArrayList<AlertActionViewModel>();
             if (Generations.eligibleHeirs(GameStateManager.INSTANCE.getPersonState()).length > 0) {

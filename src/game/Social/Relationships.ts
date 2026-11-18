@@ -31,7 +31,8 @@ import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Utils } from "../Utils/Utils";
 import { GenericListType } from "../Fragments/GenericListType";
 import { SocialCircle, PersonMeta } from "./SocialCircle";
-import { SocialPerson } from "./SocialPerson";
+import { SocialPerson, RELATIVE_KINDS } from "./SocialPerson";
+import { ExtendedFamily } from "./ExtendedFamily";
 
 export type Mood = "happy" | "fine" | "stressed" | "upset";
 export const MOOD_TITLE: Record<Mood, string> = { happy: "Happy", fine: "Fine", stressed: "Stressed", upset: "Upset" };
@@ -137,7 +138,8 @@ export const Relationships = {
         const rate = RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate();
         if (rate >= 0) return 0;
         const kind = Relationships.kindOf(person);
-        if (kind === "parent" || kind === "sibling") {
+        if (kind === "partner" && Vampire.bonded(p)) return 0;   // v0.17.0 Eternal Bond: you never drift apart
+        if (kind === "parent" || kind === "sibling" || RELATIVE_KINDS.includes(kind)) {
             if (p.getAgeInYears() < 18) return 0;
             const score = person.getRelationshipProgress();
             if (score <= Relationships.familyFloor) return 0;
@@ -176,7 +178,9 @@ export const Relationships = {
     badges(person: any): string[] {
         const out: string[] = [];
         if (!person.getIsAlive()) return out;
-        if (Relationships.circle().metaFor(person.getId()).vampire) out.push("Vampire");
+        if (Relationships.kindOf(person) === "partner" && Vampire.bonded()) out.push("Eternal Bond");
+        else if (Relationships.circle().metaFor(person.getId()).vampire) out.push("Vampire");
+        if (ExtendedFamily.isNewborn(person)) out.push("Newborn");
         if (Relationships.isBirthdayWeek(person)) out.push("Birthday this week");
         if (Relationships.kindOf(person) === "partner" && Relationships.anniversaryYears(person) != null) out.push("Anniversary this week");
         return out;
@@ -196,6 +200,7 @@ export const Relationships = {
         if (partner != null && partner.getIsAlive()) out.push(partner);
         for (const rel of [Relationship.parent, Relationship.child]) for (const x of Relationships.family(rel, p)) if (x.getIsAlive() && !x.getNotYetBorn()) out.push(x);
         for (const s of Relationships.siblings(p)) if (s.getIsAlive()) out.push(s);
+        for (const r of ExtendedFamily.all(p)) if (r.getIsAlive()) out.push(r);   // v0.17.0
         return out;
     },
 
@@ -223,6 +228,7 @@ export const Relationships = {
         for (const k of Array.from(parent.getFamilyState().getChildren() as any) as any[]) {
             if (k === chosenChild || k.getId() === chosenChild.getId() || !k.getIsAlive() || k.getNotYetBorn()) continue;
             const s = SocialPerson.make("sibling", k.getSex(), k.getLastName() ?? heir.getLastName(), k.getAgeInWeeks());
+            s.id = k.getId();   // v0.17.0: keeps their children (your grandchildren) linked as the heir's nieces/nephews
             s.firstName = k.getFirstName();
             s.trueAgeInWeeks = k.getTrueAgeInWeeks?.() ?? k.getAgeInWeeks();
             s.setRelationshipProgress(500);
@@ -349,8 +355,10 @@ export const Relationships = {
             const chance = turned ? 0 : Constants.Person.INSTANCE.chanceOfDeathAtAgePerWeek(s.getAgeInYears(), Constants.Person.INSTANCE.getPersonLifeExpectancy());
             if (Math.random() < chance) {
                 s.isAlive = false;
+                const msg = `Your ${s.getTitle().toLowerCase()} ${s.getFullName()} has died at the age of ${s.getAgeInYears()}.`;
                 if (s.kind === "ex") c.remove(s.id);
-                else Relationships.alert(s.kind === "sibling" ? "Family Loss" : "A Friend Passed Away", `Your ${s.getTitle().toLowerCase()} ${s.getFullName()} has died at the age of ${s.getAgeInYears()}.`, R.drawable.love_funeral);
+                else if (s.kind === "auntUncle" || s.kind === "cousin" || s.kind === "nibling") Relationships.banner("Family Loss", msg, R.drawable.love_funeral);
+                else Relationships.alert(s.kind === "friend" ? "A Friend Passed Away" : "Family Loss", msg, R.drawable.love_funeral);
                 if (s.kind === "friend") c.remove(s.id);
                 continue;
             }
@@ -359,6 +367,8 @@ export const Relationships = {
                 Relationships.banner("Drifted apart", `You and ${s.getFirstName()} aren't friends any more.`);
             }
         }
+        // v0.17.0: babies across the family (parents until 55, children, grandchildren, siblings, aunts/uncles)
+        ExtendedFamily.weekly(weeks, p);
         if (weeks > 1) return;
         const fam = p.getFamilyState();
         // children whose rent you help with

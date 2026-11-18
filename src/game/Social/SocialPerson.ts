@@ -11,7 +11,11 @@ import { LoverPersonality } from "../Enums/LoverPersonality";
 import { AgeGroup } from "../Enums/AgeGroup";
 import { RelationshipProgressStatus } from "../Enums/RelationshipProgressStatus";
 
-export type SocialKind = "sibling" | "friend" | "ex";
+export type SocialKind = "sibling" | "friend" | "ex"
+    // v0.17.0 extended family
+    | "grandparent" | "auntUncle" | "cousin" | "nibling" | "grandchild" | "greatGrandchild";
+/** The extended family kinds (v0.17.0). */
+export const RELATIVE_KINDS = ["grandparent", "auntUncle", "cousin", "nibling", "grandchild", "greatGrandchild"];
 
 let counter = 0;
 
@@ -37,6 +41,13 @@ export class SocialPerson {
     sinceWeek: number = 0;
     /** Adult siblings: what they do. */
     occupation: string = null;
+    /** v0.17.0: whose child they are (a Person or SocialPerson id): cousins → aunt/uncle, nieces → sibling,
+     *  grandchildren → your child, great-grandchildren → grandchild. */
+    parentId: string = null;
+    /** v0.17.0: grandparents, aunts and uncles: "mom" or "dad" (your parents' side). */
+    side: string = null;
+    /** v0.17.0: week (your true age) they were born into the family, for "New baby" badges. */
+    bornWeek: number = null;
 
     static make(kind: SocialKind, sex: Sex, lastName: string | null, ageInWeeks: number): SocialPerson {
         const p = new SocialPerson();
@@ -82,6 +93,12 @@ export class SocialPerson {
     getTitle(): string {
         const male = this.getSex() === Sex.male;
         if (this.kind === "sibling") return male ? "Brother" : "Sister";
+        if (this.kind === "grandparent") return male ? "Grandfather" : "Grandmother";
+        if (this.kind === "auntUncle") return male ? "Uncle" : "Aunt";
+        if (this.kind === "cousin") return "Cousin";
+        if (this.kind === "nibling") return male ? "Nephew" : "Niece";
+        if (this.kind === "grandchild") return male ? "Grandson" : "Granddaughter";
+        if (this.kind === "greatGrandchild") return male ? "Great-grandson" : "Great-granddaughter";
         if (this.kind === "ex") {
             if (this.exStatus === "married") return male ? "Ex-husband" : "Ex-wife";
             if (this.exStatus === "engaged") return male ? "Ex-fiancé" : "Ex-fiancée";

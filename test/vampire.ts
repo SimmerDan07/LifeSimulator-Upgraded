@@ -200,7 +200,25 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     LoveActions.perform(loveAction("turn"), ana, p); clear();
     const a0 = ana.getAgeInWeeks();
     week(p, 2 * W);
-    check("turned: Ana stops ageing, has a Vampire badge, and is in your coven", Vampire.isTurned(ana) && ana.getAgeInWeeks() === a0 && Relationships.badges(ana).includes("Vampire") && Vampire.coven(p).includes(ana), `${a0} → ${ana.getAgeInWeeks()}`);
+    check("turned: Ana stops ageing, has an Eternal Bond badge, and is in your coven", Vampire.isTurned(ana) && ana.getAgeInWeeks() === a0 && Relationships.badges(ana).includes("Eternal Bond") && Vampire.coven(p).includes(ana), `${a0} → ${ana.getAgeInWeeks()}`);
+    // v0.17.0 Eternal Bond
+    check("Eternal Bond: you and your vampire partner", Vampire.bonded(p) && Vampire.bondedPartner(p) === ana);
+    check("…you never drift apart", Relationships.drift(ana, p) === 0);
+    check("…better odds against hunters (70%)", Vampire.fightWinChance(p) === 0.7);
+    check("…Hunt Together, Dance Through the Night and Eternal Vows on their screen", ["Hunt Together", "Dance Through the Night", "Eternal Vows"].every((t) => titles(rows()).includes(t)));
+    check("…and an Eternal Bond card on the Lifepaths tab", tab().some((r) => r.title === "Eternal Bond with Ana"));
+    {
+        const s = Vampire.state(p); s.thirst = 80; s.suspicion = 10; const sus = s.suspicion;
+        withRandom(0.99, () => { LoveActions.perform(loveAction("huntTogether"), ana, p); }); clear();
+        check("Hunt Together: −50 thirst, +6 suspicion (+2 more: your partner hunts alone on Feed by Hand)", s.thirst === 45 && s.suspicion === sus + 8, `${s.thirst} ${s.suspicion}`);
+        rich(p, 100000);
+        LoveActions.perform(loveAction("eternalVows"), ana, p); clear();
+        check("Eternal Vows: once every 10 years", new LoveActionCell(loveAction("eternalVows"), ana).requirementNotMetString(p) === "Once every 10 years");
+        s.diet = "bags"; s.powers = [...(s.powers ?? []), "bloodBank"];
+        const flow = (Array.from(p.collectWeeklyCashFlow() as any) as any[]).map((x: any) => `${x.getFirst()}=${x.getSecond()}`).join("|");
+        check("…your partner shares your blood diet (for two, double cost)", /Blood Diet - Blood Bank Bags \(for two\)=-4000/.test(flow), flow);
+        s.diet = "hand"; s.thirst = 0;
+    }
     check("Coven shows her card on the Lifepaths tab", tab().some((r) => r.id === ana.getId()));
 }
 
