@@ -8,6 +8,7 @@ import type { AlertViewModel } from "../game/Managers/AlertViewModel";
 import { SoundManager } from "../game/Managers/SoundManager";
 import { SoundEffect } from "../game/Managers/SoundEffect";
 import { MainGameTab } from "../game/Enums/MainGameTab";
+import { LifepathsModelGenerator } from "../game/Controllers/LifepathsModelGenerator";
 import { GenericListType } from "../game/Fragments/GenericListType";
 import { GenericListModelGenerator } from "../game/Controllers/GenericListModelGenerator";
 import { ProfileModelGenerator } from "../game/Controllers/ProfileModelGenerator";
@@ -52,6 +53,7 @@ const TABS: { tab: MainGameTab; icon: string; label: string; gen: any }[] = [
     { tab: MainGameTab.Work, icon: "tab_briefcase", label: "Work", gen: new WorkModelGenerator() },
     { tab: MainGameTab.Health, icon: "tab_health", label: "Health", gen: new HealthModelGenerator() },
     { tab: MainGameTab.Bank, icon: "tab_bank", label: "Bank", gen: new BankModelGenerator() },
+    { tab: MainGameTab.Lifepaths, icon: "tab_lifepaths", label: "Lifepaths", gen: new LifepathsModelGenerator() },
 ];
 
 class MainScreen extends MainGameFragment {
@@ -197,7 +199,7 @@ const nav = {
     },
 };
 
-/** Sidebar tabs (and keys 1-7): close any open menus (Settings, Real Estate, lists...) and show the tab.
+/** Sidebar tabs (and keys 1-8): close any open menus (Settings, Real Estate, lists...) and show the tab.
  *  Screens you can't back out of (new-life setup, choosing an heir) stay open. */
 function goToTab(tab: MainGameTab) {
     if (nav.stack.length) {
@@ -332,7 +334,7 @@ function boot() {
             return;
         }
         if (e.key === "Escape" && nav.top()?.canGoBack) nav.pop();
-        if (/^[1-7]$/.test(e.key) && !(e.target instanceof HTMLInputElement)) goToTab(TABS[+e.key - 1].tab);
+        if (/^[1-8]$/.test(e.key) && !(e.target instanceof HTMLInputElement)) goToTab(TABS[+e.key - 1].tab);
     });
     window.addEventListener("beforeunload", () => { try { GameStateManager.INSTANCE.saveData(); } catch {} });
     const saveNow = () => { try { if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) GameStateManager.INSTANCE.saveData(); } catch {} };

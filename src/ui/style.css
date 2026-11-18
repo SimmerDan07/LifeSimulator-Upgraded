@@ -62,7 +62,7 @@ body.no-life #hud .who, body.no-life #hud .stats, body.no-life #hud .money { vis
 /* ---------------- tab rail */
 #tabs {
     position: fixed; top: var(--hud); bottom: 0; left: 0; width: var(--rail);
-    background: var(--primary-dark); display: flex; flex-direction: column; padding: 10px 0; gap: 4px; z-index: 20;
+    background: var(--primary-dark); display: flex; flex-direction: column; padding: 10px 0; gap: 4px; z-index: 20; overflow-y: auto;
 }
 .tab {
     background: none; border: 0; color: #cfd6d8; cursor: pointer; padding: 10px 4px;

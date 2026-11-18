@@ -10,7 +10,8 @@ export class MainGameTab extends JEnum {
     static readonly Work: MainGameTab = new MainGameTab("Work", 4);
     static readonly Health: MainGameTab = new MainGameTab("Health", 5);
     static readonly Bank: MainGameTab = new MainGameTab("Bank", 6);
-    static values(): MainGameTab[] { return [MainGameTab.Profile, MainGameTab.Leisure, MainGameTab.Love, MainGameTab.Education, MainGameTab.Work, MainGameTab.Health, MainGameTab.Bank]; }
+    static readonly Lifepaths: MainGameTab = new MainGameTab("Lifepaths", 7);
+    static values(): MainGameTab[] { return [MainGameTab.Profile, MainGameTab.Leisure, MainGameTab.Love, MainGameTab.Education, MainGameTab.Work, MainGameTab.Health, MainGameTab.Bank, MainGameTab.Lifepaths]; }
     static valueOf(n: string): MainGameTab { return (MainGameTab as any)[n]; }
     constructor(name: string, ordinal: number) { super(name, ordinal); }
 }

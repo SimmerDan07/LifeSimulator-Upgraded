@@ -100,6 +100,9 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     and Hilltop Mansion in v0.12.1).
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Lifepaths tab (v0.14.0)** (`src/game/Controllers/LifepathsModelGenerator.ts`, icon `assets/images/tab_lifepaths.svg`):
+  an eighth tab after Bank (key 8) with an all-seeing eye. It introduces lifepaths (hidden paths that change what your
+  character is) and lists Vampire as coming soon. `MainGameTab.Lifepaths` has ordinal 7.
 - **Subscriptions (v0.13.0)** (Profile tab, `src/game/Managers/Subscriptions.ts`): pay every week, benefit every week.
 
   | Subscription | Cost | Every week | Needs |
