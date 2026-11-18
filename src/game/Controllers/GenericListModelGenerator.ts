@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
+import { FamilyExtras } from "../Managers/FamilyExtras";
 import { Generations } from "../Managers/Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
 import { ArrayList, Arrays, ArraysKt, BigInteger, Boolean, CollectionsKt, ComparisonsKt, Integer, Intrinsics, Pair, R, Ref, SpannableStringBuilder, StringBuilder, StringsKt, TypeCastException, UUID, Unit } from "../runtime";
@@ -169,7 +170,7 @@ export class GenericListModelGenerator {
                 let person: Person = (CollectionsKt.first((arrayList9 as unknown as ArrayList)) as unknown as Person);
                 arrayList2.add(new NavigationBarViewModel(person.getFullName(), false, 2, null));
                 arrayList.add(new ImageCellViewModel("ChildProfileImage", person.getAgeGroup().imageId(person.getSex()), null, 4, null));
-                arrayList.add(Utils.ViewModel.INSTANCE.getPropertyListViewModel([new Pair(Utils.INSTANCE.getString(R.string.identity_name_name), String.valueOf(person.getFullName())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_relation), String.valueOf(person.getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(person.getAgeInYears())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_gender), String.valueOf(person.getGender().getTitle())), new Pair(Utils.INSTANCE.getString(R.string.Common_Status), String.valueOf(person.getChildStatus()))]));
+                arrayList.add(Utils.ViewModel.INSTANCE.getPropertyListViewModel([new Pair(Utils.INSTANCE.getString(R.string.identity_name_name), String.valueOf(person.getFullName())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_relation), String.valueOf(person.getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(person.getAgeInYears())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_trueAge), String.valueOf(FamilyExtras.trueAgeYears(person))), new Pair(Utils.INSTANCE.getString(R.string.identity_name_gender), String.valueOf(person.getGender().getTitle())), new Pair(Utils.INSTANCE.getString(R.string.Common_Status), String.valueOf(person.getChildStatus()))]));
                 CollectionsKt.addAll(arrayList, person.getRelationDescriptorAndProgressBarViewModels());
                 if (person.getSupportedByParent()) {
                     arrayList.add(person.getChildSupport().getViewModelForChildSupport(person));
@@ -177,6 +178,7 @@ export class GenericListModelGenerator {
                 for (const personInteraction of PersonInteraction.INSTANCE.actionWithChild(person)) {
                     arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, personInteraction, null, 2, null));
                 }
+                { const elixir = FamilyExtras.elixirCell(person); if (elixir != null && person.getAgeInYears() >= 18) arrayList.add(elixir); }
                 break;
             case GenericListType.petDetails:
                 let familyMembers2: ArrayList<Person> = personState.getFamilyState().getFamilyMembers();
@@ -253,11 +255,12 @@ export class GenericListModelGenerator {
                 let person3: Person = (CollectionsKt.first((arrayList11 as unknown as ArrayList)) as unknown as Person);
                 arrayList2.add(new NavigationBarViewModel(person3.getFullName(), false, 2, null));
                 arrayList.add(new ImageCellViewModel("ParentProfileImage", person3.getAgeGroup().imageId(person3.getSex()), null, 4, null));
-                arrayList.add(Utils.ViewModel.INSTANCE.getPropertyListViewModel([new Pair(Utils.INSTANCE.getString(R.string.identity_name_name), String.valueOf(person3.getFullName())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_relation), String.valueOf(person3.getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(person3.getAgeInYears())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_gender), String.valueOf(person3.getGender().getTitle()))]));
+                arrayList.add(Utils.ViewModel.INSTANCE.getPropertyListViewModel([new Pair(Utils.INSTANCE.getString(R.string.identity_name_name), String.valueOf(person3.getFullName())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_relation), String.valueOf(person3.getTitle())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(person3.getAgeInYears())), new Pair(Utils.INSTANCE.getString(R.string.identity_name_trueAge), String.valueOf(FamilyExtras.trueAgeYears(person3))), new Pair(Utils.INSTANCE.getString(R.string.identity_name_gender), String.valueOf(person3.getGender().getTitle()))]));
                 CollectionsKt.addAll(arrayList, person3.getRelationDescriptorAndProgressBarViewModels());
                 for (const personInteraction3 of PersonInteraction.INSTANCE.getParentActions()) {
                     arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, personInteraction3, null, 2, null));
                 }
+                { const elixir = FamilyExtras.elixirCell(person3); if (elixir != null) arrayList.add(elixir); }
                 break;
             case GenericListType.scenarioSelection:
                 arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.NewGame_HeaderTitle)));

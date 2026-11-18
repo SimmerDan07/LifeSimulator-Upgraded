@@ -10,13 +10,26 @@ import { IViewModelGenerator } from "./IViewModelGenerator";
 import { Leisure } from "../Enums/Leisure";
 import { Player } from "../Managers/Player";
 import { Utils } from "../Utils/Utils";
+import { KidsLeisure } from "../Managers/KidsLeisure";
 
 export class VacationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
+        arrayList.addAll(this.getPlaytimeViewModels());
         arrayList.addAll(this.getLeisureViewModels());
         arrayList.addAll(this.getTravelViewModels());
         return new GenericListFragmentViewModel(arrayList);
+    }
+    /** Ages 0–8: things for young children to do (see KidsLeisure.ts). */
+    getPlaytimeViewModels(): ArrayList<BaseViewModel> {
+        let arrayList: ArrayList = new ArrayList();
+        const player = GameStateManager.INSTANCE.getPersonState();
+        if (!KidsLeisure.shown(player)) return arrayList;
+        arrayList.add(new HeaderTitleViewModel("Playtime"));
+        for (const a of KidsLeisure.activities) {
+            arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, a as any, null, 2, null));
+        }
+        return arrayList;
     }
     getLeisureViewModels(): ArrayList<BaseViewModel> {
         let arrayList: ArrayList = new ArrayList();

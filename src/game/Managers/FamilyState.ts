@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, CollectionsKt, Intrinsics, JMath } from "../runtime";
+import { FamilyExtras } from "./FamilyExtras";
 import { GameStateManager } from "./GameStateManager";
 import { LoveEvent } from "../Enums/LoveEvent";
 import { Person } from "./Person";
@@ -138,6 +139,7 @@ export class FamilyState {
     date(person: Person): void {
         Intrinsics.checkParameterIsNotNull(person, "person");
         GameStateManager.INSTANCE.getPersonState().setRomanticRelationshipStatus(RomanticRelationshipStatus.inRelationship);
+        FamilyExtras.onStartDating(person);
         this.familyMembers.add(person);
         GameStateManager.INSTANCE.getPersonState().getMiscState().setHasReceivedRelationshipWarning(false);
     }
@@ -151,6 +153,7 @@ export class FamilyState {
         if (event === LoveEvent.marry) {
             personState.setRomanticRelationshipStatus(RomanticRelationshipStatus.married);
             let partner: Person = this.getPartner();
+            FamilyExtras.onMarried(partner);
             if (partner != null) {
                 partner.setLastName(personState.getLastName());
             }

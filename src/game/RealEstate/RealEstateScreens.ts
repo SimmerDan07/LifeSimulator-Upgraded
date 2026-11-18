@@ -201,6 +201,7 @@ export const RealEstateScreens = {
         const lease = pf.lease;
         const cur = pl.getHousingState().currentHousing().getType();
         const atParents = cur === Housing.parentsHouse;
+        const minorAtParents = atParents && pl.getAgeInYears() < AgeLimits.adultStuff;  // adults can move out any time
 
         // Where you live: a home you own, a home you rent, or a basic place
         content.add(new HeaderTitleViewModel("Where You Live"));
@@ -215,7 +216,7 @@ export const RealEstateScreens = {
             content.add(new ActionCellMultipleOptionsViewModel(img(h), (home ? "🏠 " : "") + h.name, new TextLabelViewModel("", null, false, false, null, sb), text(""),
                 home ? [button("Manage", true, () => RealEstateScreens.open(GenericListType.propertyDetails, home.id))] : [], null));
         } else {
-            const sb = rich([["", atParents ? "You live with your parents until you're 18." : cur.getRentalCost().signum() > 0 ? `Basic housing${RealEstateScreens.rentText(cur)}` : "No rent to pay."]]).getStringBuilder();
+            const sb = rich([["", atParents ? (minorAtParents ? "You live with your parents." : "You live with your parents. You can move out whenever you like.") : cur.getRentalCost().signum() > 0 ? `Basic housing${RealEstateScreens.rentText(cur)}` : "No rent to pay."]]).getStringBuilder();
             ExtensionsKt.appendNewline(sb);
             ExtensionsKt.appendAttributesString$default(sb, cur.getModifiers(), null, null, null, 14, null);
             content.add(new ActionCellMultipleOptionsViewModel(cur.getImageId(), cur.getTitle(), new TextLabelViewModel("", null, false, false, null, sb), text(""), [], null));
@@ -241,13 +242,13 @@ export const RealEstateScreens = {
 
         // Find a home
         content.add(new HeaderTitleViewModel("Find a Home"));
-        content.add(cell(R.drawable.housing_family_home, "Homes for Sale & Rent", [["", atParents
-            ? "You can look for your own place once you've moved out of your parents' house."
+        content.add(cell(R.drawable.housing_family_home, "Homes for Sale & Rent", [["", minorAtParents
+            ? "You can look for your own place once you're 18."
             : "Every home is unique: its own address, neighborhood, condition and price. New listings every 4 weeks."]], [
-            button("Homes for Sale", !atParents, () => RealEstateScreens.open(GenericListType.propertyMarket)),
-            button("Homes for Rent", !atParents, () => RealEstateScreens.open(GenericListType.rentalMarket)),
+            button("Homes for Sale", !minorAtParents, () => RealEstateScreens.open(GenericListType.propertyMarket)),
+            button("Homes for Rent", !minorAtParents, () => RealEstateScreens.open(GenericListType.rentalMarket)),
         ]));
-        if (!atParents) {
+        if (!minorAtParents) {
             const basics = Housing.INSTANCE.housingOptions(pl).filter((h: any) => BASIC_HOUSING.includes(h.name()) && h !== cur && h !== Housing.jail);
             for (const h of basics) {
                 const sb = rich([["Rent", h.getRentalCost().signum() > 0 ? `${ExtensionsKt.numberDisplayString(h.getRentalCost(), true)}/week` : "Free"]]).getStringBuilder();

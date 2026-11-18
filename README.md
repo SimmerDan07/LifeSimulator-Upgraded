@@ -101,6 +101,21 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `housing_hilltop_mansion.svg`) — replace them with same-named .png files and delete the .svg.
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Playtime (v0.11.0)** (Leisure tab, ages 0–8, `src/game/Managers/KidsLeisure.ts`): Nap Time (0–4), Play with Toys,
+  Bedtime Story, Go to the Playground (2+), Play Catch with a Parent (3+), Family Movie Night ($10), Children's Museum
+  (4+, $20), Go to the Carnival (3+, $40), Theme Park Trip (4+, $150), Family Vacation ($400). The family ones bring
+  you closer to your parents.
+- **Weeks left (v0.11.0)**: every school, degree, skill and charity project you can study shows "N weeks left".
+- **Family & love (v0.11.0)** (`src/game/Managers/FamilyExtras.ts`):
+  - True age of parents, children and your partner (detail screens, the Love tab lists). Fixes an original bug: family
+    members' true age never went up as they aged.
+  - Give your partner, a parent or an adult child the Elixir of Youth (same price as yours; 10 years younger, never
+    below 18).
+  - "Together N years · Married N years" under your partner on the Love tab (partners from older saves start counting
+    from when you load the save).
+  - "Spend Time with Everyone" (Love tab, free, one week): partner, parents, children and pets all grow closer.
+- **No more being kicked out at 18 (v0.11.0)**: you can keep living with your parents as an adult, move out whenever
+  you like (buy/rent or a basic place), and move back in while a parent is alive. The allowance still stops at 18.
 - **School rework (v0.10.0)** (`src/game/Managers/Schooling.ts`): new **Preschool** and **Elementary School**, and every
   school now has a starting age and realistic length, so you finish high school around 17–18 instead of 15. You still click
   a school each week to study (one week of school per click); a school year is 40 weeks of study.

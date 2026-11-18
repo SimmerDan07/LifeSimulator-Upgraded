@@ -258,7 +258,10 @@ export namespace CompletableActionState {
                 invoke: () => GameStateManager.INSTANCE.getPersonState().learnSkillOrEducation(this.getType()),
             }, 96, null);
             const text = description != null ? new TextLabelViewModel(description, null, false, false, null, null, 62, null) : TextLabelViewModel.INSTANCE.getHidden();
-            return new ActionProgressViewModel(imageId, title, text, null, bar, null, button, 32, null);
+            // Weeks of study still to go (shown next to the title)
+            const left = Math.max(0, required - progress);
+            const decorator = (this.completed || locked || left <= 0) ? null : `${left} week${left === 1 ? "" : "s"} left`;
+            return new ActionProgressViewModel(imageId, title, text, decorator, bar, null, button, 32, null);
         }
     }
     export namespace CompletableActionStateSingle {

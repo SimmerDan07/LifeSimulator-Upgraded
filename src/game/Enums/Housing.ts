@@ -251,7 +251,11 @@ export namespace Housing {
     }
         housingOptions(player: Player): Housing[] {
         Intrinsics.checkParameterIsNotNull(player, "player");
-        return (player.getHousingState().currentHousing().getType() === Housing.parentsHouse) ? [Housing.parentsHouse] : this.getNormalHousingOptions();
+        // Kids live with their parents. Adults can move out, and move back in while a parent is alive.
+        const atParents = player.getHousingState().currentHousing().getType() === Housing.parentsHouse;
+        if (atParents && player.getAgeInYears() < 18) return [Housing.parentsHouse];
+        const options = this.getNormalHousingOptions();
+        return player.getFamilyState().getParentsStillLiving() ? [...options, Housing.parentsHouse] : options;
     }
     }
 }

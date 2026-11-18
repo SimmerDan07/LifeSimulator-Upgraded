@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Integer, Intrinsics, JMath, NoWhenBranchMatchedException, R, Random, SpannableStringBuilder, StringCompanionObject, TypeCastException, UUID } from "../runtime";
+import { FamilyExtras } from "./FamilyExtras";
 import { AgeGroup } from "../Enums/AgeGroup";
 import { AlertManager } from "./AlertManager";
 import { AlertViewModel } from "./AlertViewModel";
@@ -61,6 +62,9 @@ export class Person {
     sex: Sex = null;
     sexuality: Sexuality = null;
     trueAgeInWeeks: number = 0;
+    /** Partner only: when you started dating / got married (player's true age in weeks). Undefined in older saves. */
+    togetherSinceWeek: number = null;
+    marriedSinceWeek: number = null;
     $init0(str: string, str2: string, gender: Gender, sexuality: Sexuality, sex: Sex, relationship: Relationship, i: number, loverPersonality: LoverPersonality, i2: number, defaultConstructorMarker: any): void {
         this.$init(str, str2, gender, sexuality, sex, relationship, i, ((i2 & 128) !== 0) ? null : loverPersonality);
     }
@@ -196,7 +200,8 @@ export class Person {
         return this.ageInWeeks;
     }
     setAgeInWeeks(i: number): void {
-        let i2: number = this.ageInWeeks - i;
+        // True age goes up as the person ages (the original had this backwards, so it never advanced).
+        let i2: number = i - this.ageInWeeks;
         if ((i < (Constants.Time.INSTANCE.getWeeksPerYear() * Constants.Person.INSTANCE.getMinAgeInYears())) && (this.relationship === Relationship.self)) {
             i = Constants.Time.INSTANCE.getWeeksPerYear() * Constants.Person.INSTANCE.getMinAgeInYears();
         }
@@ -624,7 +629,7 @@ export class Person {
             str = String.format(string3, Arrays.copyOf(objArr2, objArr2.length));
         } else {
             ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(spannableStringBuilder, this.getTitle() + " - ", null, null, null, 14, null), this.getFullName(), null, null, null, 14, null);
-            str = (Utils.INSTANCE.returnFirstIfTrue(this.isAlive, Utils.Strings.INSTANCE.formatWithColon(Utils.INSTANCE.getString(R.string.Health_Header_Age), String.valueOf(this.getAgeInYears())), Utils.INSTANCE.getString(R.string.Common_Deceased)) as string);
+            str = (Utils.INSTANCE.returnFirstIfTrue(this.isAlive, Utils.Strings.INSTANCE.formatWithColon(Utils.INSTANCE.getString(R.string.Health_Header_Age), this.getPetType() != null ? String.valueOf(this.getAgeInYears()) : FamilyExtras.ageText(this)), Utils.INSTANCE.getString(R.string.Common_Deceased)) as string);
         }
         return new LeftRightCellViewModel("PersonAgeInfo." + this.getFullName(), new TextLabelViewModel(spannableStringBuilder, false, false, null, 14, null), new TextLabelViewModel(str, null, false, false, Utils.INSTANCE.returnFirstIfTrue(this.isAlive, R.color.flatBlack, R.color.flatRed), null, 46, null), null, 8, null);
     }

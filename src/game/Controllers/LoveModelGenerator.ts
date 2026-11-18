@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ComingOut } from "../Managers/ComingOut";
+import { FamilyExtras } from "../Managers/FamilyExtras";
 import { ArrayList, BigInteger, CollectionsKt, ComparisonsKt, Integer, Intrinsics, R, SpannableStringBuilder } from "../runtime";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { BaseViewModel } from "../Models/BaseViewModel";
@@ -108,7 +109,10 @@ export class LoveModelGenerator implements IViewModelGenerator {
             if (loverPersonality == null) {
                 Intrinsics.throwNpe();
             }
-            arrayList.add(new LeftRightCellViewModel("RomanceNameAndAge", new TextLabelViewModel(ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(new SpannableStringBuilder(), partner.getTitle() + ": ", null, null, null, 14, null), partner.getFullName(), null, null, null, 14, null), false, false, null, 14, null), new TextLabelViewModel(ExtensionsKt.appendNormal$default(new SpannableStringBuilder(), (Utils.INSTANCE.getString(R.string.identity_name_age) + ": ") + partner.getAgeInYears(), null, null, null, 14, null), false, false, null, 14, null), null, 8, null));
+            arrayList.add(new LeftRightCellViewModel("RomanceNameAndAge", new TextLabelViewModel(ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(new SpannableStringBuilder(), partner.getTitle() + ": ", null, null, null, 14, null), partner.getFullName(), null, null, null, 14, null), false, false, null, 14, null), new TextLabelViewModel(ExtensionsKt.appendNormal$default(new SpannableStringBuilder(), (Utils.INSTANCE.getString(R.string.identity_name_age) + ": ") + FamilyExtras.ageText(partner), null, null, null, 14, null), false, false, null, 14, null), null, 8, null));
+            // How long you've been together / married
+            const counters = FamilyExtras.countersText();
+            if (counters != null) arrayList.add(new SingleLabelCellViewModel("RelationshipCounters", new TextLabelViewModel(ExtensionsKt.appendNormal$default(new SpannableStringBuilder(), counters, R.color.flatSkyBlue, null, null, 12, null), false, false, null, 14, null)));
             let spannableStringBuilder: SpannableStringBuilder = new SpannableStringBuilder();
             let partnerModifiers: Modifiers = partner.getPartnerModifiers();
             if (partnerModifiers != null) {
@@ -122,7 +126,10 @@ export class LoveModelGenerator implements IViewModelGenerator {
             }
             arrayList.add(new LeftRightCellViewModel("LovePersonality", new TextLabelViewModel(ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(new SpannableStringBuilder(), Utils.INSTANCE.getString(R.string.Alert_Love_YouMetSomeone_Personality) + ": ", null, null, null, 14, null), loverPersonality.getTitle(), null, null, null, 14, null), false, false, null, 14, null), new TextLabelViewModel(spannableStringBuilder, false, false, null, 14, null), null, 8, null));
             CollectionsKt.addAll(arrayList, partner.getRelationDescriptorAndProgressBarViewModels());
+            const elixir = FamilyExtras.elixirCell(partner);
+            if (elixir != null) arrayList.add(elixir);
         }
+        arrayList.add(FamilyExtras.spendTimeCell());
         let it = LoveEvent.INSTANCE.eventsForPlayer(GameStateManager.INSTANCE.getPersonState()).iterator();
         while (it.hasNext()) {
             let loveEvent: LoveEvent = it.next();

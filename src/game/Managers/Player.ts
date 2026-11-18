@@ -965,17 +965,12 @@ export class Player {
     }
     newYearReached(): void {
         Retirement.onNewYear(this);
-        if (((this.getAgeInYears() >= 18) && this.familyState.getParentsStillLiving()) && (this.housingState.currentHousing().getType() === Housing.parentsHouse)) {
-            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(Utils.INSTANCE.getString(R.string.AlertYouAreAdultNowTitle), Utils.INSTANCE.getString(R.string.AlertYouAreAdultNowMessage), R.drawable.waving_hand, Utils.INSTANCE.getString(R.string.Common_Jeez), {
-                invoke: () => {
-                this.getHousingState().moveHere(Housing.shared_room);
-                this.setDiet(Diet.cupnoodle);
-                let mainGameFragment: MainGameFragment = GameStateManager.INSTANCE.getMainGameFragment();
-                if (mainGameFragment != null) {
-                    MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
-                }
-            }
-            }), false, 2, null);
+        // Upgraded: you're no longer kicked out at 18. You can keep living with your parents and move out whenever
+        // you like (Profile → Real Estate). Their allowance still stops at 18.
+        if ((this.getAgeInYears() === 18) && this.familyState.getParentsStillLiving() && (this.housingState.currentHousing().getType() === Housing.parentsHouse)) {
+            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(Utils.INSTANCE.getString(R.string.AlertYouAreAdultNowTitle),
+                "You're 18! You can keep living with your parents, or move out whenever you're ready (Profile → Real Estate). Your allowance has stopped.",
+                R.drawable.waving_hand, "Okay", { invoke: () => {} }), false, 2, null);
         }
     }
     collectWeeklyValues(): void {
