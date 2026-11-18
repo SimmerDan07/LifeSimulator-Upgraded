@@ -406,7 +406,7 @@ export class Person {
                 if (i === Relationship.child) {
                     let i2: number = this.relationshipProgress;
                     if (personState.getTempState().getPrevActionState() !== PlayerActionType.child) {
-                        this.setRelationshipProgress(this.relationshipProgress + RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate());
+                        this.setRelationshipProgress(this.relationshipProgress + Relationships.drift(this, personState));
                     }
                     if (this.getSupportedByParent()) {
                         if ((i2 > (JMath.idiv(RelationshipProgressStatus.lacking.getStartProgressValue(), 4))) && (this.relationshipProgress <= (JMath.idiv(RelationshipProgressStatus.lacking.getStartProgressValue(), 4)))) {
@@ -446,10 +446,10 @@ export class Person {
                     }
                 } else if (i === Relationship.pet) {
                     if (personState.getTempState().getPrevActionState() !== PlayerActionType.pet) {
-                        this.setRelationshipProgress(this.relationshipProgress + RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate());
+                        this.setRelationshipProgress(this.relationshipProgress + Relationships.drift(this, personState));
                     }
                 } else if (personState.getTempState().getPrevActionState() !== this.relationship.getCorrespondingActionType()) {
-                    this.setRelationshipProgress(this.relationshipProgress + RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate());
+                    this.setRelationshipProgress(this.relationshipProgress + Relationships.drift(this, personState));
                 }
                 this.triggerPossibleDeath();
                 if ((this.ageInWeeks % Constants.Time.INSTANCE.getWeeksPerYear()) === 0) {

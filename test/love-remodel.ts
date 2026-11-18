@@ -1,5 +1,5 @@
 // Love tab remodel (v0.12.0): grouped relationship cards, the shared person screen, new actions for every
-// relationship, moods, anniversaries and birthdays, repeat-action fatigue, siblings, friends and exes.
+// relationship, moods, anniversaries and birthdays, gentle weekly drift, siblings, friends and exes.
 import { UIBridge, MainGameFragment } from "../src/game/ui/bridge";
 import { GameStateManager } from "../src/game/Managers/GameStateManager";
 import { AlertManager } from "../src/game/Managers/AlertManager";
@@ -176,24 +176,15 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     check("every visible action on every relationship runs without errors", ok, msg);
 }
 
-// ---------------------------------------------------------------- repeat-action fatigue
+// ---------------------------------------------------------------- no repeat penalty (removed in v0.12.1)
 {
     Relationships.setMood(mom, "fine");
     mom.setRelationshipProgress(300);
     const g = (id: string) => { const b = mom.getRelationshipProgress(); doIt(id, mom, p); Relationships.setMood(mom, "fine"); return mom.getRelationshipProgress() - b; };
-    // decay is skipped for the parent you did something with, so the gain is exact
-    const a1 = g("advice"), a2 = g("advice"), a3 = g("advice"), b1 = g("parentVacation"), a4 = g("advice");
-    check("same action back-to-back: full, half, quarter", a1 === 10 && a2 === 5 && a3 === 3, `${a1}, ${a2}, ${a3}`);
-    check("a different action is full again, and so is the first one after it", b1 === 100 && a4 === 10, `${b1}, ${a4}`);
-    week(p);
-    const a5 = g("advice");
-    week(p);
-    const a6 = g("advice");
-    check("a week off in between: full again", a5 === 10 && a6 === 10, `${a5}, ${a6}`);
-    const cell = new LoveActionCell(loveAction("advice"), mom);
-    week(p);
-    doIt("advice", mom, p); Relationships.setMood(mom, "fine");
-    check("the row shows the reduced gain and why", /\+5 relationship \(half/.test(cell.getAdditionalDescription() ?? ""), String(cell.getAdditionalDescription()));
+    // drift is skipped for the parent you did something with, so the gain is exact
+    const a1 = g("advice"), a2 = g("advice"), a3 = g("advice");
+    check("the same action week after week gives the full amount every time", a1 === 10 && a2 === 10 && a3 === 10, `${a1}, ${a2}, ${a3}`);
+    check("the row shows the full gain", new LoveActionCell(loveAction("advice"), mom).getAdditionalDescription() === "+10 relationship\n", String(new LoveActionCell(loveAction("advice"), mom).getAdditionalDescription()));
 }
 
 // ---------------------------------------------------------------- moods
@@ -264,7 +255,7 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     Relationships.setMood(kidOld, "fine");
     const k0 = kidOld.getRelationshipProgress();
     week(p);
-    check("…and +5 relationship a week (minus the drift of 2)", kidOld.getRelationshipProgress() - k0 === 5 + RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate(), String(kidOld.getRelationshipProgress() - k0));
+    check("…and +5 relationship a week (minus the weekly drift)", kidOld.getRelationshipProgress() - k0 === 5 + RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate(), String(kidOld.getRelationshipProgress() - k0));
     const flowA = p.getTotalCashFlowPerWeek();
     doIt("rentHelp", kidOld, p);
     check("Stop Helping with Rent", p.getTotalCashFlowPerWeek().subtract(flowA).intValue() === 200 && !Relationships.meta(kidOld).rentHelp);
@@ -289,9 +280,9 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     doIt("hangOut", sis, p);
     check("Hang Out with a sibling: +15, no drift that week", sis.getRelationshipProgress() - s1 === 15, String(sis.getRelationshipProgress() - s1));
     check("adults: no Video Games or Prank", !ids(sis, "sibling", p).includes("videoGames") && !ids(sis, "sibling", p).includes("prank"));
-    const cash = p.getMoneyState().getCash();
-    doIt("lend", sis, p);
-    check("Lend $1,000, and they owe you", cash.subtract(p.getMoneyState().getCash()).compareTo(BigInteger.valueOf(1000)) >= 0 && Relationships.meta(sis).loanDue != null);
+    Relationships.meta(sis).loanDue = undefined;   // (the "every action" pass above already lent once)
+    const lent = doIt("lend", sis, p);
+    check("Lend $1,000, and they owe you", lent && Relationships.meta(sis).loanDue != null);
     check("can't lend again until repaid", new LoveActionCell(loveAction("lend"), sis).requirementNotMetString(p) === "They still owe you $1,000");
     Relationships.meta(sis).loanDue = Relationships.now();
     week(p);
@@ -349,7 +340,7 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     check("Remove from List", Relationships.exes(p).length === 0);
 }
 
-// ---------------------------------------------------------------- dates feel fatigue too; adult child & parent actions
+// ---------------------------------------------------------------- dates; adult child & parent actions
 {
     const bo = new Person(Relationship.lover, Sex.male, "Kim", 30 * W); bo.setFirstName("Bo"); bo.setLoverPersonality(LoverPersonality.cheerful);
     bo.setRelationshipProgress(300); fam.date(bo); Relationships.setMood(bo, "fine");
@@ -359,7 +350,7 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     const b1 = bo.getRelationshipProgress();
     p.loveEvent(LoveEvent.romanticDinner); clear();
     const d2 = bo.getRelationshipProgress() - b1;
-    check("Romantic Dinner twice in a row: +15 then +8 (half)", d1 === 15 && d2 === 8, `${d1}, ${d2}`);
+    check("Romantic Dinner twice in a row: +15 both times", d1 === 15 && d2 === 15, `${d1}, ${d2}`);
 
     mom.setRelationshipProgress(950);
     Relationships.meta(mom).moneyAskedWeek = undefined;
@@ -385,6 +376,38 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     check("save keeps siblings, friends, exes and per-person notes", c2.list().length === c.list().length && c2.list("sibling").length === 2 && c2.list()[0] instanceof SocialPerson && JSON.stringify(c2.meta) === JSON.stringify(c.meta));
     p.getCrimeState().setIsInJail?.(true);
     if (p.getCrimeState().getIsInJail()) check("in jail: relationship actions are locked", new LoveActionCell(loveAction("hangOut"), sis).requirementNotMetString(p) === "Not while you're in jail");
+}
+
+// ---------------------------------------------------------------- weekly drift (v0.12.1)
+{
+    // a newborn who never does anything with the family: everyone still likes them at 18
+    const kid = start(LifeScenario.youngChild);
+    const parents0 = Relationships.family(Relationship.parent, kid).filter((x: any) => x.getIsAlive());
+    const sibs0 = Relationships.siblings(kid);
+    const start0 = [...parents0, ...sibs0].map((x: any) => x.getRelationshipProgress());
+    for (let i = 0; i < 18 * W; i++) { kid.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100)); kid.applyWeekly(); clear(); }
+    const now0 = [...parents0, ...sibs0].map((x: any) => x.getRelationshipProgress());
+    check("growing up (0 to 18) without doing anything: parents and siblings don't drift", now0.every((v, i) => v >= start0[i]) && now0.length > 0, start0.join(",") + " → " + now0.join(","));
+    check("…so at 18 they still like you (Good or better)", now0.every((v) => v >= 400), now0.join(","));
+    const mom2: any = parents0[0];
+    mom2.setRelationshipProgress(700);
+    for (let i = 0; i < 10; i++) { kid.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100)); kid.applyWeekly(); clear(); }
+    check("as an adult they drift slowly (1 a week, 2 if Apathetic)", mom2.getRelationshipProgress() >= 680 && mom2.getRelationshipProgress() < 700, String(mom2.getRelationshipProgress()));
+    mom2.setRelationshipProgress(401);
+    for (let i = 0; i < 20; i++) { kid.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100)); kid.applyWeekly(); clear(); }
+    check("…but never below Good (400) from time alone", mom2.getRelationshipProgress() === 400, String(mom2.getRelationshipProgress()));
+    const fr = Relationships.makeFriend("work", kid)!;
+    fr.setRelationshipProgress(300);
+    kid.applyWeekly(); clear();
+    check("friends drift 1 a week (2 if Apathetic)", fr.getRelationshipProgress() === 300 + RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate(), String(fr.getRelationshipProgress()));
+    // old saves: family that already drifted away is repaired once
+    kid.getSocial().driftFixed = false;
+    mom2.setRelationshipProgress(5);
+    Relationships.repairDrift(kid);
+    check("one-time repair for older saves: parents raised back to Good", mom2.getRelationshipProgress() === 400);
+    mom2.setRelationshipProgress(5);
+    Relationships.repairDrift(kid);
+    check("…only once", mom2.getRelationshipProgress() === 5);
 }
 
 console.log(failures ? `${failures} FAILED` : "ALL PASSED");

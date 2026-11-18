@@ -103,10 +103,10 @@ check("high school done at about 17.3 — not 15", g.highSchool >= 17 && g.highS
 check("Fast Learner perk doesn't shorten kids' school", S.highSchool.getTimeRequiredInWeeks(p) === 160 || p.getAgeInYears() >= 18);
 
 // ---------------------------------------------------------------- night school for adults
-p = start(LifeScenario.highSchoolDropout, (np) => np.getPerkState().getPerks().clear());
+p = start(LifeScenario.highSchoolDropout, (np) => { np.getPerkState().getPerks().clear(); np.getTraitState().getTraits().clear(); });   // traits like Stupid change study time
 const edu = p.getCompletableActionState();
 check("High School Dropout (18): preschool + elementary done, middle done, high school 15 weeks in", edu.isCompleted(S.preschool) && edu.isCompleted(S.elementarySchool) && edu.isCompleted(S.middleSchool) && edu.getState(S.highSchool).getProgress() === 15 && !edu.isCompleted(S.highSchool));
-check("adult high school is night school: 80 weeks", S.highSchool.getTimeRequiredInWeeks(p) === 80 && /Night school/.test(text(eduRow("High School"))));
+check("adult high school is night school: 80 weeks", S.highSchool.getTimeRequiredInWeeks(p) === 80 && /Night school/.test(text(eduRow("High School"))), `${S.highSchool.getTimeRequiredInWeeks(p)} weeks, traits ${Array.from(p.getTraitState?.()?.getTraits?.() ?? []).map((t: any) => t.name()).join(",")}`);
 check("adult can't go to preschool", /Only for ages 3–5/.test(text(eduRow("Preschool"))) || edu.isCompleted(S.preschool));
 p.getPerkState().addPerk(Perk.fastLearner);
 check("Fast Learner still speeds up adult night school", S.highSchool.getTimeRequiredInWeeks(p) < 80, String(S.highSchool.getTimeRequiredInWeeks(p)));

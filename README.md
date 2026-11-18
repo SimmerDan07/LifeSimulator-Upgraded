@@ -95,12 +95,15 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   - **Home comfort** replaces the old fixed "+1 happiness" tags: each home type has its own happiness/sanity, scaled
     by condition, plus renovations.
   - **Six new homes (v0.6.0)** — mid-range: Townhouse (~$350K), Ranch House (~$650K), Family Home (~$850K);
-    high-end: Penthouse (~$3M), Beachfront Villa (~$6M), Hilltop Mansion (~$25M). Townhouse, Ranch House and Family
-    Home use the user's own icons (v0.6.1, `assets/images/housing_townhouse.png` etc.); Penthouse, Beachfront Villa
-    and Hilltop Mansion still use placeholders (`housing_penthouse.svg`, `housing_beach_villa.svg`,
-    `housing_hilltop_mansion.svg`) — replace them with same-named .png files and delete the .svg.
+    high-end: Penthouse (~$3M), Beachfront Villa (~$6M), Hilltop Mansion (~$25M). All six use the user's own
+    icons (`assets/images/housing_*.png`: Townhouse, Ranch House and Family Home in v0.6.1; Penthouse, Beachfront Villa
+    and Hilltop Mansion in v0.12.1).
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Relationship drift (v0.12.1)** (`Relationships.drift`): scores drift 1 a week when you do nothing with someone
+  (was 2; Apathetic 2, Emotional Intelligence 0). While you're under 18 your parents and siblings don't drift at all,
+  and as an adult time alone never takes them below 400 (Good). Older saves get a one-time repair: parents and siblings
+  below that are raised to 400. The v0.12.0 repeat-action penalty is gone: the same action gives the full amount every week.
 - **Love tab remodel (v0.12.0)** (`src/game/Social/`): the Love tab is now a people screen.
   - **Layout** (`LoveScreens.ts`): status and counters on top with group actions (Spend Time with Everyone, Family
     Gathering, Family Vacation), then **Partner** (or *Find Love* with the dating options when single), **Parents**
@@ -124,11 +127,10 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     | Friends | Hang Out, Call (8+), Go to the Movies ($30), Go to a Party (16+, $50), Give a Gift ($100), Unfriend |
     | Exes | Text Them (+10, small chance they want you back), Ask to Get Back Together (score 500+), Remove from List |
     | Everyone | Family Gathering ($250, +30 with every family member), Meet New People (50% chance of a new friend, up to 10) |
-  - **Systems** (`Relationships.ts`): every relationship still uses the 0–1000 score and the −2/week drift (doing
+  - **Systems** (`Relationships.ts`): every relationship still uses the 0–1000 score and the weekly drift (doing
     something with someone skips it that week). **Moods** (Happy, Fine, Stressed, Upset) are re-rolled every 4 weeks,
     weighted by the score and a partner's personality; Stressed/Upset halve gains, and Deep Talk, Call, Ask for Advice and
-    Couples Therapy lift them back to Fine. **Repeat-action fatigue**: the same action with the same person in back-to-back
-    weeks gives half, then a quarter (dates included). **Anniversaries** come from the Together/Married counters;
+    Couples Therapy lift them back to Fine. (The v0.12.0 repeat-action penalty was removed in v0.12.1.) **Anniversaries** come from the Together/Married counters;
     missing one costs 40 and upsets your partner. **Siblings**: new games roll 0–3; heirs get the deceased's other
     children. **Exes**: a breakup or divorce keeps them with their score. **Friends** are met at school (4–17) or work
     (2% a week) or with Meet New People; one you ignore until 0 drifts away.

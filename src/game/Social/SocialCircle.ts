@@ -5,9 +5,9 @@ import { SocialPerson } from "./SocialPerson";
 /** Per-person notes, keyed by Person/SocialPerson id. All fields optional. */
 export interface PersonMeta {
     mood?: string;          // happy | fine | stressed | upset
-    lastKey?: string;       // last action done with them
-    lastWeek?: number;      // week it was done (your true age in weeks)
-    streak?: number;        // back-to-back weeks of that same action
+    lastKey?: string;       // (v0.12.0 repeat-action penalty, removed in v0.12.1)
+    lastWeek?: number;
+    streak?: number;
     touched?: number;       // last week you did anything with them (skips their weekly drift)
     annivYear?: number;     // last anniversary celebrated (years together)
     annivMissed?: number;   // last anniversary that was missed
@@ -24,6 +24,8 @@ export class SocialCircle {
     meta: any = {};
     /** Week the moods were last rolled. */
     moodWeek: number = -1;
+    /** v0.12.1 one-time repair of family scores that drifted away while you were a kid. */
+    driftFixed: boolean = false;
 
     list(kind?: string): SocialPerson[] {
         const all = this.people ?? (this.people = []);

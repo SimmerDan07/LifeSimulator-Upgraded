@@ -195,7 +195,8 @@ export namespace RelationshipProgressStatus {
             throw new Error('no overload for $init with ' + a.length + ' args');
         }
         getWeeklyDeteriorationRate(): number {
-        let i: number = GameStateManager.INSTANCE.getPersonState().hasTrait(Trait.apathetic) ? -3 : -2;
+        // v0.12.1: halved (was -2, or -3 if Apathetic) — relationships fell apart far too fast
+        let i: number = GameStateManager.INSTANCE.getPersonState().hasTrait(Trait.apathetic) ? -2 : -1;
         return GameStateManager.INSTANCE.getPersonState().hasPerk(Perk.emotionalIntelligence) ? (i + 1) : i;
     }
         getMaxValue(): number {

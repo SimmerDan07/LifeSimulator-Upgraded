@@ -1,8 +1,8 @@
 // Love tab remodel (v0.12.0): the rules behind relationships.
 //
 // - Everyone: partner, parents, children, pets (FamilyState) and siblings, friends, exes (SocialCircle).
-// - Gains go through applyGain(): moods (Stressed/Upset halve gains) and repeat-action fatigue
-//   (the same action with the same person in back-to-back weeks gives half, then a quarter).
+// - Gains go through applyGain(): moods (Stressed/Upset halve gains). Weekly drift goes through drift():
+//   1 a week, none for parents/siblings while you're a kid, and never below Good for them from time alone.
 // - Moods are re-rolled every 4 weeks, weighted by the score (and a partner's personality).
 // - Anniversaries come from the Together/Married counters; a missed one costs 40. Birthdays come from age.
 // - Siblings are rolled for new games (0–3) and inherited by heirs; a breakup or divorce keeps your ex.
@@ -104,35 +104,55 @@ export const Relationships = {
     liftMood(person: any) { const m = Relationships.mood(person); if (m === "upset" || m === "stressed") Relationships.setMood(person, "fine"); },
 
     // ------------------------------------------------------------------ gains
-    /** How much `base` would give right now (mood and fatigue), without doing it. */
-    preview(person: any, key: string, base: number): { gain: number; why: string | null } {
+    /** How much `base` would give right now (a Stressed or Upset person gets half), without doing it. */
+    preview(person: any, _key: string, base: number): { gain: number; why: string | null } {
         if (base <= 0) return { gain: base, why: null };
-        const m = Relationships.meta(person), now = Relationships.now();
-        const streak = m.lastKey === key && (m.lastWeek === now - 1 || m.lastWeek === now) ? (m.streak ?? 0) + (m.lastWeek === now ? 0 : 1) : 0;
-        let mult = streak <= 0 ? 1 : streak === 1 ? 0.5 : 0.25;
-        const notes: string[] = [];
-        if (streak === 1) notes.push("half: you did this last week");
-        if (streak >= 2) notes.push("a quarter: same thing again");
         const mood = Relationships.mood(person);
-        if (mood === "stressed" || mood === "upset") { mult *= 0.5; notes.push(`halved: ${MOOD_TITLE[mood].toLowerCase()}`); }
-        return { gain: Math.max(1, Math.round(base * mult)), why: notes.length ? notes.join(", ") : null };
+        if (mood === "stressed" || mood === "upset") return { gain: Math.max(1, Math.round(base / 2)), why: `halved: ${MOOD_TITLE[mood].toLowerCase()}` };
+        return { gain: base, why: null };
     },
-    /** Apply a relationship change from `key` (an action id). Positive gains are shaped by mood and fatigue. */
+    /** Apply a relationship change from `key` (an action id). Positive gains are halved while they're Stressed or Upset.
+     *  (v0.12.1: the repeat-action penalty was removed at the user's request.) */
     applyGain(person: any, key: string, base: number): number {
         if (person == null) return 0;
         const m = Relationships.meta(person), now = Relationships.now();
-        let gain = base;
-        if (base > 0) {
-            gain = Relationships.preview(person, key, base).gain;
-            const sameKeyRecent = m.lastKey === key && (m.lastWeek === now - 1 || m.lastWeek === now);
-            m.streak = sameKeyRecent ? (m.streak ?? 0) + (m.lastWeek === now ? 0 : 1) : 0;
-            m.lastKey = key;
-            m.lastWeek = now;
-        }
+        const gain = base > 0 ? Relationships.preview(person, key, base).gain : base;
         m.touched = now;
         if (key === "pi:call") Relationships.liftMood(person);
         person.setRelationshipProgress(person.getRelationshipProgress() + gain);
         return gain;
+    },
+
+    // ------------------------------------------------------------------ weekly drift (v0.12.1)
+    /** Parents and siblings never drift below this from time alone ("Good"). */
+    familyFloor: 400,
+    /**
+     * How much someone's score drifts this week when you did nothing with them (0 or negative).
+     * - While you're a kid (under 18) your parents and siblings don't drift at all: you live with them.
+     * - As an adult they drift 1 a week but never below 400 (Good) from time alone.
+     * - Everyone else drifts 1 a week (2 if you're Apathetic, 0 with Emotional Intelligence).
+     */
+    drift(person: any, p: any = player()): number {
+        const rate = RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate();
+        if (rate >= 0) return 0;
+        const kind = Relationships.kindOf(person);
+        if (kind === "parent" || kind === "sibling") {
+            if (p.getAgeInYears() < 18) return 0;
+            const score = person.getRelationshipProgress();
+            if (score <= Relationships.familyFloor) return 0;
+            return Math.max(rate, Relationships.familyFloor - score);
+        }
+        return rate;
+    },
+    /** One-time repair for saves played before v0.12.1: family that drifted to nothing while you were growing up. */
+    repairDrift(p: any = player()) {
+        const c = Relationships.circle(p);
+        if (c.driftFixed) return;
+        c.driftFixed = true;
+        const minor = p.getAgeInYears() < 18;
+        const target = minor ? RelationshipProgressStatus.good.getStartProgressValue() : Relationships.familyFloor;
+        const fam = [...Relationships.family(Relationship.parent, p), ...Relationships.siblings(p)];
+        for (const x of fam) if (x.getIsAlive() && x.getRelationshipProgress() < target) x.setRelationshipProgress(target);
     },
 
     // ------------------------------------------------------------------ once-a-year moments
@@ -305,16 +325,16 @@ export const Relationships = {
         let p: any;
         try { p = player(); } catch { return; }
         if (p == null || p.getSocial == null) return;
+        Relationships.repairDrift(p);
         const c = Relationships.circle(p);
         const now = Relationships.now();
-        const decay = RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate();
         // siblings, friends and exes age, drift apart a little each week, and may pass away
         for (const s of c.list()) {
             if (!s.getIsAlive()) continue;
             s.advanceWeeks(weeks);
             if (weeks > 1) continue;
             const m = c.metaFor(s.id);
-            if (m.touched !== now) s.setRelationshipProgress(s.getRelationshipProgress() + decay);
+            if (m.touched !== now) s.setRelationshipProgress(s.getRelationshipProgress() + Relationships.drift(s, p));
             if (s.kind === "sibling" && m.loanDue != null && now >= m.loanDue) {
                 delete m.loanDue;
                 if (Math.random() < 0.6) {

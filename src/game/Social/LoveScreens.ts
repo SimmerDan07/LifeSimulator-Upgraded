@@ -92,6 +92,7 @@ export const LoveScreens = {
     // ------------------------------------------------------------------ Love tab
     tab(): GenericListFragmentViewModel {
         const p = player();
+        Relationships.repairDrift(p);
         const fam = p.getFamilyState();
         const out = new ArrayList<BaseViewModel>();
         const status = p.getRomanticRelationshipStatus();

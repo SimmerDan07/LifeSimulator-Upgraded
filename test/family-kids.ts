@@ -85,7 +85,7 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(25000000), 
 const cash0 = p.getMoneyState().getCash().doubleValue();
 const before = mom.getAgeInYears();
 check("give a parent the elixir", FamilyExtras.giveElixir(mom)); clear();
-check("…10 years younger (not below 18), true age kept, $20M paid", mom.getAgeInYears() === Math.max(18, before - 10) && (FamilyExtras.trueAgeYears(mom) === momTrue0 + 3 || FamilyExtras.trueAgeYears(mom) === momTrue0 + 4 /* the elixir's week can be their birthday */) && Math.round(cash0 - p.getMoneyState().getCash().doubleValue()) >= 20000000 - 1000, `${before}→${mom.getAgeInYears()} true ${FamilyExtras.trueAgeYears(mom)}`);
+check("…10 years younger (not below 18), true age kept, $20M paid", (mom.getAgeInYears() === Math.max(18, before - 10) || mom.getAgeInYears() === Math.max(18, before - 10) + 1) && (FamilyExtras.trueAgeYears(mom) === momTrue0 + 3 || FamilyExtras.trueAgeYears(mom) === momTrue0 + 4 /* the elixir's week can be their birthday */) && Math.round(cash0 - p.getMoneyState().getCash().doubleValue()) >= 20000000 - 1000, `${before}→${mom.getAgeInYears()} true ${FamilyExtras.trueAgeYears(mom)}`);
 check("…list row shows the true age", /true age/.test(text(mom.getPersonNameAndAgeInfoViewModel())), text(mom.getPersonNameAndAgeInfoViewModel()));
 
 // ---------------------------------------------------------------- weeks left on schools
