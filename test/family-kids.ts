@@ -80,13 +80,13 @@ for (let w = 0; w < 3 * W; w++) { keepAlive(p); p.applyWeekly(); clear(); }
 check("parent's true age goes up as they age (fixed)", (FamilyExtras.trueAgeYears(mom) === momTrue0 + 3 || FamilyExtras.trueAgeYears(mom) === momTrue0 + 4 /* the elixir's week can be their birthday */) && mom.getAgeInYears() === momAge0 + 3, `${momAge0}/${momTrue0} → ${mom.getAgeInYears()}/${FamilyExtras.trueAgeYears(mom)}`);
 check("toddler (3): playground opens", KidsLeisure.get("playground").requirementNotMetString(p) == null);
 const parentScreen = GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.parentDetails, mom.getId(), true);
-check("parent screen (new person screen) shows their age and an Elixir button", /Age: \d+/.test(text(parentScreen)) && /Elixir of Youth/.test(text(parentScreen)));
+// v0.15.0: the Elixir of Youth became the vampire Cure, so family can no longer be made younger
+check("parent screen shows their age and no Elixir button any more", /Age: \d+/.test(text(parentScreen)) && !/Elixir of Youth/.test(text(parentScreen)));
 MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(25000000), MoneyUpdateType.workIncome, null, null, 12, null);
-const cash0 = p.getMoneyState().getCash().doubleValue();
 const before = mom.getAgeInYears();
-check("give a parent the elixir", FamilyExtras.giveElixir(mom)); clear();
-check("…10 years younger (not below 18), true age kept, $20M paid", (mom.getAgeInYears() === Math.max(18, before - 10) || mom.getAgeInYears() === Math.max(18, before - 10) + 1) && (FamilyExtras.trueAgeYears(mom) === momTrue0 + 3 || FamilyExtras.trueAgeYears(mom) === momTrue0 + 4 /* the elixir's week can be their birthday */) && Math.round(cash0 - p.getMoneyState().getCash().doubleValue()) >= 20000000 - 1000, `${before}→${mom.getAgeInYears()} true ${FamilyExtras.trueAgeYears(mom)}`);
-check("…list row shows the true age", /true age/.test(text(mom.getPersonNameAndAgeInfoViewModel())), text(mom.getPersonNameAndAgeInfoViewModel()));
+check("the elixir can't be given any more", !FamilyExtras.giveElixir(mom) && mom.getAgeInYears() === before); clear();
+mom.trueAgeInWeeks = mom.getAgeInWeeks() + 10 * W;   // e.g. an older save where she drank it
+check("…list row still shows a true age that differs", /true age/.test(text(mom.getPersonNameAndAgeInfoViewModel())), text(mom.getPersonNameAndAgeInfoViewModel()));
 
 // ---------------------------------------------------------------- weeks left on schools
 const eduRow = (t: string) => (Array.from(new EducationModelGenerator().getEducationViewModels() as any) as any[]).find((r) => r.title === t);
@@ -114,7 +114,7 @@ check("married a year: 'Together 3 years · Married 1 year'", FamilyExtras.count
 const love = rows(new LoveModelGenerator());
 check("Love tab shows the counters", love.some((r) => /Together 3 years · Married 1 year/.test(text(r))));
 const partnerScreen = Array.from(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.personDetails, p.getFamilyState().getPartner().getId(), true).getContentViewModels() as any) as any[];
-check("partner screen: Elixir button; Love tab: Spend Time with Everyone", partnerScreen.some((r) => r.title === "Give Ana the Elixir of Youth") && love.some((r) => r.title === "Spend Time with Everyone"));
+check("partner screen: no Elixir; Love tab: Spend Time with Everyone", !partnerScreen.some((r) => /Elixir/.test(r.title ?? "")) && love.some((r) => r.title === "Spend Time with Everyone"));
 const everyone = FamilyExtras.everyone();
 const rel0 = everyone.map((x) => x.getRelationshipProgress());
 const w0 = p.getAgeInWeeks();
@@ -122,11 +122,9 @@ const n = FamilyExtras.spendTimeWithEveryone(); clear();
 check("Spend Time with Everyone: everyone closer, one week", n === everyone.length && n >= 2 && p.getAgeInWeeks() === w0 + 1 && everyone.every((x, i) => x.getRelationshipProgress() >= Math.min(rel0[i] + 1, 100) || x.getRelationshipProgress() === rel0[i]), everyone.map((x, i) => `${x.getFirstName()} ${rel0[i]}→${x.getRelationshipProgress()}`).join(", "));
 const back: any = (SaveCodec as any).decode((SaveCodec as any).encode(p));
 check("save keeps the counters", back.getFamilyState().getPartner().togetherSinceWeek === p.getFamilyState().getPartner().togetherSinceWeek && back.getFamilyState().getPartner().marriedSinceWeek != null);
-// partner elixir
-MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(25000000), MoneyUpdateType.workIncome, null, null, 12, null);
-const a0 = lover.getAgeInYears();
-FamilyExtras.giveElixir(lover); clear();
-check("partner elixir: 10 years younger, Love tab shows true age", lover.getAgeInYears() === a0 - 10 && rows(new LoveModelGenerator()).some((r) => /true age/.test(text(r))));
+// a partner with an older true age (from an older save) still shows it on the Love tab
+lover.trueAgeInWeeks = lover.getAgeInWeeks() + 10 * W;
+check("Love tab shows a partner's true age when it differs", rows(new LoveModelGenerator()).some((r) => /true age/.test(text(r))));
 // minors can't get it
 const kid = new Person(Relationship.child, Sex.male, p.getLastName(), 10 * W);
 check("children under 18 can't get the elixir", !FamilyExtras.canGetElixir(kid));

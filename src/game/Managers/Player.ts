@@ -76,6 +76,9 @@ import { Utils } from "../Utils/Utils";
 import { WorkType } from "../Enums/WorkType";
 import { SocialCircle } from "../Social/SocialCircle";
 import { Subscriptions } from "./Subscriptions";
+import { Vampire } from "../Lifepaths/Vampire";
+import { Babies } from "../Social/Babies";
+import { VampireState } from "../Lifepaths/VampireState";
 import { Relationships } from "../Social/Relationships";
 
 export class Player {
@@ -109,6 +112,8 @@ export class Player {
     social: SocialCircle = null;
     /** Subscriptions (Profile tab): active ids. Undefined in older saves. */
     subscriptions: string[] = null;
+    /** The Vampire lifepath (v0.15.0). Undefined in older saves: human. */
+    vampire: VampireState = null;
     id: string = null;
     itemState: ItemState = null;
     jobState: JobState = null;
@@ -263,8 +268,10 @@ export class Player {
     getBirthMonth(): number { return ((this.birthMonth ?? 0) % 12 + 12) % 12; }
     setBirthMonth(m: number): void { this.birthMonth = ((m % 12) + 12) % 12; }
     /** The calendar month now (0 = January): your birth month plus the months since your last birthday. */
+    /** Weeks for the calendar: your age, plus the weeks lived as a vampire (when your age stood still). */
+    calendarWeeks(): number { return this.ageInWeeks + Vampire.calendarOffset(this); }
     getCurrentMonthIndex(): number {
-        const monthsSinceBirthday = JMath.idiv(this.ageInWeeks % Constants.Time.INSTANCE.getWeeksPerYear(), Constants.Time.INSTANCE.getWeeksPerMonth());
+        const monthsSinceBirthday = JMath.idiv(this.calendarWeeks() % Constants.Time.INSTANCE.getWeeksPerYear(), Constants.Time.INSTANCE.getWeeksPerMonth());
         return (this.getBirthMonth() + monthsSinceBirthday) % 12;
     }
     getTrueAgeInWeeks(): number {
@@ -402,7 +409,7 @@ export class Player {
     }
     getGetHUDViewModel(): GameHUDViewModel {
         let monthString: string = new DateFormatSymbols().getMonths()[this.getCurrentMonthIndex()];
-        let weeksPerYear: number = (this.ageInWeeks % Constants.Time.INSTANCE.getWeeksPerYear()) % Constants.Time.INSTANCE.getWeeksPerMonth();
+        let weeksPerYear: number = (this.calendarWeeks() % Constants.Time.INSTANCE.getWeeksPerYear()) % Constants.Time.INSTANCE.getWeeksPerMonth();
         let health: number = this.attributeState.getHealth();
         let happiness: number = this.attributeState.getHappiness();
         let sanity: number = this.attributeState.getSanity();
@@ -466,6 +473,7 @@ export class Player {
             let format: string = String.format(string2, Arrays.copyOf(objArr, objArr.length));
             AlertManager.showAlert$default(alertManager, new AlertViewModel(string, format, Integer.valueOf(travelCountry.getImageId()), null, null, null, null, null, null, 504, null), false, 2, null);
         }
+        Vampire.onLeisure(this, action);
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForLeisure(action), false, 2, null);
         this.applyWeekly();
     }
@@ -493,11 +501,7 @@ export class Player {
             Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.chooseDiet, null, false, 6, null);
             return;
         }
-        if (action === HealthEvent.elixirOfYouth) {
-            this.setAgeInWeeks(this.ageInWeeks - (Constants.Time.INSTANCE.getWeeksPerYear() * 10));
-            let miscState: MiscState = GameStateManager.INSTANCE.getPersonState().miscState;
-            miscState.setNumberOfLifeElixirsBought(miscState.getNumberOfLifeElixirsBought() + 1);
-        }
+        // v0.15.0: the Elixir of Youth no longer makes you younger; it is now the vampire Cure (Lifepaths tab).
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForHealth(action), false, 2, null);
         this.applyWeekly();
     }
@@ -684,41 +688,13 @@ export class Player {
                 }
                 }), false, 2, null);
                 break;
-            case LoveEvent.makeBaby:
-                if (this.gender === Gender.male) {
-                    let stringCompanionObject4 = StringCompanionObject.INSTANCE;
-                    let string4: string = Utils.INSTANCE.getString(R.string.PregnantMessageWife);
-                    let objArr4 = new Array(1).fill(null);
-                    let partner3: Person = this.familyState.getPartner();
-                    if (partner3 == null) {
-                        Intrinsics.throwNpe();
-                    }
-                    let title2: string = partner3.getTitle();
-                    if (title2 == null) {
-                        throw new TypeCastException("null cannot be cast to non-null type java.lang.String");
-                    }
-                    let lowerCase2: string = title2.toLowerCase();
-                    objArr4[0] = lowerCase2;
-                    string = String.format(string4, Arrays.copyOf(objArr4, objArr4.length));
-                } else {
-                    string = Utils.INSTANCE.getString(R.string.PregnantMessageYou);
-                }
-                let alertManager3: AlertManager = AlertManager.INSTANCE;
-                let string5: string = Utils.INSTANCE.getString(R.string.PregnantYouAreNowPregnantTitle);
-                let stringCompanionObject5 = StringCompanionObject.INSTANCE;
-                let string6: string = Utils.INSTANCE.getString(R.string.PregnantYouAreNowPregnantMessage);
-                let objArr5 = [string, Integer.valueOf(Constants.Time.INSTANCE.getPregnancyTimeInWeeks())];
-                let format4: string = String.format(string6, Arrays.copyOf(objArr5, objArr5.length));
-                AlertManager.showAlert$default(alertManager3, new AlertViewModel(string5, format4, R.drawable.alert_pregnant, {
-                    invoke: () => {
-                    this.getFamilyState().makeBaby();
-                    let mainGameFragment: MainGameFragment = GameStateManager.INSTANCE.getMainGameFragment();
-                    if (mainGameFragment != null) {
-                        MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
-                    }
-                }
-                }), false, 2, null);
+            case LoveEvent.makeBaby: {
+                // v0.15.0: the woman of the couple carries the baby (by sex). Men can't get pregnant.
+                if (!Babies.canMakeBaby(this) || this.familyState.getPregnantChild() != null) break;
+                const child = Babies.startPregnancy(this, this.sex === Sex.female ? "you" : "partner");
+                Babies.announce(child);
                 break;
+            }
             case LoveEvent.adoptBaby:
                 let adoptChildForPlayer: Person = Person.INSTANCE.adoptChildForPlayer(GameStateManager.INSTANCE.getPersonState());
                 this.familyState.getFamilyMembers().add(adoptChildForPlayer);
@@ -745,7 +721,7 @@ export class Player {
                 this.romanticRelationshipStatus = RomanticRelationshipStatus.single;
                 break;
             default:
-                if ((event.getChanceOfFindingDate() > 0.0) && Utils.Random.INSTANCE.rollWithProbability(event.getChanceOfFindingDate())) {
+                if ((event.getChanceOfFindingDate() > 0.0) && Utils.Random.INSTANCE.rollWithProbability(Math.min(1, event.getChanceOfFindingDate() * Vampire.datingMultiplier()))) {
                     let chooseFromPool: IProbableEvent = Utils.Random.INSTANCE.chooseFromPool(ArraysKt.toCollection(LoverPersonality.values(), new ArrayList()));
                     let alertManager4: AlertManager = AlertManager.INSTANCE;
                     if (chooseFromPool == null) {
@@ -756,6 +732,7 @@ export class Player {
                 }
                 break;
         }
+        Vampire.maybeStranger(this, event);
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForLoveEvent(event), false, 2, null);
         this.applyWeekly();
     }
@@ -842,9 +819,12 @@ export class Player {
     applyWeekly(): void {
         this.collectWeeklyValues();
         this.applyWeeklyValues();
-        this.setAgeInWeeks(this.ageInWeeks + 1);
+        // a vampire's body doesn't age: only the true age and the calendar move on
+        if (Vampire.frozen(this)) Vampire.tickFrozen(this);
+        else this.setAgeInWeeks(this.ageInWeeks + 1);
         Retirement.countWeek(this);
         Subscriptions.afterWeek(this);
+        Vampire.afterWeek(this);
         let miscState: MiscState = this.miscState;
         miscState.setTotalWeekInLife(miscState.getTotalWeekInLife() + 1);
         let miscState2: MiscState = this.miscState;
@@ -857,7 +837,7 @@ export class Player {
         this.executePostWeekEndLogic();
     }
     executePostWeekEndLogic(): void {
-        if ((this.ageInWeeks % Constants.Time.INSTANCE.getWeeksPerYear()) === 0) {
+        if ((this.calendarWeeks() % Constants.Time.INSTANCE.getWeeksPerYear()) === 0) {
             this.newYearReached();
         }
         if (this.showDeathAlertsIfRequired()) {
@@ -1006,6 +986,7 @@ export class Player {
         realEstate.collectWeeklyValues(this);
         Retirement.collectWeeklyValues(this);
         Subscriptions.collectWeeklyValues(this);
+        Vampire.collectWeeklyValues(this);
         this.attributeState.setDeltaValue(PersonAttribute.health, Utils.INSTANCE.getString(R.string.identity_name_age), this.getHealthStatus().getHealthModifier());
         let effectiveInterestRate: number = this.moneyState.getEffectiveInterestRate();
         let weeksPerYear: number = Constants.Time.INSTANCE.getWeeksPerYear();
@@ -1051,8 +1032,11 @@ export class Player {
                 this.attributeState.setDeltaValue(petType.getModifiers(), next.getFullName());
             }
         }
-        MoneyState.updateMoney$default(this.moneyState, this.diet.getCost(), MoneyUpdateType.expense, Utils.Strings.INSTANCE.formatWithDash(Utils.INSTANCE.getString(R.string.Common_Diet), this.diet.getTitle()), null, 8, null);
-        this.attributeState.setDeltaValue(this.diet.getModifiers(), Utils.Strings.INSTANCE.formatWithDash(Utils.INSTANCE.getString(R.string.Common_Diet), this.diet.getTitle()));
+        // vampires live on blood: their diet doesn't matter
+        if (!Vampire.isVampire(this)) {
+            MoneyState.updateMoney$default(this.moneyState, this.diet.getCost(), MoneyUpdateType.expense, Utils.Strings.INSTANCE.formatWithDash(Utils.INSTANCE.getString(R.string.Common_Diet), this.diet.getTitle()), null, 8, null);
+            this.attributeState.setDeltaValue(this.diet.getModifiers(), Utils.Strings.INSTANCE.formatWithDash(Utils.INSTANCE.getString(R.string.Common_Diet), this.diet.getTitle()));
+        }
         for (const singleSideHustleState of this.sideHustleState.getStates()) {
             if (singleSideHustleState.getWeeklyRevenue() > 0) {
                 let moneyState3: MoneyState = this.moneyState;

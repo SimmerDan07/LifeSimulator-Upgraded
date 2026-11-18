@@ -9,6 +9,7 @@ import { SoundManager } from "../game/Managers/SoundManager";
 import { SoundEffect } from "../game/Managers/SoundEffect";
 import { MainGameTab } from "../game/Enums/MainGameTab";
 import { LifepathsModelGenerator } from "../game/Controllers/LifepathsModelGenerator";
+import { Vampire } from "../game/Lifepaths/Vampire";
 import { GenericListType } from "../game/Fragments/GenericListType";
 import { GenericListModelGenerator } from "../game/Controllers/GenericListModelGenerator";
 import { ProfileModelGenerator } from "../game/Controllers/ProfileModelGenerator";
@@ -76,6 +77,10 @@ class MainScreen extends MainGameFragment {
         setBar("#hud-health", m.getAttr_health_progress());
         setBar("#hud-happiness", m.getAttr_happiness_progress());
         setBar("#hud-sanity", m.getAttr_sanity_progress());
+        // v0.15.0: vampires get a red Thirst bar
+        const vamp = Vampire.isVampire(p) && (p as any).vampire?.cureWeeks === 0;
+        document.body.classList.toggle("vampire", vamp);
+        if (vamp) { const t = $("#hud-thirst") as HTMLElement; t.style.width = `${(p as any).vampire.thirst}%`; t.style.background = "#b3262e"; }
         $("#hud-cash").textContent = ExtensionsKt.numberDisplayString(m.getCashAmount(), true);
         $("#hud-bank").textContent = ExtensionsKt.numberDisplayString(m.getBankAmount(), true);
         $("#hud-name").textContent = p.getFullName();

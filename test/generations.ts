@@ -28,14 +28,15 @@ const gsm = GameStateManager.INSTANCE.getGlobalStateManager();
 const check = (n: string, ok: boolean, x = "") => console.log((ok ? "PASS " : "FAIL ") + n + (x ? "  (" + x + ")" : ""));
 const buttons = (vm: any) => { const out: ButtonViewModel[] = []; const walk = (o: any, d = 0) => { if (!o || typeof o !== "object" || d > 5) return; if (o instanceof ButtonViewModel) { out.push(o); return; } for (const v of Object.values(o)) Array.isArray(v) ? v.forEach((x) => walk(x, d + 1)) : walk(v, d + 1); }; walk(vm); return out; };
 
-// --- elixir price is flat
+// --- v0.15.0: the Elixir of Youth is now the vampire Cure: not on the Health tab, and it no longer makes you younger
 GameStateManager.INSTANCE.startNewGameFlow(LifeScenario.oldMan);
 GameStateManager.INSTANCE.startNewGame(GameStateManager.INSTANCE.getNewGamePlayerState()!);
 const p = GameStateManager.INSTANCE.getPersonState();
 MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000000), MoneyUpdateType.workIncome, null, null, 12, null);
-const prices: string[] = [];
-for (let i = 0; i < 3; i++) { prices.push(HealthEvent.elixirOfYouth.getCost().toString()); p.healthAction(HealthEvent.elixirOfYouth); while (alerts.length) AlertManager.INSTANCE.alertDismissed(alerts.shift()); }
-check("elixir stays $20M", prices.every((x) => x === "20000000"), prices.join(", "));
+check("the Health tab no longer offers the Elixir of Youth", !HealthEvent.INSTANCE.eventsForPlayer(p).includes(HealthEvent.elixirOfYouth));
+const age0 = p.getAgeInYears();
+p.healthAction(HealthEvent.elixirOfYouth); while (alerts.length) AlertManager.INSTANCE.alertDismissed(alerts.shift());
+check("…and it doesn't make you younger any more", p.getAgeInYears() >= age0);
 
 // --- set up a family: adult child with a job, a young child, a house
 const kid = new Person(Relationship.child, Sex.female, p.getLastName(), 48 * 24 + 10);

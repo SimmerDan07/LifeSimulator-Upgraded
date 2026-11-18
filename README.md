@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, old-save loading (360 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, old-save loading (416 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -50,7 +50,7 @@ reconstructed by hand from bytecode (e.g. job salaries, side-hustle income, mone
 All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - `removePaywall` — sandbox mode, all perks, all destinations, extra save slots and "unlock all content" are owned.
 - **No store (v0.5.0):** the store screen is gone. What it sold as unlocks is simply unlocked; its money packs and
-  Elixir of Youth packs no longer exist (the Elixir is still in the Health tab at its in-game price of $20M).
+  Elixir of Youth packs no longer exist (the Elixir is now the vampire Cure, v0.15.0).
   Revive on the death / bankruptcy pop-ups is kept and free (`InAppPurchaseManager` now only handles that).
 - `unlockProgression` — scenarios, perks, the achievement save slot and countries that were earned through
   achievements, life goals or daily rewards start unlocked.
@@ -100,9 +100,31 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     and Hilltop Mansion in v0.12.1).
   - **Old saves**: properties owned in a pre-0.4 save are turned into records automatically on load (the home you live
     in becomes your residence, the rest become rentals with tenants), so rental income carries on at the original rate.
+- **Vampire lifepath (v0.15.0)** (`src/game/Lifepaths/Vampire.ts`, state `VampireState.ts`, Lifepaths tab, icon
+  `assets/images/lifepath_vampire.png`):
+  - **Becoming one (18+)**: a pale stranger can appear at nightclubs and local events (2%), or *Seek the Ancient*
+    ($5,000, 1 in 4). *Accept the Bite* (with a warning) drops health to 50; you rise a week later with 1 blood power.
+  - **Never aging**: your age freezes and true age keeps counting (`calendarOffset` keeps months and new years moving;
+    `Player.calendarWeeks()`). People you turn freeze too.
+  - **Thirst** (HUD bar, red) rises 15 a week: at 60+ happiness −5, 80+ sanity −20, 4 weeks at 100 costs health and
+    100 can cause a frenzy. Feed: Blood Bank Contact, Animal Blood, Hunt (police risk), Your Partner (willing ones).
+  - **Suspicion** (red meter; rises yearly, from hunting, frenzies and telling people) — at 80+ hunters may come: Fight (50% win, 25%
+    hurt, 25% death), Flee (lose job, −50 suspicion) or Hide ($10k). Lay Low, Fake Your Death ($20k), Move City ($5k).
+  - **Sunlight**: daytime leisure costs −10 health (−5 with Sun Ward) and work half that, unless you have Night Owl.
+  - **Blood powers** (1 a year, +1 every 10 years): Charm (relationship gains ×1.25), Night Owl (work pays ×1.2, no sun
+    at work), Blood Bank Contact, Mist Step (no police when hunting), Sun Ward (half sun damage), Mind Fog (suspicion −5 a week).
+  - **Loved ones**: Tell Your Secret (they may accept, or recoil and talk), Turn a partner/parent/child/sibling/friend
+    (3 blood power), Find a Coven (vampire friends). Badges say "Vampire". Family deaths hit harder.
+  - **No biological children** while a vampire (adoption, surrogacy and insemination still work).
+  - **Endings**: *Elixir of Youth: The Cure* ($1M, 4 weeks; you're human again and age from where you froze) or
+    *Final Rest*. The old Elixir of Youth is gone from the Health tab and family screens.
+  - Tests: `test/vampire.ts`.
+- **Children for every couple (v0.15.0)** (`src/game/Social/Babies.ts`): fixes a bug where a man could get pregnant
+  (the player always carried). Now only a woman carries; two men use **Surrogacy** ($100k), two women use
+  **Artificial Insemination** ($15k, you carry unless infertile), and single adults can **Adopt a Child** ($50k) from
+  the Children section. The Love tab says "You are / Your wife is / Your surrogate is pregnant".
 - **Lifepaths tab (v0.14.0)** (`src/game/Controllers/LifepathsModelGenerator.ts`, icon `assets/images/tab_lifepaths.svg`):
-  an eighth tab after Bank (key 8) with an all-seeing eye. It introduces lifepaths (hidden paths that change what your
-  character is) and lists Vampire as coming soon. `MainGameTab.Lifepaths` has ordinal 7.
+  an eighth tab after Bank (key 8) with an all-seeing eye. `MainGameTab.Lifepaths` has ordinal 7.
 - **Subscriptions (v0.13.0)** (Profile tab, `src/game/Managers/Subscriptions.ts`): pay every week, benefit every week.
 
   | Subscription | Cost | Every week | Needs |
@@ -161,8 +183,6 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - **Family & love (v0.11.0)** (`src/game/Managers/FamilyExtras.ts`):
   - True age of parents, children and your partner (detail screens, the Love tab lists). Fixes an original bug: family
     members' true age never went up as they aged.
-  - Give your partner, a parent or an adult child the Elixir of Youth (same price as yours; 10 years younger, never
-    below 18).
   - "Together N years · Married N years" under your partner on the Love tab (partners from older saves start counting
     from when you load the save).
   - "Spend Time with Everyone" (Love tab, free, one week): partner, parents, children and pets all grow closer.
@@ -185,7 +205,7 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   elementary as done for anyone 11+ or past middle school. The two new schools use the user's
   icons (v0.10.1, `education_preschool.png`, `education_elementaryschool.png`).
 - **Young Child starts at age 0 (v0.10.0)**, and the game can now start at any age from 0 (sandbox slider 0–80). The old
-  minimum age (8) now only stops the Elixir of Youth making you younger than 8.
+  minimum age (8) is gone.
 - **Birth month (v0.10.0)**: pick the month you're born in on the new-life screen (it used to always be January).
   Birthdays fall in that month; heirs keep the calendar month going.
 - **Age limits (v0.10.0)**: jobs and side hustles from 14; businesses, buying or renting property, bank loans, stocks
@@ -199,8 +219,7 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - **Years in a career (v0.8.0)**: every job card on the Work tab shows how long it has been your job ("3 years in
   this career", "Less than a year in this career"). Each career keeps its own count (`JobStateSingle.weeksInCareer`,
   counted every week it's your current job); switching away pauses it.
-- **Retirement (v0.8.0)** (`src/game/Managers/Retirement.ts`): from age **60 physical age** (the age the Elixir of
-  Youth rolls back, not true age) you can retire from the Work tab; on the birthday you turn 60 with a job, a pop-up
+- **Retirement (v0.8.0)** (`src/game/Managers/Retirement.ts`): from age **60 physical age** (not true age) you can retire from the Work tab; on the birthday you turn 60 with a job, a pop-up
   offers *Retire* or *Keep working*. Retiring ends your job and pays a weekly **pension** for life: 2% of your pay for
   each year in that career, up to 70%, never less than $100/week. Retired life also gives +1 happiness and +1 sanity a
   week. Applying for a job asks first and brings you out of retirement (pension stops while you work; retiring again
@@ -212,7 +231,7 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   down). Anyone you meet afterwards matches your new sexuality. Can be changed again later.
 - **No row icons on Love/Health actions (v0.7.0)**: like the original game, only careers and education have pictures,
   so Come Out and Assisted Dying are text rows (their icons were deleted).
-- **Elixir of Youth** (Health tab) is a flat $20M instead of doubling after every purchase.
+- **Elixir of Youth** is no longer a Health tab item; it became the vampire Cure (v0.15.0).
 
 - **Net worth** now includes property equity (value minus mortgages).
 

@@ -26,6 +26,7 @@ import { Utils } from "../Utils/Utils";
 import { ValueRange } from "../Utils/ValueRange";
 import { WorkAction } from "../Enums/WorkAction";
 import { Retirement } from "./Retirement";
+import { Vampire } from "../Lifepaths/Vampire";
 
 export class JobState {
     static INSTANCE: any;
@@ -104,7 +105,7 @@ export class JobState {
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
         let state: JobState.JobStateSingle = this.getState(job);
         AttributeState.setDeltaValue$default(personState.getAttributeState(), job.modifiers(state.getLevel()), null, 2, null);
-        let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * workAction.getPayModifier();
+        let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * workAction.getPayModifier() * Vampire.onWork(personState);
         let moneyState: MoneyState = personState.getMoneyState();
         let valueOf: BigInteger = BigInteger.valueOf(JMath.toInt(randomValue));
         MoneyState.updateMoney$default(moneyState, valueOf, MoneyUpdateType.workIncome, null, null, 12, null);

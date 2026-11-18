@@ -213,7 +213,8 @@ export namespace HealthEvent {
         }
         eventsForPlayer(player: Player): HealthEvent[] {
         Intrinsics.checkParameterIsNotNull(player, "player");
-        return [HealthEvent.mindfulMeditation, HealthEvent.takeAntidepressantPills, HealthEvent.selfTreatment, HealthEvent.doctorVisit, HealthEvent.hospitalStay, HealthEvent.experimentalTreatment, HealthEvent.elixirOfYouth];
+        // v0.15.0: the Elixir of Youth was reworked into the vampire Cure (Lifepaths tab).
+        return [HealthEvent.mindfulMeditation, HealthEvent.takeAntidepressantPills, HealthEvent.selfTreatment, HealthEvent.doctorVisit, HealthEvent.hospitalStay, HealthEvent.experimentalTreatment];
     }
     }
 }

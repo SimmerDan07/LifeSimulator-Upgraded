@@ -46,8 +46,11 @@ export const FamilyExtras = {
 
     // ---------------------------------------------------------------- elixir for others
     elixirPrice(): BigInteger { return HealthEvent.elixirOfYouth.getCost(); },
-    canGetElixir(person: any): boolean { return person.getIsAlive() && !person.getNotYetBorn() && person.getPetType?.() == null && person.getAgeInYears() > FamilyExtras.elixirMinAge; },
+    /** v0.15.0: the Elixir of Youth was reworked into the vampire Cure, so nobody can be made younger any more. */
+    elixirRetired: true,
+    canGetElixir(person: any): boolean { if (FamilyExtras.elixirRetired) return false; return person.getIsAlive() && !person.getNotYetBorn() && person.getPetType?.() == null && person.getAgeInYears() > FamilyExtras.elixirMinAge; },
     elixirCell(person: any): ActionCellSingleViewModel | null {
+        if (FamilyExtras.elixirRetired) return null;
         if (person == null || !person.getIsAlive() || person.getNotYetBorn()) return null;
         const p = GameStateManager.INSTANCE.getPersonState();
         const price = FamilyExtras.elixirPrice();

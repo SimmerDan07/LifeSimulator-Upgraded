@@ -17,6 +17,8 @@ export interface PersonMeta {
     moneyAskedWeek?: number;
     vowsWeek?: number;
     loanDue?: number;       // sibling loan: week it may be paid back
+    knows?: boolean;        // knows you're a vampire
+    vampire?: boolean;      // a vampire (you turned them, or met them in your coven)
 }
 
 export class SocialCircle {

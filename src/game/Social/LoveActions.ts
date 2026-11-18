@@ -10,6 +10,8 @@ import { Pet } from "../Enums/Pet";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { Relationships, MOOD_TITLE } from "./Relationships";
 import { SocialPerson } from "./SocialPerson";
+import { Babies } from "./Babies";
+import { Vampire } from "../Lifepaths/Vampire";
 
 export type Section = "time" | "big" | "hard";
 type Mods = [number, number, number];   // health, happiness, sanity
@@ -160,11 +162,39 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
         confirm: (t) => `Remove ${t.getFullName()} from your past relationships?`,
         run: (t, p) => { Relationships.circle(p).remove(t.getId()); Relationships.popPersonScreen(); } },
 
+    // ---------------------------------------------------------------- babies (v0.15.0)
+    { id: "surrogacy", title: "Surrogacy", image: R.drawable.alert_pregnant, who: ["partner"], section: "big", cost: Babies.surrogacyPrice, mods: [0, 10, 0],
+        show: (t, p) => alive(t) && Babies.canSurrogacy(p),
+        lock: (_t, p) => (Babies.pregnant(p) ? "You're already expecting a baby" : null),
+        note: () => "A surrogate carries your baby. Born in 40 weeks.\n",
+        run: (_t, p) => Babies.announce(Babies.startPregnancy(p, "surrogate")) },
+    { id: "insemination", title: "Artificial Insemination", image: R.drawable.sperm, who: ["partner"], section: "big", cost: Babies.inseminationPrice, mods: [0, 10, 0],
+        show: (t, p) => alive(t) && Babies.inseminationCarrier(p) != null,
+        lock: (_t, p) => (Babies.pregnant(p) ? "You're already expecting a baby" : null),
+        note: (t) => (Babies.inseminationCarrier() === "you" ? "You carry the baby" : `${t.getFirstName()} carries the baby`) + " (with a donor). Born in 40 weeks.\n",
+        run: (_t, p) => Babies.announce(Babies.startPregnancy(p, Babies.inseminationCarrier(p) ?? "you")) },
+
+    // ---------------------------------------------------------------- vampires (v0.15.0)
+    { id: "tellSecret", title: "Tell Them You're a Vampire", image: R.drawable.lifepath_vampire, who: ["partner", "parent", "child", "sibling", "friend"], section: "big",
+        show: (t, p) => alive(t) && Vampire.isVampire(p) && !Vampire.knows(t) && !Vampire.isTurned(t) && (Relationships.kindOf(t) !== "child" || age(t) >= 12),
+        note: () => "Close people (600+) take it well. Others may be scared, talk, or leave.\n",
+        run: (t, p) => Vampire.tell(p, t) },
+    { id: "turn", title: "Turn Them into a Vampire", image: R.drawable.lifepath_vampire, who: ["partner", "parent", "child", "sibling", "friend"], section: "big",
+        show: (t, p) => alive(t) && Vampire.isVampire(p) && Vampire.knows(t) && !Vampire.isTurned(t),
+        lock: (t, p) => (age(t) < 18 ? "They must be 18 or older" : Vampire.state(p).bloodPower < Vampire.turnCost ? `Needs ${Vampire.turnCost} blood power` : null),
+        note: () => `They stop ageing and join your coven. Costs ${Vampire.turnCost} blood power.\n`,
+        run: (t, p) => Vampire.turn(p, t) },
+
     // ---------------------------------------------------------------- everyone (Love tab)
     { id: "gathering", title: "Family Gathering", image: R.drawable.achievement_bigfamily, who: ["group"], section: "big", cost: 250, mods: [0, 6, 3],
         lock: (_t, p) => (Relationships.familyPeople(p).length < 2 ? "Needs at least 2 family members" : null),
         note: (_t) => `+30 relationship with everyone in your family (${Relationships.familyPeople().length}).\n`,
         run: (_t, p) => { for (const x of Relationships.familyPeople(p)) Relationships.applyGain(x, "rel:gathering", 30); } },
+    { id: "adoptSingle", title: "Adopt a Child", image: R.drawable.love_adopt, who: ["group"], section: "big", cost: Babies.adoptionPrice,
+        show: (_t, p) => p.getFamilyState().getPartner() == null,
+        lock: (_t, p) => (age(p) < 18 ? "Must be 18 or older" : null),
+        note: () => "Raise a child on your own.\n",
+        run: (_t, p) => Babies.adopt(p) },
     { id: "meetPeople", title: "Meet New People", image: R.drawable.waving_hand, who: ["group"], section: "time", mods: [0, 2, 0],
         lock: (_t, p) => Relationships.canMeetPeople(p),
         note: () => "Good chance of making a new friend.\n",

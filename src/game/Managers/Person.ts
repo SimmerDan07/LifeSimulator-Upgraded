@@ -2,6 +2,8 @@
 /* eslint-disable */
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Integer, Intrinsics, JMath, NoWhenBranchMatchedException, R, Random, SpannableStringBuilder, StringCompanionObject, TypeCastException, UUID } from "../runtime";
 import { Relationships } from "../Social/Relationships";
+import { Vampire } from "../Lifepaths/Vampire";
+import { Babies } from "../Social/Babies";
 import { FamilyExtras } from "./FamilyExtras";
 import { AgeGroup } from "../Enums/AgeGroup";
 import { AlertManager } from "./AlertManager";
@@ -228,6 +230,7 @@ export class Person {
     }
     getChanceOfDeathThisWeek(): number {
         let pet: Pet;
+        if (Vampire.isTurned(this)) return 0;
         if ((this.relationship === Relationship.pet) && ((pet = this.petType) != null)) {
             return Constants.Person.INSTANCE.chanceOfDeathAtAgePerWeek(this.getAgeInYears(), pet.getAgeExpectancy()) * Relationships.petHealthFactor(this);
         }
@@ -399,7 +402,9 @@ export class Person {
     }
     advanceWeek(weeksToAdvance: number): void {
         if (this.isAlive) {
-            this.setAgeInWeeks(this.ageInWeeks + weeksToAdvance);
+            // someone you turned into a vampire stops ageing (their true age keeps counting)
+            if (Vampire.isTurned(this)) this.trueAgeInWeeks = Math.max(this.trueAgeInWeeks ?? 0, this.ageInWeeks) + weeksToAdvance;
+            else this.setAgeInWeeks(this.ageInWeeks + weeksToAdvance);
             if (!this.getNotYetBorn() && (weeksToAdvance <= 1)) {
                 let personState: Player = GameStateManager.INSTANCE.getPersonState();
                 let i: Relationship = this.relationship;
@@ -475,11 +480,12 @@ export class Person {
     die(): void {
         let pregnantChild: Person;
         this.isAlive = false;
+        Vampire.onFamilyDeath(this);
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
         if ((this.relationship === Relationship.parent) && !personState.getFamilyState().getParentsStillLiving()) {
             AlertManager.INSTANCE.showInheritanceAlert(personState.getFamilyState().getCombinedParentRelationshipProgressStatus());
         } else if (this.relationship === Relationship.lover) {
-            if ((this.sex === Sex.female) && ((pregnantChild = personState.getFamilyState().getPregnantChild()) != null)) {
+            if (((pregnantChild = personState.getFamilyState().getPregnantChild()) != null) && Babies.carrierOf(pregnantChild) === "partner") {
                 personState.getFamilyState().getFamilyMembers().remove(pregnantChild);
             }
             personState.setRomanticRelationshipStatus(RomanticRelationshipStatus.widowed);
@@ -604,25 +610,8 @@ export class Person {
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
         let spannableStringBuilder: SpannableStringBuilder = new SpannableStringBuilder();
         if (this.getNotYetBorn()) {
-            String();
-            if ((personState.getGender() === Gender.male) && (personState.getFamilyState().getPartner() != null)) {
-                let stringCompanionObject = StringCompanionObject.INSTANCE;
-                let string2: string = Utils.INSTANCE.getString(R.string.PregnantMessageWife);
-                let objArr = new Array(1).fill(null);
-                let partner: Person = personState.getFamilyState().getPartner();
-                if ((partner == null) || ((title = partner.getTitle()) == null)) {
-                    str2 = null;
-                } else {
-                    if (title == null) {
-                        throw new TypeCastException("null cannot be cast to non-null type java.lang.String");
-                    }
-                    str2 = title.toLowerCase();
-                }
-                objArr[0] = str2;
-                string = String.format(string2, Arrays.copyOf(objArr, objArr.length));
-            } else {
-                string = Utils.INSTANCE.getString(R.string.PregnantMessageYou);
-            }
+            // v0.15.0: whoever is actually carrying the baby (you, your partner or a surrogate)
+            string = Babies.carrierPhrase(this);
             ExtensionsKt.appendBold$default(spannableStringBuilder, (string + " ") + Utils.INSTANCE.getString(R.string.Common_Pregnant), null, null, null, 14, null);
             let stringCompanionObject2 = StringCompanionObject.INSTANCE;
             let string3: string = Utils.INSTANCE.getString(R.string.BabyDueIn);

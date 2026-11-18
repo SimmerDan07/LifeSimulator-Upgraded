@@ -11,6 +11,7 @@ import { Possession } from "./Possession";
 import { Trait } from "./Trait";
 import { Utils } from "../Utils/Utils";
 import { ValueRange } from "../Utils/ValueRange";
+import { Vampire } from "../Lifepaths/Vampire";
 
 export class Leisure extends JEnum implements ActionDescriptor {
     static readonly take_week_off: Leisure = new Leisure("take_week_off", 0);
@@ -54,6 +55,9 @@ export class Leisure extends JEnum implements ActionDescriptor {
         return ActionDescriptor.DefaultImpls.getActionTitle(this);
     }
     getAdditionalDescription(): string {
+        // v0.15.0: daylight burns vampires
+        const sun = Vampire.leisureNote(this);
+        if (sun) return sun + (ActionDescriptor.DefaultImpls.getAdditionalDescription(this) ?? "");
         return ActionDescriptor.DefaultImpls.getAdditionalDescription(this);
     }
     overrideCost(metadata: any): BigInteger {

@@ -232,3 +232,15 @@ body.no-life #hud .who, body.no-life #hud .stats, body.no-life #hud .money { vis
 .st-close .pc-fill, .pc-status.st-close, .st-besties .pc-fill, .pc-status.st-besties { background: var(--green); }
 .pc-status.st-good { color: #2b2b2b; }
 .memory-label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin: 4px 0 6px 4px; }
+
+/* ---------------- Lifepaths meters (v0.15.0) */
+.meter-card { padding: 12px 16px; }
+.meter-top { display: flex; justify-content: space-between; font-size: 15px; }
+.meter-val { font-weight: 700; color: #555; }
+.meter-bar { height: 14px; background: #e3e8ea; border-radius: 7px; overflow: hidden; margin-top: 6px; }
+.meter-fill { height: 100%; border-radius: 7px; transition: width .35s; }
+.tone-red .meter-fill { background: #b3262e; }
+.tone-purple .meter-fill { background: #7d4bb3; }
+.meter-note { color: var(--muted); font-size: 13px; margin-top: 5px; }
+#hud .stat.thirst { display: none; }
+body.vampire #hud .stat.thirst { display: grid; }

@@ -12,6 +12,7 @@ import { RomanticRelationshipStatus } from "./RomanticRelationshipStatus";
 import { Trait } from "./Trait";
 import { Utils } from "../Utils/Utils";
 import { ValueRange } from "../Utils/ValueRange";
+import { Babies } from "../Social/Babies";
 
 export class LoveEvent extends JEnum implements ActionDescriptor {
     static readonly swipeRight: LoveEvent = new LoveEvent("swipeRight", 0);
@@ -307,12 +308,12 @@ export namespace LoveEvent {
         let arrayList: ArrayList<LoveEvent> = new ArrayList();
         let arrayListOf: ArrayList = CollectionsKt.arrayListOf(LoveEvent.watchMovie, LoveEvent.museum, LoveEvent.romanticDinner, LoveEvent.watchPlay);
         let arrayList2: ArrayList = new ArrayList();
-        let partner: Person = player.getFamilyState().getPartner();
-        if ((player.getSex().getCorrespondingGender() === ((partner != null) ? partner.getGender() : null)) || player.hasTrait(Trait.infertile)) {
-            arrayList2.add(LoveEvent.adoptBaby);
-        }
-        arrayList2.add(LoveEvent.makeBaby);
-        if (player.getFamilyState().getPregnantChild() != null) {
+        // v0.15.0: only a man and a woman can make a baby (by sex; neither infertile nor a vampire). Same-sex couples
+        // get Surrogacy / Artificial Insemination on the partner screen; everyone can adopt.
+        arrayList2.add(LoveEvent.adoptBaby);
+        if (Babies.canMakeBaby(player)) arrayList2.add(LoveEvent.makeBaby);
+        const pregnant = player.getFamilyState().getPregnantChild();
+        if (pregnant != null && Babies.carrierOf(pregnant) !== "surrogate") {
             arrayList2.add(LoveEvent.abortChild);
         }
         let i: RomanticRelationshipStatus = player.getRomanticRelationshipStatus();

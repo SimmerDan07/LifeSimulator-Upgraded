@@ -30,7 +30,7 @@ import { TextLabelViewModel } from "../game/Models/TextLabelViewModel";
 import { TombstoneViewModel } from "../game/Models/TombstoneViewModel";
 import { WorkButtonsViewModel } from "../game/Models/WorkButtonsViewModel";
 import { EditableTextFieldViewModel } from "../game/Models/EditableTextFieldViewModel";
-import { PersonCardViewModel, SubHeaderViewModel } from "../game/Models/PersonCardViewModel";
+import { PersonCardViewModel, SubHeaderViewModel, MeterViewModel } from "../game/Models/PersonCardViewModel";
 
 const IMG: Record<string, string> = images as any;
 
@@ -204,6 +204,17 @@ export function renderCell(vm: any): HTMLElement | null {
     if (vm == null) return null;
     if (vm instanceof PersonCardViewModel) return personCard(vm);
     if (vm instanceof SubHeaderViewModel) return el("div", "memory-label", textToHtml(vm.title));
+    if (vm instanceof MeterViewModel) {
+        const c = el("div", "card meter-card tone-" + vm.tone);
+        const top = el("div", "meter-top");
+        top.append(el("b", "", textToHtml(vm.title)), el("span", "meter-val", `${Math.round(vm.value)}/${vm.max}`));
+        const bar = el("div", "meter-bar"), fill = el("div", "meter-fill");
+        fill.style.width = Math.max(0, Math.min(100, (vm.value / (vm.max || 1)) * 100)) + "%";
+        bar.appendChild(fill);
+        c.append(top, bar);
+        if (vm.note) c.appendChild(el("div", "meter-note", textToHtml(vm.note)));
+        return c;
+    }
     if (vm instanceof HeaderTitleViewModel) return el("h2", "section-header", textToHtml(vm.getDisplayTitle()));
     if (vm instanceof NavigationBarViewModel) return null; // drawn by the screen header
     if (vm instanceof ActionCellSingleViewModel) {

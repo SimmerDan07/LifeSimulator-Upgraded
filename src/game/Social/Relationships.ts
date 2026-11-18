@@ -25,6 +25,7 @@ import { Sexuality } from "../Enums/Sexuality";
 import { Housing } from "../Enums/Housing";
 import { Possession } from "../Enums/Possession";
 import { Person } from "../Managers/Person";
+import { Vampire } from "../Lifepaths/Vampire";
 import { LoverPersonality } from "../Enums/LoverPersonality";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Utils } from "../Utils/Utils";
@@ -116,7 +117,7 @@ export const Relationships = {
     applyGain(person: any, key: string, base: number): number {
         if (person == null) return 0;
         const m = Relationships.meta(person), now = Relationships.now();
-        const gain = base > 0 ? Relationships.preview(person, key, base).gain : base;
+        const gain = base > 0 ? Math.round(Relationships.preview(person, key, base).gain * Vampire.gainMultiplier()) : base;
         m.touched = now;
         if (key === "pi:call") Relationships.liftMood(person);
         person.setRelationshipProgress(person.getRelationshipProgress() + gain);
@@ -175,6 +176,7 @@ export const Relationships = {
     badges(person: any): string[] {
         const out: string[] = [];
         if (!person.getIsAlive()) return out;
+        if (Relationships.circle().metaFor(person.getId()).vampire) out.push("Vampire");
         if (Relationships.isBirthdayWeek(person)) out.push("Birthday this week");
         if (Relationships.kindOf(person) === "partner" && Relationships.anniversaryYears(person) != null) out.push("Anniversary this week");
         return out;
@@ -331,7 +333,9 @@ export const Relationships = {
         // siblings, friends and exes age, drift apart a little each week, and may pass away
         for (const s of c.list()) {
             if (!s.getIsAlive()) continue;
-            s.advanceWeeks(weeks);
+            const turned = !!c.metaFor(s.id).vampire;   // vampires don't age or die of old age
+            if (turned) s.trueAgeInWeeks = s.getTrueAgeInWeeks() + weeks;
+            else s.advanceWeeks(weeks);
             if (weeks > 1) continue;
             const m = c.metaFor(s.id);
             if (m.touched !== now) s.setRelationshipProgress(s.getRelationshipProgress() + Relationships.drift(s, p));
@@ -342,7 +346,7 @@ export const Relationships = {
                     Relationships.banner("Loan repaid", `${s.getFirstName()} paid back the $1,000 you lent them.`);
                 }
             }
-            const chance = Constants.Person.INSTANCE.chanceOfDeathAtAgePerWeek(s.getAgeInYears(), Constants.Person.INSTANCE.getPersonLifeExpectancy());
+            const chance = turned ? 0 : Constants.Person.INSTANCE.chanceOfDeathAtAgePerWeek(s.getAgeInYears(), Constants.Person.INSTANCE.getPersonLifeExpectancy());
             if (Math.random() < chance) {
                 s.isAlive = false;
                 if (s.kind === "ex") c.remove(s.id);

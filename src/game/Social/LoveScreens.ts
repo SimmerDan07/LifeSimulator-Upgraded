@@ -134,7 +134,12 @@ export const LoveScreens = {
 
         // Children (pregnancy included)
         const children = Relationships.family(Relationship.child, p);
-        if (children.length) { out.add(new HeaderTitleViewModel(S("Common_Children"))); LoveScreens.group(children, out); }
+        const adoptAlone = new LoveActionCell(loveAction("adoptSingle"), null);
+        if (children.length || (partner == null && p.getAgeInYears() >= 18)) {
+            out.add(new HeaderTitleViewModel(S("Common_Children")));
+            LoveScreens.group(children, out);
+            if (adoptAlone.visible(p) && p.getAgeInYears() >= 18) out.add(adoptAlone.cell());
+        }
 
         // Siblings
         const siblings = Relationships.siblings(p);
