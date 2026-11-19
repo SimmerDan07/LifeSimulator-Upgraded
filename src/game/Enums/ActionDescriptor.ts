@@ -98,8 +98,9 @@ export namespace ActionDescriptor {
             if ((!GameStateManager.INSTANCE.getGlobalStateManager().getInappPurchaseState().isPurchased(GameInAppPurchase.unlockAllDestinations) && !GameStateManager.INSTANCE.getGlobalStateManager().getInappPurchaseState().isPurchased(GameInAppPurchase.unlockAllContent)) && !travelCountry.getUnlockedByDefault()) {
                 return Utils.INSTANCE.getString(R.string.Perks_Unlock_InAppPurchase);
             }
-            let requiredLanguage: CompletableAction = travelCountry.getRequiredLanguage();
-            if ((requiredLanguage != null) && !player.getCompletableActionState().isCompleted(requiredLanguage)) {
+            // v0.27.0: English counts too (for people born elsewhere), and your native language is always known
+            let requiredLanguage: CompletableAction = travelCountry.getRequiredLanguage() ?? (CompletableAction as any).english;
+            if ((requiredLanguage != null) && !player.getCompletableActionState().isCompleted(requiredLanguage) && ((player as any).nativeLanguage ?? "english") !== requiredLanguage.name()) {
                 let stringCompanionObject = StringCompanionObject.INSTANCE;
                 let string5: string = Utils.INSTANCE.getString(R.string.Move_NeedLanguage_Message);
                 let objArr3 = [requiredLanguage.getTitle()];

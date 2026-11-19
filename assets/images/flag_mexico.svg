@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cmexico"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cmexico)">
+  <rect x="0.00" y="66.21" width="128.50" height="251.59" fill="#006847"/>
+  <rect x="128.00" y="66.21" width="128.50" height="251.59" fill="#FFFFFF"/>
+  <rect x="256.00" y="66.21" width="128.50" height="251.59" fill="#CE1126"/>
+  <circle cx="192.00" cy="192.00" r="30.00" fill="#8C5A2B"/>
+  <path d="M156.0,222.0 Q192.0,244.0 228.0,222.0" stroke="#006847" stroke-width="6" fill="none"/>
+
+ </g>
+</svg>

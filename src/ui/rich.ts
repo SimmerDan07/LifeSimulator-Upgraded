@@ -1,6 +1,7 @@
 // Renders Android-style SpannableStringBuilder rich text to HTML.
 import { SpannableStringBuilder, Span } from "../game/runtime";
 import { Utils } from "../game/Utils/Utils";
+import { ExtensionsKt } from "../game/Utils/ExtensionsKt";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -33,12 +34,12 @@ export function richToHtml(sb: SpannableStringBuilder): string {
             if (w.kind === "relsize") style.push(`font-size:${w.size}em`);
             if (w.kind === "font" && w.font === "fa_solid") cls = "fa";
         }
-        const body = esc(piece).replace(/\n/g, "<br>");
+        const body = esc(ExtensionsKt.localizeDollars(piece)).replace(/\n/g, "<br>");
         html += style.length || cls ? `<span${cls ? ` class="${cls}"` : ""}${style.length ? ` style="${style.join(";")}"` : ""}>${body}</span>` : body;
     }
     return html;
 }
 
 export function textToHtml(s: string | null | undefined): string {
-    return s ? esc(s).replace(/\n/g, "<br>") : "";
+    return s ? esc(ExtensionsKt.localizeDollars(s)).replace(/\n/g, "<br>") : "";
 }

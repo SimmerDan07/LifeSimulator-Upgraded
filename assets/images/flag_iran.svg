@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="ciran"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#ciran)">
+  <rect x="0.00" y="66.21" width="384.00" height="84.36" fill="#239F40"/>
+  <rect x="0.00" y="150.07" width="384.00" height="84.36" fill="#FFFFFF"/>
+  <rect x="0.00" y="233.93" width="384.00" height="84.36" fill="#DA0000"/>
+  <circle cx="192.00" cy="192.00" r="22.00" fill="none" stroke="#DA0000" stroke-width="7"/>
+
+ </g>
+</svg>

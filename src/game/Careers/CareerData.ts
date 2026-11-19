@@ -28,6 +28,7 @@ export interface CareerDef {
     night?: boolean;            // a night job (no sunlight for vampires)
     medical?: boolean;          // counts as a medical job (vampires: Blood Bank Bags)
     trait?: string;             // a Trait name that boosts pay (like the original careers)
+    langs?: number[];           // v0.27.0: foreign languages needed for level i+1 (translators)
 }
 
 export interface CareerCategory { id: string; title: string; image: string; blurb: string }
@@ -40,7 +41,25 @@ export const CAREER_CATEGORIES: CareerCategory[] = [
     { id: "hospitality", title: "Hospitality & Travel", image: "work_tourguide", blurb: "Chefs, bartenders, hotel managers, pilots and flight attendants." },
     { id: "science", title: "Science & Nature", image: "education_science", blurb: "Marine biologists, astronauts, engineers, zookeepers and meteorologists." },
     { id: "sports", title: "Sports & Online", image: "health_workout", blurb: "Trainers, pro athletes, lifeguards, ski instructors and content creators." },
+    // v0.27.0: every career in one place
+    { id: "starter", title: "Starter Jobs", image: "work_retail", blurb: "No experience needed: retail, driving, data entry, and the street." },
+    { id: "entertainment", title: "Entertainment & Fame", image: "lifepath_celebrity", blurb: "Acting, music and dance: the careers of Celebrity Life." },
 ];
+/** v0.27.0: where the original game's careers sit in the Career Center. */
+export const ORIGINAL_JOB_CATEGORY: Record<string, string> = {
+    panHandler: "starter", retail: "starter", uber: "starter", dataEntry: "starter",
+    burgerFlipper: "hospitality", barista: "hospitality", sushiChef: "hospitality", pastryChef: "hospitality", sommelier: "hospitality", tourGuide: "hospitality",
+    constructionWorker: "trades",
+    medical: "health",
+    police: "public", army: "public", teacher: "public", lawyer: "public", royalGuard: "public",
+    programmer: "tech", business: "tech", finance: "tech",
+    artist: "creative", animeArtist: "creative",
+    research: "science",
+    actor: "entertainment", music: "entertainment", dancer: "entertainment",
+};
+/** v0.27.0: careers that won't hire someone with a recent criminal record. */
+export const CLEAN_RECORD_JOBS = new Set(["police", "army", "lawyer", "teacher", "medical", "royalGuard", "finance",
+    "nurse", "paramedic", "pharmacist", "dentist", "firefighter", "socialWorker", "politician", "pilot", "flightAttendant", "astronaut", "accountant", "cybersecurity", "lifeguard"]);
 
 const L = (n: number, h = 0, hap = 0, san = 0) => Array.from({ length: n }, (_, i) => [h, hap, san - Math.floor(i / 2)] as [number, number, number]);
 
@@ -281,6 +300,12 @@ export const CAREERS: CareerDef[] = [
         pay: [[0, 200], [300, 800], [600, 1400], [1500, 4000], [4000, 10000], [10000, 30000]], mods: [[0, 1, -1], [0, 2, -1], [0, 2, -2], [0, 2, -3], [0, 2, -3], [0, 3, -4]],
         edu: [null, null, null, null, null, null],
         followers: [0, 1000, 10000, 100000, 1000000, 10000000] },
+    // ------------------------------------------------------------------ v0.27.0
+    { id: "translator", name: "Translator", category: "hospitality", image: "icon_job_translator", fallback: "education_literature",
+        blurb: "Turn one language into another. Needs foreign languages (Education tab › Languages); every extra one counts.",
+        titles: ["Freelance Translator", "Interpreter", "Senior Interpreter", "Conference Interpreter", "Chief Interpreter (United Nations)"],
+        pay: [500, 900, 1500, 2400, 3800], mods: [[0, 1, -1], [0, 1, -1], [0, 1, -2], [0, 1, -2], [0, 1, -3]],
+        edu: ["highSchool", "highSchool", "college_literature", "college_literature", "masters"], langs: [1, 2, 3, 4, 5] },
 ];
 
 export type DegreeKind = "college" | "grad" | "training";

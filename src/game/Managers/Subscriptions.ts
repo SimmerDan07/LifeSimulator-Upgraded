@@ -229,6 +229,8 @@ class BillsCell {
 }
 
 // v0.24.0: weekly bills for the current player come out of savings when they've turned it on
-MoneyState.billsFromSavings = (ms: any): boolean => {
-    try { const p = player(); return p != null && p.getMoneyState() === ms && !!p.billsFromSavings; } catch { return false; }
-};
+export function installSubscriptionHooks() {
+    MoneyState.billsFromSavings = (ms: any): boolean => {
+        try { const p = player(); return p != null && p.getMoneyState() === ms && !!p.billsFromSavings; } catch { return false; }
+    };
+}

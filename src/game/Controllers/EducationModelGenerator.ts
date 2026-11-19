@@ -9,6 +9,7 @@ import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentVi
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { IViewModelGenerator } from "./IViewModelGenerator";
 import { Utils } from "../Utils/Utils";
+import { World } from "../World/World";
 
 export class EducationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
@@ -55,6 +56,9 @@ export class EducationModelGenerator implements IViewModelGenerator {
     }
     getLanguagesViewModels(): ArrayList<BaseViewModel> {
         let arrayList: ArrayList = new ArrayList();
+        // v0.27.0: 35 languages live on their own screen; the tab shows the ones you're learning
+        for (const c of World.languageCells()) arrayList.add(c);
+        if (arrayList.size() > 0) return arrayList;
         arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.SectionHeader_Language)));
         let states: CompletableActionState.CompletableActionStateSingle[] = GameStateManager.INSTANCE.getPersonState().getCompletableActionState().getStates(CompletableActionType.skill);
         let arrayList2: ArrayList = new ArrayList();

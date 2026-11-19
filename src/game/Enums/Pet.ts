@@ -48,6 +48,7 @@ export class Pet extends JEnum implements ActionDescriptor {
         return ActionDescriptor.DefaultImpls.overrideTitle(this, metadata);
     }
     requirementNotMetString(player: Player): string {
+        if (player.getCrimeState().getIsInJail()) return "Not while you're in prison";   // v0.27.0
         Intrinsics.checkParameterIsNotNull(player, "player");
         return ActionDescriptor.DefaultImpls.requirementNotMetString(this, player);
     }

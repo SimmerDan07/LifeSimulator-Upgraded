@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { COUNTRY_BY_ID } from "../World/WorldData";
 import { BigInteger, Double, Intrinsics, JEnum, JMath, NoWhenBranchMatchedException, R } from "../runtime";
 import { ActionDescriptor } from "./ActionDescriptor";
 import { CompletableAction } from "./CompletableAction";
@@ -40,7 +41,9 @@ export class Diet extends JEnum implements ActionDescriptor {
     static readonly noodles: Diet = new Diet("noodles", 23);
     static readonly hotpot: Diet = new Diet("hotpot", 24);
     static readonly seafood: Diet = new Diet("seafood", 25);
-    static values(): Diet[] { return [Diet.scavenge, Diet.cupnoodle, Diet.fastfood, Diet.basic, Diet.balanced, Diet.vegan, Diet.homeCooking, Diet.prisonFood, Diet.maplePancakes, Diet.poutine, Diet.onigri, Diet.ramen, Diet.sushi, Diet.baguette, Diet.quiche, Diet.escargot, Diet.churro, Diet.croquette, Diet.chorizo, Diet.paella, Diet.fullEnglish, Diet.fishAndChips, Diet.tikkaMasala, Diet.noodles, Diet.hotpot, Diet.seafood]; }
+    /** v0.27.0: each new country's own cooking (title from WorldData `dish`). */
+    static readonly localCuisine: Diet = new Diet("localCuisine", 26);
+    static values(): Diet[] { return [Diet.scavenge, Diet.cupnoodle, Diet.fastfood, Diet.basic, Diet.balanced, Diet.vegan, Diet.homeCooking, Diet.prisonFood, Diet.maplePancakes, Diet.poutine, Diet.onigri, Diet.ramen, Diet.sushi, Diet.baguette, Diet.quiche, Diet.escargot, Diet.churro, Diet.croquette, Diet.chorizo, Diet.paella, Diet.fullEnglish, Diet.fishAndChips, Diet.tikkaMasala, Diet.noodles, Diet.hotpot, Diet.seafood, Diet.localCuisine]; }
     static valueOf(n: string): Diet { return (Diet as any)[n]; }
     constructor(name: string, ordinal: number) { super(name, ordinal); }
     getAgeRange(): ValueRange {
@@ -119,6 +122,10 @@ export class Diet extends JEnum implements ActionDescriptor {
                 return Utils.INSTANCE.getString(R.string.Diet_Hotpot);
             case Diet.seafood:
                 return Utils.INSTANCE.getString(R.string.Diet_Seafood);
+            case Diet.localCuisine: {
+                const c = GameStateManager.INSTANCE.getPersonState()?.getCountry?.()?.name?.();
+                return COUNTRY_BY_ID[c]?.dish || "Local Cooking";
+            }
             default:
                 throw new NoWhenBranchMatchedException();
         }
@@ -175,6 +182,8 @@ export class Diet extends JEnum implements ActionDescriptor {
                 return R.drawable.diet_hotpot;
             case Diet.seafood:
                 return R.drawable.diet_seafood;
+            case Diet.localCuisine:
+                return (R.drawable as any).icon_diet_local;
             default:
                 throw new NoWhenBranchMatchedException();
         }
@@ -234,6 +243,9 @@ export class Diet extends JEnum implements ActionDescriptor {
                 break;
             case Diet.seafood:
                 i = 1500;
+                break;
+            case Diet.localCuisine:
+                i = 300;
                 break;
             default:
                 throw new NoWhenBranchMatchedException();

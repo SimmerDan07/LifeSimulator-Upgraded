@@ -5,6 +5,7 @@
 // partner, kids, parents, friends, money, being famous, being a vampire). You pick what to do; the result shows next.
 // Moments never happen in jail, while a vampire lies collapsed, or once the life is over.
 // State: Player.moments = { last, seen: {id: week}, pending: [{week, amount, name}] } (undefined in older saves).
+import { seasonForMonth, hasSnow } from "../World/WorldData";
 import { BigInteger, R } from "../runtime";
 import { GameStateManager } from "./GameStateManager";
 import { AlertManager } from "./AlertManager";
@@ -36,7 +37,7 @@ export interface Moment {
 }
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
-const seasonOf = (p: any): "winter" | "spring" | "summer" | "fall" => { let m = 0; try { m = p.getCurrentMonthIndex(); } catch { /* ignore */ } return m === 11 || m <= 1 ? "winter" : m <= 4 ? "spring" : m <= 7 ? "summer" : "fall"; };
+const seasonOf = (p: any): "winter" | "spring" | "summer" | "fall" => { let m = 0, c: string | null = null; try { m = p.getCurrentMonthIndex(); c = p.getCountry().name(); } catch { /* ignore */ } return seasonForMonth(m, c); };
 const money = (n: number) => ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(n)), true);
 const roll = (x: number) => Math.random() < x;
 const pickOne = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -402,7 +403,7 @@ export const LifeMoments = {
     /** Moments that could happen to this player right now. */
     eligible(p: any = player()): Moment[] {
         const age = p.getAgeInYears(), now = LifeMoments.now(p), s = LifeMoments.state(p);
-        return MOMENTS.filter((m) => age >= m.min && age <= m.max && (s.seen[m.id] == null || now - s.seen[m.id] >= LifeMoments.cooldown) && (!m.seasons || m.seasons.includes(seasonOf(p))) && (!m.when || safe(() => m.when!(p))));
+        return MOMENTS.filter((m) => age >= m.min && age <= m.max && (s.seen[m.id] == null || now - s.seen[m.id] >= LifeMoments.cooldown) && (!m.seasons || m.seasons.includes(seasonOf(p))) && (m.id !== "snowDay" || hasSnow(p.getCountry?.()?.name?.())) && (!m.when || safe(() => m.when!(p))));
     },
     canHappen(p: any): boolean {
         try {

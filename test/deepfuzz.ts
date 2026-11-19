@@ -4,6 +4,9 @@
 //   attributes 0–100, money finite, relationships 0–1000, fame/vampire/hobby numbers in range, no "undefined"/"NaN"
 //   in anything on screen, and every 150 steps the save survives a round trip unchanged.
 // Usage: node dist-test/deepfuzz.mjs [steps per scenario] [seed]
+import { Crime } from "../src/game/Crime/Crime";
+import { Country } from "../src/game/Enums/Country";
+import { Possession } from "../src/game/Enums/Possession";
 import { SocialModelGenerator } from "../src/game/Controllers/SocialModelGenerator";
 import { SocialMedia, POSTS_PER_WEEK } from "../src/game/Social/SocialMedia";
 import { Careers } from "../src/game/Careers/Careers";
@@ -118,6 +121,14 @@ function screens(): { name: string; models: any }[] {
     out.push({ name: "vampire", models: lp.screen("vampire") });
     out.push({ name: "celebrity", models: lp.screen("celebrity") });
     for (const k of ["celebrity-news", "celebrity-works", "celebrity-milestones"]) out.push({ name: k, models: lp.screen(k) });
+    // v0.27.0: crime, a Things to Do group, a Move Abroad region, languages (rotating)
+    out.push({ name: "crime", models: lp.screen("crime") });
+    if (rng() < 0.3) out.push({ name: "crime-murder", models: lp.screen("crime-murder") });
+    const acts = ["outdoors", "sports", "culture", "nightlife", "wellness", "fun", "food", "giving"];
+    out.push({ name: "activities", models: lp.screen("activities:" + acts[Math.floor(rng() * acts.length)]) });
+    const regions = ["americas", "europe", "asia", "africa"];
+    out.push({ name: "world", models: lp.screen("world:" + regions[Math.floor(rng() * regions.length)]) });
+    if (rng() < 0.3) out.push({ name: "languages", models: lp.screen("languages") });
     // v0.26.0 Career Center: one group screen per step (rotating) keeps the action list a sensible size
     const cat = CAREER_CATEGORIES[Math.floor(rng() * CAREER_CATEGORIES.length)].id;
     out.push({ name: "careers:" + cat, models: lp.screen("careers:" + cat) });
@@ -154,6 +165,18 @@ function invariants(where: string) {
     }
     for (const [id, h] of Object.entries(p.hobbies ?? {}) as [string, any][]) if (!Number.isFinite(h.skill) || h.skill < 0 || h.skill > 100) report("HOBBY", `${id}=${h.skill}`, where);
     if (Relationships.together != null) report("STATE", "Relationships.together left set", where);
+    const cr = Crime.peek(p);
+    if (cr) {
+        if (!Number.isFinite(cr.heat) || cr.heat < 0 || cr.heat > 100) report("CRIME", `heat=${cr.heat}`, where);
+        const jailed = p.getCrimeState().getIsInJail();
+        if (jailed !== (cr.jail != null)) report("CRIME", `isInJail=${jailed} but jail=${JSON.stringify(cr.jail)}`, where);
+        if (jailed && p.getHousingState().currentHousing().getType().name() !== "jail") report("CRIME", "in jail but not living in jail", where);
+        if (!jailed && p.getHousingState().currentHousing().getType().name() === "jail") report("CRIME", "living in jail but free", where);
+        if (cr.jail && (cr.jail.weeks < 0 || !Number.isFinite(cr.jail.weeks))) report("CRIME", `jail weeks ${cr.jail.weeks}`, where);
+        if (jailed && p.getJobState().getCurrentJob() != null && (cr.jail?.total ?? 0) >= 4) report("CRIME", "kept a job through a long sentence", where);
+        if (cr.org && (cr.org.rank < 0 || cr.org.rank > 4)) report("CRIME", `rank ${cr.org.rank}`, where);
+    }
+    if (p.getCountry() == null) report("WORLD", "no country", where);
     const sm = SocialMedia.peek(p);
     if (sm) {
         for (const [k, v] of Object.entries(sm.f ?? {}) as [string, number][]) if (!Number.isFinite(v) || v < 0) report("SOCIAL", `${k}=${v}`, where);
@@ -183,6 +206,12 @@ const SCENARIOS: Record<string, () => void> = {
     thirsty: () => start(30, (p) => { rich(p, 50000); Vampire.rise(p); Vampire.state(p).thirst = 99.5; }),
     celebrity: () => start(24, (p) => { rich(p, 2_000_000); p.getJobState().switchJob(Job.music); const s = Celebrity.state(p); s.fans = 600_000; s.music = 60; }),
     vampstar: () => start(34, (p) => { rich(p, 5_000_000); Vampire.rise(p); p.getJobState().switchJob(Job.actor); const s = Celebrity.state(p); s.fans = 3_000_000; s.acting = 70; Vampire.state(p).bloodPower = 10; }),
+    // v0.27.0
+    foreigner: () => start(24, (p) => { rich(p, 300000); p.setCountry((Country as any).brazil); p.nativeLanguage = "portuguese"; p.getCompletableActionState().completeAction((CompletableAction as any).portuguese); p.getCompletableActionState().completeAction((CompletableAction as any).german); p.buyItem(Possession.passport); }),
+    criminal: () => start(22, (p) => { rich(p, 50000); Crime.state(p).respect = 60; Crime.joinGang(p); Crime.orgPoints(p, 150); }),
+    don: () => start(40, (p) => { rich(p, 20000000); const s = Crime.state(p); s.respect = 200; s.org = { kind: "mafia", name: "The Fuzz Family", rank: 4, points: 700, own: true, members: 0, turf: 0, fronts: ["pizzeria"], since: 0 }; s.heat = 50; }),
+    inmate: () => start(30, (p) => { rich(p, 20000); Crime.sendToJail(p, 300, "Robbery", true, false); }),
+    teenKorea: () => start(13, (p) => { p.setCountry((Country as any).southKorea); }),
     worker: () => start(23, (p) => { rich(p, 60000); for (const n of ["highSchool", "college_biology", "nursing", "emtTraining", "electricalTrade", "cdl", "fireAcademy", "culinarySchool", "gameDesign"]) p.getCompletableActionState().completeAction((CompletableAction as any)[n]); }),
     influencer: () => start(19, (p) => { rich(p, 20000); SocialMedia.createAccount(p); SocialMedia.addFollowers(p, 40000, "cliptok"); p.getJobState().switchJob((Job as any).contentCreator); }),
     vampcreator: () => start(26, (p) => { rich(p, 200000); Vampire.rise(p); Vampire.state(p).bloodPower = 20; SocialMedia.createAccount(p); SocialMedia.addFollowers(p, 15000, "snapgram"); }),

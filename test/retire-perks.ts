@@ -7,6 +7,7 @@ import { MainGameTab } from "../src/game/Enums/MainGameTab";
 import { Job } from "../src/game/Enums/Job";
 import { WorkAction } from "../src/game/Enums/WorkAction";
 import { WorkModelGenerator } from "../src/game/Controllers/WorkModelGenerator";
+import { LifepathsModelGenerator } from "../src/game/Controllers/LifepathsModelGenerator";
 import { GenericListModelGenerator } from "../src/game/Controllers/GenericListModelGenerator";
 import { GenericListType } from "../src/game/Fragments/GenericListType";
 import { Retirement } from "../src/game/Managers/Retirement";
@@ -30,7 +31,8 @@ const text = (vm: any): string => {
     const walk = (o: any, d: number) => { if (o == null || d > 4) return; if (typeof o === "string") { parts.push(o); return; } if (typeof o !== "object") return; if (typeof o.text === "string") parts.push(o.text); for (const k of Object.keys(o)) if (k !== "text") walk(o[k], d + 1); };
     walk(vm, 0); return parts.join(" | ");
 };
-const workTab = () => Array.from(new WorkModelGenerator().getWorkViewModels() as any) as any[];
+// v0.27.0: every career lives in the Career Center (Work tab › a group screen)
+const workTab = () => [...Array.from(new WorkModelGenerator().getWorkViewModels() as any) as any[], ...(Array.from(new LifepathsModelGenerator().screen("careers:starter").getContentViewModels() as any) as any[])];
 
 // ---- old save (made before careers were counted or retirement existed)
 GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(new M());
@@ -73,7 +75,7 @@ check("59: can't retire", !Retirement.canRetire(p) && Retirement.cell() === null
 p.setAgeInWeeks(60 * WPY - 1);
 keepAlive(); p.applyWeekly();
 const offer = alerts.find((a) => /You Can Retire/.test(a.getTitle?.() ?? ""));
-check("turning 60 with a job: retire-or-keep-working pop-up", !!offer, alerts.map((a) => a.getTitle?.()).join(", "));
+check("turning 60 with a job: retire-or-keep-working pop-up", !!offer, alerts.map((a) => a.getTitle?.()).join(", ") + " job=" + p.getJobState().getCurrentJob()?.name?.() + " age=" + p.getAgeInYears() + " offered=" + p.retirementOffered);
 const keep = [offer?.getPositiveButton?.(), offer?.getNegativeButton?.()].find((b: any) => b && /Keep working/.test(b.getTitle()));
 keep?.getAction().invoke(); clear();
 check("keep working: still employed, not retired", p.getJobState().getCurrentJob() === Job.retail && !Retirement.isRetired(p));

@@ -1,6 +1,7 @@
 // Lifepaths › Celebrity Life (v0.19.0; v0.20.0 "The Fame Update"): the screen behind the star in the Lifepaths menu,
 // plus its sub-screens (Headlines, Discography & Filmography, Milestones).
 import { ArrayList, R } from "../runtime";
+import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
@@ -95,11 +96,14 @@ export const CelebrityScreen = {
 
         // ---------------------------------------------------------------- careers
         out.add(new HeaderTitleViewModel("Careers"));
-        const ordered = [...CAREERS].sort((a, b) => (a === c ? -1 : b === c ? 1 : 0));
-        for (const k of ordered) out.add(p.getJobState().getState(k.job()).getViewModel());
+        // v0.27.0: every career (these three included) lives in the Work tab's Career Center
+        out.add(new ActionCellSingleViewModel(R.drawable.lifepath_celebrity, "Fame Careers",
+            new TextLabelViewModel(`Acting, Music and Dance are in the Work tab's Career Center (Entertainment & Fame).${c != null ? ` You're ${ExtensionsKt.aOrAn(p.getJobState().getCurrentJobState().getJobTitle())}.` : ""}`, null, false, false, null, null),
+            new ButtonViewModel("Browse", null, true, false, false, false, false,
+                { invoke: () => { Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.lifepath, "careers:entertainment", false, 4, null); return null; } }), null, null));
         out.add(note("CelebCareerRules",
-            "These careers are only found here. Acting starts as an Extra (Theater degree from Theater Ensemble). Music starts as a Street Performer (Music & Production degree from Recording Artist). " +
-            "Dance starts as a Street Dancer (Theater degree from Dance Captain). The top jobs also need fans: work hard and get noticed. Your Work buttons work your celebrity job too."));
+            "Acting starts as an Extra (Theater degree from Theater Ensemble). Music starts as a Street Performer (Music & Production degree from Recording Artist). " +
+            "Dance starts as a Street Dancer (Theater degree from Dance Captain). The top jobs also need fans: work hard and get noticed."));
         out.add(note("CelebSkills", `Skills · Acting ${Celebrity.skill(p, "acting")} · Music ${Celebrity.skill(p, "music")} · Dance ${Celebrity.skill(p, "dance")}  (degrees add 15)`));
 
         // ---------------------------------------------------------------- young talent

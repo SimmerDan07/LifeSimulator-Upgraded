@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cuae"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cuae)">
+  <rect x="0.00" y="66.21" width="384.00" height="84.36" fill="#00732F"/>
+  <rect x="0.00" y="150.07" width="384.00" height="84.36" fill="#FFFFFF"/>
+  <rect x="0.00" y="233.93" width="384.00" height="84.36" fill="#000000"/>
+  <rect x="0.00" y="66.21" width="96.00" height="251.59" fill="#FF0000"/>
+
+ </g>
+</svg>

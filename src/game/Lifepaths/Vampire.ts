@@ -12,6 +12,7 @@
 // Vampires can't have biological children. Endings: the Vampiric Cure (the reworked Elixir of Youth) or Final Rest.
 // v0.16.0: the Vampiric Cure costs $300 billion; one vampire life per lifetime (no turning again after the Cure);
 // a vampire's health never decays (only vampire dangers hurt it); blood diets replace food diets.
+import { seasonForMonth } from "../World/WorldData";
 import { ArrayList, BigInteger, R } from "../runtime";
 import { GameStateManager } from "../Managers/GameStateManager";
 import { AlertManager } from "../Managers/AlertManager";
@@ -158,7 +159,7 @@ export const Vampire = {
         if (!Vampire.has("mistStep", p) && roll(0.1)) {
             pay(p, 2000);
             s.suspicion = Math.min(100, s.suspicion + 10);
-            Vampire.alert("Police Trouble", `Someone saw the two of you. You paid ${money(2000)} in "fines" (suspicion +10).`, R.drawable.police_badge);
+            Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw the two of you. You paid ${money(2000)} in "fines" (suspicion +10).`, R.drawable.police_badge);
         }
     },
     /** Chance of beating the hunters (better with your bonded partner at your side). */
@@ -318,7 +319,7 @@ export const Vampire = {
         if (d.id === "hunting" && !Vampire.has("mistStep", p) && roll(0.05)) {
             pay(p, 2000);
             s.suspicion = Math.min(100, s.suspicion + 10);
-            Vampire.alert("Police Trouble", `Someone saw you on one of your nightly hunts. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
+            Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw you on one of your nightly hunts. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
         }
         // Eternal Bond: with no blood diet, your partner hunts on their own and people notice
         if (Vampire.bonded(p) && d.id === "hand") s.suspicion = Math.min(100, s.suspicion + 2);
@@ -504,11 +505,12 @@ export const Vampire = {
     /** v0.26.0: sunlight depends on the season (half in winter, ×1.5 in summer). */
     sunDamage(p: any): number {
         const base = Vampire.has("sunWard", p) ? 5 : 10;
-        let m = 0; try { m = p.getCurrentMonthIndex(); } catch { /* ignore */ }
-        const f = m === 11 || m <= 1 ? 0.5 : m >= 5 && m <= 7 ? 1.5 : 1;
+        let m = 0, c: string | null = null; try { m = p.getCurrentMonthIndex(); c = p.getCountry().name(); } catch { /* ignore */ }
+        const s = seasonForMonth(m, c);   // v0.27.0: hemisphere-aware
+        const f = s === "winter" ? 0.5 : s === "summer" ? 1.5 : 1;
         return Math.round(base * f);
     },
-    isDaytime(action: any): boolean { return action != null && DAYTIME.has(action.name()); },
+    isDaytime(action: any): boolean { return action != null && (DAYTIME.has(action.name()) || !!action.act?.()?.outdoor); },
     /** v0.21.1: sunlight drains a vampire's happiness (it no longer touches health). */
     onLeisure(p: any, action: any) {
         if (!Vampire.isVampire(p) || !Vampire.isDaytime(action)) return;
@@ -561,6 +563,8 @@ export const Vampire = {
         collapseStart: null as ((p: any) => void) | null,
         collapseEnd: null as ((p: any, years: number) => string) | null,
         yearly: null as ((p: any, years: number) => void) | null,
+        /** v0.27.0: police trouble while hunting (Crime: heat). */
+        police: null as ((p: any) => void) | null,
     },
     /** Set by Crossover: a celebrity power couple ends when you fake your death. */
     forgetCelebPartner: null as ((p: any) => void) | null,
@@ -708,6 +712,8 @@ export interface LifeActionDef {
     instant?: boolean;
     confirm?: () => string;
     actionTitle?: () => string | null;
+    /** v0.27.0: a prison action (the only kind you can do in prison). */
+    jail?: boolean;
 }
 
 /** A blood diet in the shape of the game's diet rows. */
@@ -753,7 +759,9 @@ export class LifeActionCell {
     overrideImageId(_m: any): any { return null; }
     overrideTitle(_m: any): any { return null; }
     requirementNotMetString(p: any): string | null {
-        if (p.getCrimeState?.()?.getIsInJail?.()) return "Not while you're in jail";
+        const jailed = !!p.getCrimeState?.()?.getIsInJail?.();
+        if (jailed && !this.def.jail) return "Not while you're in prison";
+        if (!jailed && this.def.jail) return "Only in prison";
         return this.def.lock?.(p) ?? null;
     }
     visible(p: any = player()): boolean { return this.def.show ? this.def.show(p) : true; }
@@ -810,7 +818,7 @@ export const FEEDING: LifeActionDef[] = [
             if (!Vampire.has("mistStep", p) && roll(0.1)) {
                 pay(p, 2000);
                 Vampire.state(p).suspicion = Math.min(100, Vampire.state(p).suspicion + 10);
-                Vampire.alert("Police Trouble", `Someone saw you. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
+                Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw you. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
             }
         } },
     { id: "partner", title: () => `Feed on ${Vampire.willingPartner(player())?.getFirstName() ?? "a Willing Partner"}`, image: R.drawable.icon_vamp_feedpartner,

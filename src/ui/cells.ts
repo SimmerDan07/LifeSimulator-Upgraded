@@ -118,7 +118,7 @@ export function button(vm: ButtonViewModel | null | undefined, cls = "btn"): HTM
         b.title = "Locked";
     } else {
         if (sb != null) b.innerHTML = richToHtml(sb);
-        else b.textContent = vm.getTitle();
+        else b.textContent = ExtensionsKt.localizeDollars(vm.getTitle());
         b.disabled = !vm.getEnabled();
     }
     b.addEventListener("click", () => {
@@ -473,7 +473,9 @@ function textField(vm: EditableTextFieldViewModel | null | undefined): HTMLEleme
     i.placeholder = vm.getPlaceholderText() ?? "";
     if ((vm as any).initialText) i.value = (vm as any).initialText;
     i.addEventListener("input", () => { try { vm.getTextChangedHandler().invoke(i.value); } catch (e) { console.error(e); } });
-    i.addEventListener("change", () => afterAction());
+    // The typed value is already saved on every keystroke; only redraw once focus has left the text boxes, so
+    // clicking from First Name into Last Name doesn't redraw the screen under the click and drop the focus.
+    i.addEventListener("change", () => setTimeout(() => { if (!(document.activeElement instanceof HTMLInputElement && document.activeElement.type === "text")) afterAction(); }, 0));
     return i;
 }
 

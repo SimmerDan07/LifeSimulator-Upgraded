@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { World } from "../World/World";
 import { Careers } from "../Careers/Careers";
 import { ArrayList, ArraysKt, BigInteger, CollectionsKt, Intrinsics, JMath, MapsKt, R, SpannableStringBuilder, TuplesKt, TypeCastException } from "../runtime";
 import { AgeLimits } from "./Schooling";
@@ -110,9 +111,10 @@ export class JobState {
         Intrinsics.checkParameterIsNotNull(workAction, "workAction");
         TelemetryManager.INSTANCE.logEvent("Work", MapsKt.mapOf(TuplesKt.to("Type", ArraysKt.first(job.getJobTitles())), TuplesKt.to("Action", workAction.toString())));
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
+        if (personState.getCrimeState().getIsInJail()) return;   // v0.27.0: no outside work from a cell
         let state: JobState.JobStateSingle = this.getState(job);
         AttributeState.setDeltaValue$default(personState.getAttributeState(), job.modifiers(state.getLevel()), null, 2, null);
-        let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * workAction.getPayModifier() * Vampire.onWork(personState, job) * Careers.payMultiplier(job, personState);
+        let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * workAction.getPayModifier() * Vampire.onWork(personState, job) * Careers.payMultiplier(job, personState) * World.payMultiplier(personState, job);
         // v0.23.0 Automatic Savings: part of the paycheck can go straight to savings
         Subscriptions.payCheck(JMath.toInt(randomValue), personState);
         // v0.19.0 Celebrity Life: celebrity careers earn fans and skill
@@ -148,6 +150,8 @@ export class JobState {
     }
     switchJob(job: Job): void {
         Intrinsics.checkParameterIsNotNull(job, "job");
+        // v0.27.0: nobody hires you while you're in prison (whatever path tries: coaching, moments, heirs…)
+        try { const me = GameStateManager.INSTANCE.getPersonState(); if (me?.getJobState() === this && me.getCrimeState().getIsInJail()) return; } catch { /* no game */ }
         this.currentJob = job;
         GameStateManager.INSTANCE.getPersonState().getSideHustleState().deactivateProject();
         GameStateManager.INSTANCE.getPersonState().getMiscState().setHasShownDegreeMissingAlert(false);

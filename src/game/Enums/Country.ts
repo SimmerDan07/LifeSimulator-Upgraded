@@ -7,6 +7,7 @@ import { Diet } from "./Diet";
 import { Job } from "./Job";
 import { Leisure } from "./Leisure";
 import { Utils } from "../Utils/Utils";
+import { COUNTRY_BY_ID, CountryDef, NEW_COUNTRY_DEFS } from "../World/WorldData";
 
 export class Country extends JEnum {
     static readonly unitedStates: Country = new Country("unitedStates", 0);
@@ -16,7 +17,10 @@ export class Country extends JEnum {
     static readonly spain: Country = new Country("spain", 4);
     static readonly uk: Country = new Country("uk", 5);
     static readonly china: Country = new Country("china", 6);
-    static values(): Country[] { return [Country.unitedStates, Country.canada, Country.japan, Country.france, Country.spain, Country.uk, Country.china]; }
+    static values(): Country[] { return [Country.unitedStates, Country.canada, Country.japan, Country.france, Country.spain, Country.uk, Country.china, ...NEW_COUNTRIES]; }
+    /** v0.27.0: the World data for this country (all 37 have one). */
+    def(): CountryDef { return COUNTRY_BY_ID[this.name()]; }
+    isNew(): boolean { return !this.def()?.original; }
     static valueOf(n: string): Country { return (Country as any)[n]; }
     constructor(name: string, ordinal: number) { super(name, ordinal); }
     getTitle(): string {
@@ -36,6 +40,7 @@ export class Country extends JEnum {
             case Country.china:
                 return Utils.INSTANCE.getString(R.string.Country_China);
             default:
+                if (this.def()) return this.def().name;
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -56,6 +61,7 @@ export class Country extends JEnum {
             case Country.china:
                 return R.drawable.flag_china;
             default:
+                if (this.def()) return (R.drawable as any)["flag_" + this.name().toLowerCase()];
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -73,6 +79,7 @@ export class Country extends JEnum {
             case Country.spain:
                 return 16;
             default:
+                if (this.def()) return this.def().drink;
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -93,12 +100,13 @@ export class Country extends JEnum {
             case Country.china:
                 return [Diet.scavenge, Diet.cupnoodle, Diet.fastfood, Diet.noodles, Diet.hotpot, Diet.seafood];
             default:
+                if (this.def()) return this.def().diets.map((d) => (Diet as any)[d]).filter((d: any) => d != null);
                 throw new NoWhenBranchMatchedException();
         }
     }
     getUnlockedByDefault(): boolean {
         let i: Country = this;
-        return (i === Country.unitedStates) || (i === Country.canada);
+        return (i === Country.unitedStates) || (i === Country.canada) || this.isNew();
     }
     getLeisureOptions(): Leisure[] {
         switch (this) {
@@ -116,8 +124,18 @@ export class Country extends JEnum {
                 return [Leisure.take_week_off, Leisure.goToPark, Leisure.playGames, Leisure.pub, Leisure.goCamping, Leisure.watchSoccer, Leisure.local_vacation, Leisure.international_vacation, Leisure.luxury_vacation, Leisure.spa];
             case Country.china:
                 return [Leisure.take_week_off, Leisure.goToPark, Leisure.playGames, Leisure.grab_drinks, Leisure.pingpong, Leisure.badminton, Leisure.watchSoccer, Leisure.local_vacation, Leisure.international_vacation, Leisure.luxury_vacation, Leisure.spa];
-            default:
-                throw new NoWhenBranchMatchedException();
+            default: {
+                const d = this.def();
+                if (!d) throw new NoWhenBranchMatchedException();
+                const out = [Leisure.take_week_off, Leisure.goToPark, Leisure.playGames, d.id === "ireland" || d.id === "australia" || d.id === "newZealand" ? Leisure.pub : Leisure.grab_drinks];
+                if (d.climate !== "desert") out.push(Leisure.goCamping);
+                out.push(Leisure.goToConcert);
+                if (d.ski) out.push(Leisure.ski);
+                if (d.climate === "cold" && d.id !== "iceland") out.push(Leisure.iceHockey);
+                if (d.id !== "southKorea" && d.id !== "india" && d.id !== "newZealand") out.push(Leisure.watchSoccer);
+                out.push(Leisure.local_vacation, Leisure.international_vacation, Leisure.luxury_vacation, Leisure.spa);
+                return out;
+            }
         }
     }
     getUnskilledJobOptions(): Job[] {
@@ -137,6 +155,7 @@ export class Country extends JEnum {
             case Country.china:
                 return [Job.constructionWorker];
             default:
+                if (this.def()) return this.def().jobs.map((j) => (Job as any)[j]).filter((j: any) => j != null);
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -160,6 +179,7 @@ export class Country extends JEnum {
             case Country.china:
                 return Currency.yuan;
             default:
+                if (this.def()) return (Currency as any)[this.def().currency];
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -178,7 +198,12 @@ export class Country extends JEnum {
             case Country.china:
                 return CompletableAction.chinese;
             default:
+                if (this.def()) return this.def().lang ? (CompletableAction as any)[this.def().lang] : null;
                 throw new NoWhenBranchMatchedException();
         }
     }
 }
+
+/** v0.27.0 "The World Update": 30 new countries (data in World/WorldData.ts). */
+export const NEW_COUNTRIES: Country[] = [];
+NEW_COUNTRY_DEFS.forEach((d, i) => { const c = new Country(d.id, 7 + i); (Country as any)[d.id] = c; NEW_COUNTRIES.push(c); });

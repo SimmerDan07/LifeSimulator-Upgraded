@@ -75,6 +75,26 @@ export class ExtensionsKt {
         if (d >= 0) return symbol + JString.format(fmt, d) + suffix;
         return "-" + symbol + JString.format(fmt, Math.abs(d)) + suffix;
     }
+    /**
+     * v0.27.0: prices written into story text as US dollars ("Go ($800)", "$5,000 a week") are shown in the
+     * currency of the country you live in, converted like every other price. Only display text is changed.
+     */
+    static localizeDollars(s: string): string {
+        if (!s || s.indexOf("$") < 0) return s;
+        let cur: any;
+        try { cur = GameStateManager.INSTANCE.getPersonState()?.getCountry()?.getCurrency(); } catch { return s; }
+        if (cur == null || (cur.getSymbol() === "$" && cur.getExchangeRate() === 1)) return s;
+        const mult: Record<string, number> = { K: 1e3, M: 1e6, B: 1e9, T: 1e12, thousand: 1e3, million: 1e6, billion: 1e9, trillion: 1e12 };
+        return s.replace(/(?<![A-Za-z0-9$])\$(\d+(?:,\d{3})*(?:\.\d+)?)(?:(K|M|B|T)\b|\s(thousand|million|billion|trillion)\b)?/g, (m, num: string, suf?: string, word?: string) => {
+            const n = parseFloat(num.replace(/,/g, "")) * (mult[suf ?? word ?? ""] ?? 1);
+            if (!isFinite(n)) return m;
+            try { return ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(n)), true); } catch { return m; }
+        });
+    }
+    /** "a" or "an" before a word: aOrAn("Interpreter") = "an Interpreter". */
+    static aOrAn(word: string): string {
+        return (/^[aeiou]/i.test(word) && !/^(uni|use|eu|one|ur)/i.test(word) ? "an " : "a ") + word;
+    }
     static toIntegerCappingAtMaxInt(b: BigInteger): number {
         if (b.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) return Integer.MAX_VALUE;
         return b.intValue();

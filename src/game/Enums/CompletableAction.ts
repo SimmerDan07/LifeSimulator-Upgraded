@@ -15,6 +15,7 @@ import { Trait } from "./Trait";
 import { Utils } from "../Utils/Utils";
 import { Schooling } from "../Managers/Schooling";
 import { DEGREES, DEGREE_BY_ID, DegreeDef } from "../Careers/CareerData";
+import { LANGUAGE_BY_ID, LanguageDef, NEW_LANGUAGE_DEFS } from "../World/WorldData";
 
 export class CompletableAction extends JEnum {
     static readonly middleSchool: CompletableAction = new CompletableAction("middleSchool", 0);
@@ -63,7 +64,9 @@ export class CompletableAction extends JEnum {
     // Added in Life Sim Upgraded (listed first in values() so they show first on the Education tab).
     static readonly preschool: CompletableAction = new CompletableAction("preschool", 43);
     static readonly elementarySchool: CompletableAction = new CompletableAction("elementarySchool", 44);
-    static values(): CompletableAction[] { return [...CompletableAction.BASE(), ...NEW_DEGREES]; }
+    static values(): CompletableAction[] { return [...CompletableAction.BASE(), ...NEW_DEGREES, ...NEW_LANGUAGES]; }
+    /** v0.27.0: language data (all 35 languages have it). */
+    lang(): LanguageDef | null { return LANGUAGE_BY_ID[this.name()] ?? null; }
     /** v0.26.0: the data for a new degree or training (null for the original ones). */
     def(): DegreeDef | null { return DEGREE_BY_ID[this.name()] ?? null; }
     isTraining(): boolean { return this.def()?.kind === "training"; }
@@ -122,6 +125,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return CompletableActionType.philanthrophy;
             default:
+                if (this.lang()) return CompletableActionType.skill;
                 if (this.def()) return CompletableActionType.education;
                 throw new NoWhenBranchMatchedException();
         }
@@ -219,6 +223,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.financialLiteracy:
                 return R.drawable.skill_financialliteracy;
             default:
+                if (this.lang()) return (R.drawable as any)[this.lang()!.image];
                 if (this.def()) return (R.drawable as any)[this.def()!.image];
                 throw new NoWhenBranchMatchedException();
         }
@@ -316,6 +321,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return Utils.INSTANCE.getString(R.string.Education_Skill_Lanaguage_marsColonization);
             default:
+                if (this.lang()) return this.lang()!.title;
                 if (this.def()) return this.def()!.title;
                 throw new NoWhenBranchMatchedException();
         }
@@ -324,6 +330,8 @@ export class CompletableAction extends JEnum {
         if (Schooling.isSchool(this)) return Schooling.description(this, GameStateManager.INSTANCE.getPersonState());
         // v0.19.0 Celebrity Life degrees
         if (this === CompletableAction.college_music) return "Celebrity Life: needed to go beyond Opening Act in Music (Recording Artist and up). +15 music skill for chart results, tours and awards.";
+        // v0.27.0: every language (the four original ones too) says where it lets you move
+        if (this.lang()) return `Learn ${this.lang()!.title}. ${this.lang()!.perk}`;
         if (this === CompletableAction.college_theater) return "Celebrity Life: needed for Theater Ensemble and up in Acting, and Dance Captain and up in Dance. +15 acting and dance skill for auditions, movies, battles and awards.";
         switch (this) {
             case CompletableAction.homeChef:
@@ -388,13 +396,14 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return Utils.INSTANCE.getString(R.string.Education_Skill_Lanaguage_marsColonization_Description);
             default:
+                if (this.lang()) return `Learn ${this.lang()!.title}. ${this.lang()!.perk}`;
                 if (this.def()) return this.def()!.description;
                 return null;
         }
     }
     isLanguage(): boolean {
         let i: CompletableAction = this;
-        return (((i === CompletableAction.french) || (i === CompletableAction.japanese)) || (i === CompletableAction.spanish)) || (i === CompletableAction.chinese);
+        return (((i === CompletableAction.french) || (i === CompletableAction.japanese)) || (i === CompletableAction.spanish)) || (i === CompletableAction.chinese) || NEW_LANGUAGES.includes(i);
     }
     getCostPerWeek(): BigInteger {
         switch (this) {
@@ -499,6 +508,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return new BigInteger("1000000000000000000000000000");
             default:
+                if (this.lang()) return BigInteger.valueOf(250);
                 if (this.def()) return BigInteger.valueOf(this.def()!.costPerWeek);
                 throw new NoWhenBranchMatchedException();
         }
@@ -568,6 +578,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return CompletableAction.lunarBase;
             default:
+                if (this.lang()) return null;
                 if (this.def()) return (CompletableAction as any)[this.def()!.prereq] ?? null;
                 throw new NoWhenBranchMatchedException();
         }
@@ -643,6 +654,7 @@ export class CompletableAction extends JEnum {
                 d = 2.5;
                 break;
             default:
+                if (this.lang()) { d = this.lang()!.years; break; }
                 if (this.def()) { d = this.def()!.years; break; }
                 throw new NoWhenBranchMatchedException();
         }
@@ -808,3 +820,7 @@ CompletableAction.INSTANCE = new CompletableAction.Companion(null);
 /** v0.26.0 "The Career Update": new degrees, graduate schools and trainings become real CompletableAction values. */
 export const NEW_DEGREES: CompletableAction[] = [];
 DEGREES.forEach((d, i) => { const a = new CompletableAction(d.id, 100 + i); (CompletableAction as any)[d.id] = a; NEW_DEGREES.push(a); });
+
+/** v0.27.0 "The World Update": 31 new languages (English is one: people born elsewhere need it to move to English-speaking countries). */
+export const NEW_LANGUAGES: CompletableAction[] = [];
+NEW_LANGUAGE_DEFS.forEach((d, i) => { const a = new CompletableAction(d.id, 200 + i); (CompletableAction as any)[d.id] = a; NEW_LANGUAGES.push(a); });

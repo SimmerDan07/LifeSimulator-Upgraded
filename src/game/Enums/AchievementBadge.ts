@@ -355,7 +355,8 @@ export class AchievementBadge extends JEnum {
                 let valueOf4: BigInteger = BigInteger.valueOf(10000000);
                 return totalValue.compareTo(valueOf4) >= 0;
             case AchievementBadge.criminal:
-                return false;
+                // v0.27.0: prison is real now: more than 10 years served in total
+                return ((player as any).crime?.stats?.served ?? 0) > 10 * Constants.Time.INSTANCE.getWeeksPerYear();
             case AchievementBadge.nerd:
                 let states: CompletableActionState.CompletableActionStateSingle[] = player.getCompletableActionState().getStates(CompletableActionType.education);
                 let arrayList: ArrayList = new ArrayList();
@@ -460,7 +461,13 @@ export class AchievementBadge extends JEnum {
                         arrayList9.add(completableActionStateSingle3);
                     }
                 }
-                return arrayList9.size() >= 1;
+                // v0.27.0: everyone now speaks their native language, so bilingual means one more
+                {
+                    const known = new Set<string>();
+                    for (const x of arrayList9.toArray?.() ?? []) known.add((x as any).getType().name());
+                    known.add((player as any).nativeLanguage ?? "english");
+                    return known.size >= 2;
+                }
             case AchievementBadge.philanthropist:
                 let states10: CompletableActionState.CompletableActionStateSingle[] = player.getCompletableActionState().getStates(CompletableActionType.philanthrophy);
                 let arrayList10: ArrayList = new ArrayList();
@@ -501,7 +508,7 @@ export namespace AchievementBadge {
             throw new Error('no overload for $init with ' + a.length + ' args');
         }
         getAvailableBadges(): AchievementBadge[] {
-        return [AchievementBadge.married, AchievementBadge.wellOff, AchievementBadge.rich, AchievementBadge.wealthy, AchievementBadge.crazyRich, AchievementBadge.oldAge, AchievementBadge.tooYoung, AchievementBadge.realEstateEmpire, AchievementBadge.doer, AchievementBadge.invester, AchievementBadge.nerd, AchievementBadge.skillful, AchievementBadge.familyMan, AchievementBadge.workaholic, AchievementBadge.sadLife, AchievementBadge.happyLife, AchievementBadge.bigFamily, AchievementBadge.massiveFamily, AchievementBadge.seedSpreader, AchievementBadge.prolificWriter, AchievementBadge.superstar, AchievementBadge.supercentenarian, AchievementBadge.bilingual, AchievementBadge.philanthropist, AchievementBadge.cheatingDeath, AchievementBadge.immortal, AchievementBadge.restaurantOwner, AchievementBadge.restaurantFranchise, AchievementBadge.factoryOwner, AchievementBadge.manufactoringTycoon, AchievementBadge.softwareCompany, AchievementBadge.techGiant];
+        return [AchievementBadge.married, AchievementBadge.wellOff, AchievementBadge.rich, AchievementBadge.wealthy, AchievementBadge.crazyRich, AchievementBadge.oldAge, AchievementBadge.tooYoung, AchievementBadge.realEstateEmpire, AchievementBadge.doer, AchievementBadge.invester, AchievementBadge.criminal, AchievementBadge.nerd, AchievementBadge.skillful, AchievementBadge.familyMan, AchievementBadge.workaholic, AchievementBadge.sadLife, AchievementBadge.happyLife, AchievementBadge.bigFamily, AchievementBadge.massiveFamily, AchievementBadge.seedSpreader, AchievementBadge.prolificWriter, AchievementBadge.superstar, AchievementBadge.supercentenarian, AchievementBadge.bilingual, AchievementBadge.philanthropist, AchievementBadge.cheatingDeath, AchievementBadge.immortal, AchievementBadge.restaurantOwner, AchievementBadge.restaurantFranchise, AchievementBadge.factoryOwner, AchievementBadge.manufactoringTycoon, AchievementBadge.softwareCompany, AchievementBadge.techGiant];
     }
         getBadges(player: Player): ArrayList<AchievementBadge> {
         Intrinsics.checkParameterIsNotNull(player, "player");

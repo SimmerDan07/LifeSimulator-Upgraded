@@ -116,6 +116,7 @@ export class SideHustle extends JEnum {
         throw new NoWhenBranchMatchedException();
     }
     requirementNotMetString(player: Player): string {
+        if (player.getCrimeState().getIsInJail()) return "Not while you're in prison";   // v0.27.0
         Intrinsics.checkParameterIsNotNull(player, "player");
         const tooYoung = AgeLimits.tooYoung(AgeLimits.work, player);
         if (tooYoung != null) return tooYoung;

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cisrael"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cisrael)">
+  <rect x="0.00" y="66.21" width="384.00" height="251.59" fill="#FFFFFF"/>
+  <rect x="0.00" y="91.37" width="384.00" height="37.74" fill="#0038B8"/>
+  <rect x="0.00" y="254.90" width="384.00" height="37.74" fill="#0038B8"/>
+  <polygon points="192.0,146.0 232.0,215.0 152.0,215.0" fill="none" stroke="#0038B8" stroke-width="9"/>
+  <polygon points="192.0,238.0 232.0,169.0 152.0,169.0" fill="none" stroke="#0038B8" stroke-width="9"/>
+
+ </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cvietnam"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cvietnam)">
+  <rect x="0.00" y="66.21" width="384.00" height="251.59" fill="#DA251D"/>
+  <polygon points="192.00,120.00 208.17,169.75 260.48,169.75 218.16,200.50 234.32,250.25 192.00,219.50 149.68,250.25 165.84,200.50 123.52,169.75 175.83,169.75" fill="#FFFF00"/>
+
+ </g>
+</svg>

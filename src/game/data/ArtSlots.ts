@@ -1,6 +1,8 @@
 // Art slots (v0.18.0): rows that still borrow an icon from somewhere else in the game. Each has its own file name;
 // drop a PNG or SVG with that name into assets/images and the game uses it instead of the stand-in (fallback).
 import { CAREERS, DEGREES } from "../Careers/CareerData";
+import { ACTIVITY_DEFS, ACTIVITY_CATEGORIES } from "../World/ActivityData";
+import { CRIMES, FRONTS } from "../Crime/CrimeData";
 export interface ArtSlot { name: string; fallback: string; where: string; row: string }
 
 export const ART_SLOTS: ArtSlot[] = [
@@ -116,5 +118,12 @@ export const ART_SLOTS: ArtSlot[] = [
     // v0.26.0 Career Center: one picture per new career, degree and training
     ...CAREERS.map((c) => ({ name: c.image, fallback: c.fallback, where: "Work › Career Center", row: c.name })),
     ...DEGREES.map((d) => ({ name: d.image, fallback: d.fallback, where: d.kind === "training" ? "Education › Trade School & Training" : "Education", row: d.title })),
+    // v0.27.0 The World Update: things to do, local favourites, crime
+    { name: "icon_diet_local", fallback: "diet_balanced", where: "Profile › Diet (new countries)", row: "Local cooking" },
+    { name: "lifepath_crime", fallback: "police_badge", where: "Lifepaths", row: "Crime" },
+    ...ACTIVITY_CATEGORIES.map((c) => ({ name: c.image, fallback: (c as any).fallback ?? ACTIVITY_DEFS.find((a) => a.cat === c.id)!.fallback, where: "Leisure › Things to Do", row: c.title })),
+    ...ACTIVITY_DEFS.map((a) => ({ name: a.image, fallback: a.fallback, where: a.cat === "local" ? "Leisure › Local Favourites" : "Leisure › Things to Do", row: a.title })),
+    ...CRIMES.map((c) => ({ name: c.image, fallback: c.fallback, where: "Lifepaths › Crime", row: c.title })),
+    ...FRONTS.map((f) => ({ name: "icon_front_" + f.id.toLowerCase(), fallback: f.fallback, where: "Lifepaths › Crime › Fronts", row: f.title })),
 ];
 export const ART_FALLBACK: Record<string, string> = Object.fromEntries(ART_SLOTS.map((s) => [s.name, s.fallback]));

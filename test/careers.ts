@@ -61,9 +61,9 @@ LifeMoments.enabled = false;
 
 // ---------------------------------------------------------------- the data
 {
-    check("40 new careers in 8 groups of 5", CAREERS.length === 40 && CAREER_CATEGORIES.every((c) => CAREERS.filter((x) => x.category === c.id).length === 5));
+    check("41 new careers (40 + Translator in v0.27.0); the first 8 groups have 5 each", CAREERS.length === 41 && CAREER_CATEGORIES.slice(0, 8).every((c) => CAREERS.filter((x) => x.category === c.id && x.id !== "translator").length === 5));
     const all = Job.values();
-    check("…all are real jobs (66 in all)", all.length === 66 && CAREERS.every((d) => (Job as any)[d.id] instanceof Job), `${all.length}`);
+    check("…all are real jobs (67 in all)", all.length === 67 && CAREERS.every((d) => (Job as any)[d.id] instanceof Job), `${all.length}`);
     check("…with unique ordinals", new Set(all.map((j) => j.ordinal())).size === all.length);
     const bad = CAREERS.filter((d) => !(d.titles.length === d.pay.length && d.pay.length === d.mods.length && d.mods.length === d.edu.length && (d.followers == null || d.followers.length === d.titles.length)));
     check("every career has a title, pay, effects and education for each level", bad.length === 0, bad.map((d) => d.id).join(","));
@@ -87,7 +87,7 @@ LifeMoments.enabled = false;
     const r = rows(new WorkModelGenerator());
     const t = titles(r);
     check("the Work tab has a Career Center with 8 groups", t.includes("Career Center") && CAREER_CATEGORIES.every((c) => t.includes(c.title)), t.slice(-10).join(" | "));
-    check("…the original careers are still listed", t.some((x) => /Panhandler|Pan/.test(x)));
+    check("v0.27.0: the original careers are in the Career Center too", [Job.panHandler, Job.programmer, Job.actor, Job.sushiChef].every((j) => Careers.categoryOf(j) != null) && CAREER_CATEGORIES.length === 10);
     const health = screen("careers:health");
     check("a group screen lists its 5 careers", CAREERS.filter((c) => c.category === "health").every((c) => text(health).includes((Job as any)[c.id].getJobTitles()[0])), titles(health).join(" | "));
     graduate(p, "highSchool");

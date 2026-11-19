@@ -1,4 +1,6 @@
 // Hand-ported from Managers/GameStateManager.java. Loads/saves the whole game via SaveCodec.
+import { installCrime } from "../Crime/install";
+import { World } from "../World/World";
 import { Crossover } from "../Lifepaths/Crossover";
 import { Appearance } from "../Social/Appearance";
 import { BigInteger } from "../runtime";
@@ -29,6 +31,7 @@ export class GameStateManager {
     /** Called once at startup (the Kotlin object's static init). */
     init(): void {
         Crossover.install();   // v0.25.0: Celebrity Life × Vampire cross content (hooks and extra actions)
+        installCrime();        // v0.27.0: the Crime update's hooks into careers, moving, heirs, vampires…
         this.globalStateManager = this.loadData();
         const slot = this.globalStateManager.getSaveState().currentSlot();
         if (slot.getPersonState() == null) {
@@ -75,6 +78,7 @@ export class GameStateManager {
     }
     startNewGame(player: Player): void {
         Schooling.fillForAge(player);  // schooling that fits the starting age (preschool…high school)
+        World.onNewLife(player);       // v0.27.0: native language (birth country)
         if (!Appearance.valid((player as any).appearance)) Appearance.set(player, Appearance.random(player.getSex()));
         player.applyPerkStateEffects();
         player.applyNameEasternEgg();

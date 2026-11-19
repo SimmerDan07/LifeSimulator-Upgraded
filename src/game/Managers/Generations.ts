@@ -1,6 +1,8 @@
 // Generational play (Life Sim Upgraded): when you die, continue the family line as one of your children.
 // The heir inherits the estate (money after debts, homes, possessions, businesses, stocks, pets),
 // keeps their own job, gets schooling that matches their age/job, and remembers their parents.
+import { nativeLanguageOf } from "../World/WorldData";
+import { World } from "../World/World";
 import { Celebrity } from "../Lifepaths/Celebrity";
 import { Appearance } from "../Social/Appearance";
 import { ArrayList, BigInteger, Pair } from "../runtime";
@@ -80,6 +82,8 @@ export class Generations {
         return new GenericListFragmentViewModel(content, header, footer);
     }
 
+    /** v0.27.0: things that pass from a parent to their heir (set by other modules, e.g. Crime). */
+    static heirHooks: ((parent: any, heir: any) => void)[] = [];
     /** Hand the game over to `child`. Call after the parent's death has been recorded. */
     static continueAs(child: Person): void {
         const gsm = GameStateManager.INSTANCE.getGlobalStateManager();
@@ -98,6 +102,7 @@ export class Generations {
             child.getSexuality() ?? Sexuality.straight, child.getSex(), child.getAgeInWeeks());
         heir.setTrueAgeInWeeks(child.getTrueAgeInWeeks());
         heir.setCountry(parent.getCountry());
+        (heir as any).nativeLanguage = nativeLanguageOf(parent.getCountry().name());   // v0.27.0: grew up here
         heir.setLifeScenario(parent.getLifeScenario());
         heir.changeDiet(parent.getDiet());
         heir.initializeRandomTraits();
@@ -172,6 +177,10 @@ export class Generations {
         heir.realEstate = realEstate;
         realEstate.inherit(parent, heir, child);
         const propCount = realEstate.all().length;
+
+        // v0.27.0: the heir's native language; other modules (Crime) pass on what they need to
+        World.onNewLife(heir);
+        for (const h of Generations.heirHooks) { try { h(parent, heir); } catch { /* ignore */ } }
 
         // Hand over control.
         gsm.getSaveState().currentSlot().setPersonState(heir);

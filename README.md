@@ -124,6 +124,46 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
       much; the new medical careers count for Blood Bank Bags.
     - Tests: `test/careers.ts` (in `npm run test:features`); `test:deep` adds worker, influencer and vampire-creator
       scenarios and the Career Center screens.
+  - **v0.27.0 The World Update**:
+    - **Countries** (`src/game/World/WorldData.ts`: `COUNTRY_DEFS`, 37 in four regions; 30 new: Germany, Italy,
+      Portugal, Ireland, Netherlands, Sweden, Norway, Denmark, Finland, Poland, Greece, Russia, Iceland, Turkey,
+      Mexico, Brazil, Argentina, South Korea, India, Thailand, Vietnam, Indonesia, Philippines, Australia, New Zealand,
+      UAE, Egypt, Israel, Kenya, South Africa) registered as `Country` values (ordinals 7+; `Country.def()`), with 23
+      new `Currency` values, drinking ages, diets (`Diet.localCuisine`, the national dish), local jobs, cities for the
+      property market, price index, climate and hemisphere. Seasons flip in the south (`seasonForMonth`), tropical
+      countries never snow (winter activities and snow days follow), holidays move (Summer Holidays in December).
+      Leisure tab › **Move Abroad**: 4 region screens (`world:<region>`); moving needs 18+, a passport, $100K and the
+      language (`World.moveBlock`); jobs that only exist in your old country stay behind (`World.afterMove`).
+    - **Languages** (`LANGUAGE_DEFS`, 35; 30 new incl. English, Arabic, Korean, Hindi, Latin, Sign Language) as
+      `CompletableAction` values 200+. Your native language (`Player.nativeLanguage`) is free; each foreign one is
+      +1% pay (max 10%) and some careers want specific ones (+5%; `World.payMultiplier`); the new **Translator**
+      career promotes on languages spoken. Education tab › Languages screen (native / for moving / other).
+    - **New life**: Birth Country on the customize screen (you speak its language, prices in its currency) and
+      **Skip childhood: start at 13** (preschool and elementary done; `World.skipTo13`). Heirs inherit the country.
+    - **113 things to do** (`src/game/World/ActivityData.ts`, `Activities.ts`; `Leisure` values 33+): 76 in 8 groups
+      (Leisure tab › Things to Do → `activities:<group>`) and 37 Local Favourites, one per country (Rio
+      Carnival in February, Oktoberfest, cherry blossoms…). Rules: minimum ages, drinking ages, seasons and months,
+      snow, family activities free for kids, casinos banned in some countries, vampires and daylight. Effects:
+      martial arts help in fights, golf with the boss, speed dating finds a partner, parties make friends, trivia and
+      casino prizes, good deeds, karaoke, fishing (`Activities.EFFECTS`).
+    - **The Career Center has every job**: the 26 original jobs joined the 41 new ones in 10 groups (new: Starter Jobs,
+      Entertainment & Fame). The Work tab shows your job, then the Career Center.
+    - **Crime** (Lifepaths › Crime, from 13; `src/game/Crime/`, state `Player.crime`): 23 crimes in 5 kinds (petty,
+      theft, scams, heists, violent) with odds, takes, heat and sentences; police heat that cools, open cases, warrants
+      and cold cases; arrests with a trial (plead guilty, top lawyer, defend yourself as a lawyer, bribe the judge,
+      State's witness, public defender); juvenile records sealed at 18; convictions block background-checked careers
+      until 7 years after the sentence. **Prison is real**: housing, diet and lease end, careers can fire you, partners
+      may leave; the Leisure tab is the prison yard (gym, library, letters, prison gang, contraband, appeal, riots,
+      escapes; Shadow Step always escapes) and the Work tab has prison jobs; parole for good behaviour; escaping makes
+      you a fugitive. **Murder** (from 18, adults only): poison, accident, ambush, hitman or (vampires) drain; murder
+      cases never close. **Gangs** (join from 14, start your own from 18: members, turf, rivals) and **crime
+      families** (Associate → Soldier → Capo → Underboss → Don: rackets, fronts that launder money, bribed police chief
+      and judges, RICO, succession; your heir can take over). Fake Your Death and a new identity clear your record.
+    - **Consistency**: prison blocks buying, homes, careers, side hustles, social media, dating and activities;
+      collapsing in prison releases you; story prices are shown in your currency (`ExtensionsKt.localizeDollars`);
+      the original "Criminal" badge (10+ years inside) works; Bilingual needs a language besides your native one.
+    - Tests: `test/world.ts`, `test/crime.ts` (in `npm run test:features`); `test:deep` adds foreigner, criminal, Don,
+      inmate and teen-in-Korea scenarios.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

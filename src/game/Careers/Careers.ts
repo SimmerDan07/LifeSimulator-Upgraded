@@ -12,6 +12,7 @@
 // - Each career group has its own on-the-job moments.
 // - Career Center: the Work tab lists the 8 groups; each opens a screen with its careers.
 import { BigInteger, R } from "../runtime";
+import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { MoneyState } from "../Managers/MoneyState";
 import { MoneyUpdateType } from "../Enums/MoneyUpdateType";
 import { GameStateManager } from "../Managers/GameStateManager";
@@ -23,7 +24,9 @@ import { Job } from "../Enums/Job";
 import { Leisure } from "../Enums/Leisure";
 import { Vampire } from "../Lifepaths/Vampire";
 import { SocialMedia } from "../Social/SocialMedia";
-import { CAREERS, CAREER_CATEGORIES, CAREER_BY_ID, CareerDef } from "./CareerData";
+import { CAREERS, CAREER_CATEGORIES, CAREER_BY_ID, CareerDef, ORIGINAL_JOB_CATEGORY, CLEAN_RECORD_JOBS } from "./CareerData";
+import { World } from "../World/World";
+import { COUNTRY_BY_ID } from "../World/WorldData";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { TextLabelViewModel } from "../Models/TextLabelViewModel";
@@ -68,10 +71,26 @@ export const Careers = {
     },
 
     // ------------------------------------------------------------------ applying
+    /** v0.27.0: every career in a Career Center group (new ones first, then the original game's). */
+    jobsIn(cat: string): Job[] {
+        return [...CAREERS.filter((c) => c.category === cat).map((c) => Careers.job(c.id)),
+            ...Object.entries(ORIGINAL_JOB_CATEGORY).filter(([, c]) => c === cat).map(([id]) => Careers.job(id))].filter((j) => j != null);
+    },
+    categoryOf(job: any): string | null { return Careers.def(job)?.category ?? ORIGINAL_JOB_CATEGORY[job?.name?.()] ?? null; },
+    /** Set by Crime: why a criminal record stops you (null = it doesn't). */
+    recordBlock: (_p: any, _job: any): string | null => null,
     /** Why you can't apply for this career right now, or null. */
     applyBlock(job: any, p: any = player()): string | null {
+        const isCurrent = (() => { try { return p.getJobState().getCurrentJob() === job; } catch { return false; } })();
+        if (!isCurrent) {
+            try { if (p.getCrimeState().getIsInJail()) return "Not while you're in prison"; } catch { /* ignore */ }
+            const local = World.localJobCountries(job);
+            if (local.length && !local.includes(p.getCountry().name())) return `Only in ${local.map((c) => COUNTRY_BY_ID[c]?.name ?? c).join(", ")}`;
+            if (CLEAN_RECORD_JOBS.has(job?.name?.())) { const r = Careers.recordBlock(p, job); if (r) return r; }
+        }
         const d = Careers.def(job);
         if (d == null) return null;
+        if (!isCurrent && d.langs && World.foreignLanguages(p).length < d.langs[0]) return `Needs ${d.langs[0]} foreign language${d.langs[0] === 1 ? "" : "s"} (you speak ${World.foreignLanguages(p).length})`;
         const age = p.getAgeInYears();
         if (d.minAge != null && age < d.minAge) return `From age ${d.minAge}`;
         if (d.maxAge != null && age > d.maxAge && p.getJobState().getCurrentJob() !== job) return `Only hires people up to age ${d.maxAge}`;
@@ -84,6 +103,8 @@ export const Careers = {
     promotionBlock(job: any, level: number, p: any = player()): string | null {
         const d = Careers.def(job);
         if (d == null) return null;
+        const langs = d.langs?.[level - 1] ?? 0;
+        if (langs > 0 && World.foreignLanguages(p).length < langs) return `${langs} foreign languages (you speak ${World.foreignLanguages(p).length}; learn more in the Education tab)`;
         const need = d.followers?.[level - 1] ?? 0;
         if (need > 0 && SocialMedia.followers(p) < need) return `${num(need)} social media followers (you have ${num(SocialMedia.followers(p))}${SocialMedia.hasAccount(p) ? "" : "; open an account in the Social tab"})`;
         if (d.hobby && level >= d.hobby.from) {
@@ -128,7 +149,7 @@ export const Careers = {
             if (st.lowHealth >= LOW_HEALTH_WEEKS) {
                 st.lowHealth = 0;
                 p.getJobState().setCurrentJob(null);
-                alert("Failed the Fitness Test", `As a ${d.name.toLowerCase()} you need ${d.minHealth} health. You've been below that for a month, so they let you go. Get healthy and you can apply again.`, job.getImageId());
+                alert("Failed the Fitness Test", `As ${ExtensionsKt.aOrAn(d.name.toLowerCase())} you need ${d.minHealth} health. You've been below that for a month, so they let you go. Get healthy and you can apply again.`, job.getImageId());
                 return;
             }
         }
@@ -139,12 +160,12 @@ export const Careers = {
         js.setCurrentJob(null);
         const trainer = Careers.job("personalTrainer");
         const ask = () => {
-            LifeMoments.ask("Hanging Up Your Boots", `At ${p.getAgeInYears()} your body can't keep up any more. You retire from pro sport as a ${was}. What next?`, Careers.job("proAthlete").getImageId(), [
+            LifeMoments.ask("Hanging Up Your Boots", `At ${p.getAgeInYears()} your body can't keep up any more. You retire from pro sport as ${ExtensionsKt.aOrAn(was)}. What next?`, Careers.job("proAthlete").getImageId(), [
                 ["Coach (Personal Trainer)", () => {
                     const s = js.getState(trainer);
                     if (s.getLevel() < 3) s.setLevel(3);
                     js.switchJob(trainer);
-                    return `Your name opens doors: you start as a ${s.getJobTitle()}.`;
+                    return `Your name opens doors: you start as ${ExtensionsKt.aOrAn(s.getJobTitle())}.`;
                 }],
                 ["Take a break", () => { attr(p, 0, 5, 5); return "You've earned a rest."; }],
             ]);
@@ -170,10 +191,9 @@ export const Careers = {
 
     // ------------------------------------------------------------------ Career Center (Work tab)
     counts(cat: string, p: any = player()): { total: number; open: number } {
-        const list = CAREERS.filter((c) => c.category === cat);
+        const list = Careers.jobsIn(cat);
         let open = 0;
-        for (const c of list) {
-            const j = Careers.job(c.id);
+        for (const j of list) {
             const edu = j.educationRequirement(1);
             if (Careers.applyBlock(j, p) == null && (edu == null || p.getCompletableActionState().isCompleted(edu))) open++;
         }
@@ -183,7 +203,7 @@ export const Careers = {
         const out: any[] = [new HeaderTitleViewModel("Career Center")];
         for (const c of CAREER_CATEGORIES) {
             const n = Careers.counts(c.id, p);
-            const mine = Careers.current(p)?.category === c.id ? ` · You work here as a ${p.getJobState().getCurrentJobState().getJobTitle()}` : "";
+            const mine = Careers.categoryOf(p.getJobState().getCurrentJob()) === c.id ? ` · You work here as ${ExtensionsKt.aOrAn(p.getJobState().getCurrentJobState().getJobTitle())}` : "";
             out.push(new ActionCellSingleViewModel((R.drawable as any)[c.image], c.title, text(`${c.blurb}\n${n.total} careers · ${n.open} you can start now${mine}`),
                 new ButtonViewModel("Browse", null, true, false, false, false, false, { invoke: () => { Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.lifepath, "careers:" + c.id, false, 4, null); return null; } }), null, null));
         }
@@ -194,15 +214,22 @@ export const Careers = {
         const out: any[] = [];
         const c = CAREER_CATEGORIES.find((x) => x.id === cat);
         if (c) out.push(new ActionCellSingleViewModel((R.drawable as any)[c.image], c.title, text(`${c.blurb}\nIt's ${Seasons.label(p)}.`), ButtonViewModel.INSTANCE.getHidden(), null, null));
-        for (const d of CAREERS.filter((x) => x.category === cat)) out.push(p.getJobState().getState(Careers.job(d.id)).getViewModel());
+        for (const j of Careers.jobsIn(cat)) out.push(p.getJobState().getState(j).getViewModel());
         return out;
     },
     /** The extra lines on a career's Work cell. */
     describe(job: any, level: number, p: any = player()): string[] {
         const d = Careers.def(job);
-        if (d == null) return [];
-        const out: string[] = [];
         const current = p.getJobState().getCurrentJob() === job;
+        if (d == null) {
+            // v0.27.0: the original careers say where they exist and whether they check your record
+            const out: string[] = [];
+            const local = World.localJobCountries(job);
+            if (local.length && !current) out.push(`Local job: ${local.map((c) => COUNTRY_BY_ID[c]?.name ?? c).join(", ")}`);
+            if (CLEAN_RECORD_JOBS.has(job?.name?.()) && !current) out.push("Background check: needs a clean criminal record");
+            return out;
+        }
+        const out: string[] = [];
         if (!current) out.push(d.blurb);
         const req: string[] = [];
         if (!current) {
@@ -210,6 +237,8 @@ export const Careers = {
             if (d.maxAge != null) req.push(`hired up to age ${d.maxAge}`);
             if (d.minHealth != null) req.push(`${d.minHealth}+ health`);
         }
+        if (!current && d.langs) req.push(`${d.langs[0]} foreign language${d.langs[0] === 1 ? "" : "s"}`);
+        if (!current && CLEAN_RECORD_JOBS.has(d.id)) req.push("a clean criminal record");
         if (req.length) out.push(`Requires: ${req.join(", ")}`);
         const next = level + 1;
         if (current && next <= d.titles.length) {
@@ -242,7 +271,7 @@ const MOMENTS: Record<string, Moment[]> = {
         (p, _d, _l, img) => { attr(p, 0, 6, 2); LifeMoments.result("A Thank-You Card", "A patient you helped months ago sent a card. It's on your fridge now. (+6 happiness)", img); },
     ],
     trades: [
-        (p, d, level, img) => LifeMoments.ask("A Cash Job", `A neighbour asks if you'd do a weekend job off the books as a ${d.name.toLowerCase()}.`, img, [
+        (p, d, level, img) => LifeMoments.ask("A Cash Job", `A neighbour asks if you'd do a weekend job off the books as ${ExtensionsKt.aOrAn(d.name.toLowerCase())}.`, img, [
             ["Take it", () => { bonus(p, 150 * level); attr(p, -1, 0, -1); return `An extra $${150 * level} for a long Saturday.`; }],
             ["Enjoy your weekend", () => { attr(p, 0, 3, 2); return "Your weekend, your rules."; }],
         ]),
@@ -286,4 +315,4 @@ const MOMENTS: Record<string, Moment[]> = {
     ],
 };
 void CAREER_BY_ID;
-Leisure.travelDiscount = (p) => Careers.travelDiscount(p);
+export function installCareerHooks() { Leisure.travelDiscount = (p) => Careers.travelDiscount(p); }

@@ -73,6 +73,8 @@ export class RealEstatePortfolio {
     clock(): number { return this.weeks ?? 0; }
     newId(prefix = "P"): string { this.nextId = (this.nextId ?? 1) + 1; return `${prefix}${this.nextId}-${Math.floor(Math.random() * 1e6).toString(36)}`; }
 
+    /** v0.27.0: set while Crime moves you home on release. */
+    static releasing = false;
     static countryKey(player: any): string {
         const c = player?.getCountry?.()?.name?.();
         return c && COUNTRIES[c] ? c : DEFAULT_COUNTRY;
@@ -610,6 +612,7 @@ export class RealEstatePortfolio {
 
     /** Sign a lease and move in. */
     signLease(player: any, id: string): string | null {
+        if (player?.getCrimeState?.()?.getIsInJail?.() && !RealEstatePortfolio.releasing) return "Not while you're in prison";   // v0.27.0
         const l = (this.rentals ?? []).find((x) => x.id === id);
         if (!l) return "That home is no longer for rent.";
         const housing = RealEstatePortfolio.housingOf(l.type);
@@ -628,6 +631,7 @@ export class RealEstatePortfolio {
 
     /** Move to a basic place (park bench, shared room, parents' house). */
     moveToBasic(player: any, housing: Housing): string | null {
+        if (player?.getCrimeState?.()?.getIsInJail?.() && !RealEstatePortfolio.releasing) return "Not while you're in prison";   // v0.27.0
         if (housing.getNumberOfPetsAllowed() < player.getFamilyState().getAlivePets().size()) return "Too many pets to live there.";
         this.leaveHome(player);
         player.getHousingState().moveHere(housing);
@@ -691,6 +695,7 @@ export class RealEstatePortfolio {
 
     /** Classic Housing screen "Purchase" buttons. */
     quickBuy(player: any, housing: Housing, n: number): string | null {
+        if (player?.getCrimeState?.()?.getIsInJail?.() && !RealEstatePortfolio.releasing) return "Not while you're in prison";   // v0.27.0
         const type = housing.name();
         if (!PROPERTY_TYPES[type] || n <= 0) return "Not for sale";
         this.reconcile(player);
@@ -740,6 +745,7 @@ export class RealEstatePortfolio {
     }
 
     buyListing(player: any, id: string, mortgage: boolean): string | null {
+        if (player?.getCrimeState?.()?.getIsInJail?.() && !RealEstatePortfolio.releasing) return "Not while you're in prison";   // v0.27.0
         const l = this.listing(id);
         if (!l) return "That listing is gone.";
         const price = l.askingPrice;
@@ -779,6 +785,7 @@ export class RealEstatePortfolio {
 
     /** Make this property your home (uses the original "move here" so pets/rent rules still apply). */
     moveInto(player: any, id: string): string | null {
+        if (player?.getCrimeState?.()?.getIsInJail?.() && !RealEstatePortfolio.releasing) return "Not while you're in prison";   // v0.27.0
         let p = this.get(id);
         if (!p) return "Not found";
         const housing = RealEstatePortfolio.housingOf(p.type);

@@ -1,5 +1,8 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
+import { Country } from "../Enums/Country";
+import { World } from "../World/World";
 import { LifepathsModelGenerator } from "./LifepathsModelGenerator";
 import { Appearance, SKIN_NAMES, HAIR_NAMES } from "../Social/Appearance";
 import { AgeGroup } from "../Enums/AgeGroup";
@@ -232,6 +235,10 @@ export class GenericListModelGenerator {
                 }
                 break;
             case GenericListType.chooseDiet:
+                if (personState.getCrimeState().getIsInJail() && !Vampire.isVampire(personState)) {
+                    arrayList.add(new SingleLabelCellViewModel("PrisonFood", new TextLabelViewModel("In prison you eat what you're given.", null, false, false, null, null, 62, null)));
+                    break;
+                }
                 if (Vampire.isVampire(personState)) {
                     for (const c of Vampire.dietCells(personState)) arrayList.add(c);
                     break;
@@ -403,6 +410,23 @@ export class GenericListModelGenerator {
                     newGamePlayerState.initializeSexuality(Sexuality.bisexual);
                 }
                 })]));
+                // v0.27.0: birth country (you speak its language) and skipping childhood
+                {
+                    const np2: any = newGamePlayerState;
+                    arrayList.add(new CustomizeOptionsViewModel("Birth Country", np2.getCountry().getTitle(), Country.values().map((c: Country) =>
+                        new CustomizeSingleOptionViewModel(c.getTitle(), c.getImageId(), {
+                            invoke: () => {
+                                World.setBirthCountry(np2, c);
+                                Utils.INSTANCE.reloadGenericList(GenericListType.customizeGame);
+                            },
+                        }))));
+                    const startAge = np2.skipChildhoodFrom ?? np2.getAgeInYears();
+                    if (startAge < 13) {
+                        arrayList.add(new CustomizeSwitchViewModel(`Skip childhood: start at 13 (${World.nativeTitle(np2)} speaker, preschool and elementary school done)`, new SwitchViewModel(!!np2.skipChildhood, false, {
+                            invoke: (on: boolean) => { World.skipTo13(np2, on); Utils.INSTANCE.reloadGenericList(GenericListType.customizeGame); },
+                        }, 2, null)));
+                    }
+                }
                 // Birth month (the original always started you in January). Birthdays fall in this month.
                 {
                     const months: string[] = new DateFormatSymbols().getMonths();

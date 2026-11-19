@@ -372,7 +372,7 @@ export const POSTS: LifeActionDef[] = [
             const j = jobOf(p), d = j.getType().def?.();
             const media = d && ["journalist", "photographer", "fashionDesigner", "filmDirector", "chef", "contentCreator", "politician", "proAthlete", "astronaut"].includes(d.id);
             const q = (1 + j.getLevel() * 0.1) * (media ? 1.5 : 1);
-            done("Post About Work", R.drawable.icon_post_work)(SocialMedia.post(p, "chirper", q, `A day as a ${j.getJobTitle()}`));
+            done("Post About Work", R.drawable.icon_post_work)(SocialMedia.post(p, "chirper", q, `A day as ${ExtensionsKt.aOrAn(j.getJobTitle())}`));
         } },
     { id: "season", title: () => `Seasonal Post (${Seasons.label(player())})`, image: R.drawable.icon_post_season, instant: true, actionTitle: () => "Post",
         lock: postLock(),

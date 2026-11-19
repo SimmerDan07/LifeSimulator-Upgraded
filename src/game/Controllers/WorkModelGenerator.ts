@@ -30,12 +30,16 @@ import { Retirement } from "../Managers/Retirement";
 import { Celebrity } from "../Lifepaths/Celebrity";
 import { Careers } from "../Careers/Careers";
 import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
+import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
+import { CrimeScreen } from "../Crime/CrimeScreen";
 
 export class WorkModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
         let arrayList2: ArrayList = new ArrayList();
         arrayList.addAll(this.getWorkViewModels());
+        // v0.27.0: no work buttons or side hustles from a cell
+        if (GameStateManager.INSTANCE.getPersonState().getCrimeState().getIsInJail()) return new GenericListFragmentViewModel(arrayList, null, arrayList2);
         arrayList2.add(this.getWorkButtonsViewModel());
         arrayList.addAll(this.getSideHustleViewModels());
         arrayList.addAll(this.getBusinessViewModels());
@@ -47,15 +51,17 @@ export class WorkModelGenerator implements IViewModelGenerator {
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
         // v0.19.0: celebrity careers live in Lifepaths › Celebrity Life; if you have one, it shows here too
         const celeb = Celebrity.career(personState);
-        if (celeb != null) {
-            arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
-            arrayList.add(new SingleLabelCellViewModel("CelebrityWorkNote", new TextLabelViewModel(`Your ${celeb.title.toLowerCase()} career is part of Celebrity Life: open Lifepaths › Celebrity Life for auditions, songs, shows, fans and your team.`, null, false, false, null, null, 62, null)));
+        // v0.27.0: in prison, only prison jobs
+        if (personState.getCrimeState().getIsInJail()) {
+            for (const c of CrimeScreen.prisonJobCells(personState)) arrayList.add(c);
+            return arrayList;
         }
-        // v0.26.0: a job from the Career Center shows at the top (the rest of its group lives in the Career Center)
-        if (Careers.current(personState) != null) arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
-        for (const jobStateSingle of personState.getJobState().statesForPlayer(personState)) {
-            arrayList.add(jobStateSingle.getViewModel());
-        }
+        // v0.27.0: every career lives in the Career Center; your current job shows at the top
+        if (personState.getJobState().getCurrentJob() != null) arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
+        else arrayList.add(new ActionCellSingleViewModel(R.drawable.tab_briefcase, "No job right now",
+            new TextLabelViewModel("Browse every career in the Career Center below: 67 careers in 10 groups.", null, false, false, null, null),
+            ButtonViewModel.INSTANCE.getHidden(), null, null));
+        if (celeb != null) arrayList.add(new SingleLabelCellViewModel("CelebrityWorkNote", new TextLabelViewModel(`Your ${celeb.title.toLowerCase()} career is part of Celebrity Life: open Lifepaths › Celebrity Life for auditions, songs, shows, fans and your team.`, null, false, false, null, null, 62, null)));
         const retirement = Retirement.cell();
         if (retirement != null) arrayList.add(retirement);
         for (const c of Careers.centerCells(personState)) arrayList.add(c);

@@ -1,5 +1,8 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Crime } from "../Crime/Crime";
+import { World } from "../World/World";
+import { Activities } from "../World/Activities";
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Double, Integer, Intrinsics, JMath, Layout, MapsKt, Pair, R, Random, SpannableStringBuilder, StringCompanionObject, StringsKt, TuplesKt, TypeCastException, TypeIntrinsics, UUID, Unit } from "../runtime";
 import { Retirement } from "./Retirement";
 import { AchievementBadge } from "../Enums/AchievementBadge";
@@ -492,6 +495,7 @@ export class Player {
             miscState.setTripsTaken(miscState.getTripsTaken() + 1);
         }
         let travelCountry: Country = action.getTravelCountry();
+        const fromCountry: Country = this.country;
         if (travelCountry != null) {
             this.country = travelCountry;
             this.diet = Diet.scavenge;
@@ -502,10 +506,15 @@ export class Player {
             let objArr = [travelCountry.getTitle()];
             let format: string = String.format(string2, Arrays.copyOf(objArr, objArr.length));
             AlertManager.showAlert$default(alertManager, new AlertViewModel(string, format, Integer.valueOf(travelCountry.getImageId()), null, null, null, null, null, null, 504, null), false, 2, null);
+            World.afterMove(this, fromCountry, travelCountry);   // v0.27.0
         }
+        Activities.onLeisure(this, action);   // v0.27.0
         Vampire.onLeisure(this, action);
         Seasons.onLeisure(this, action);
-        AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForLeisure(action), false, 2, null);
+        // v0.27.0: the prison yard (escapes, riots) and its consequences
+        const ev = Crime.leisureEvent(this, action, RandomEvent.INSTANCE.randomEventForLeisure(action));
+        AlertManager.showRandomEvent$default(AlertManager.INSTANCE, ev, false, 2, null);
+        Crime.afterLeisureEvent(this, action, ev);
         this.applyWeekly();
     }
     learnSkillOrEducation(action: CompletableAction): void {
@@ -875,6 +884,7 @@ export class Player {
             Seasons.afterWeek(this);       // v0.26.0: holidays
             Careers.afterWeek(this);       // v0.26.0: career rules (fitness, retirement from sports)
             SocialMedia.afterWeek(this);   // v0.26.0: followers, deals, drama
+            Crime.afterWeek(this);         // v0.27.0: heat, warrants, prison, gangs and families
             if (Vampire.isInTorpor(this) === false && mainGameFragment != null) MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
         }
     }
@@ -1030,6 +1040,7 @@ export class Player {
         Retirement.collectWeeklyValues(this);
         Subscriptions.collectWeeklyValues(this);
         Seasons.collectWeeklyValues(this);       // v0.26.0
+        Crime.collectWeeklyValues(this);
         SocialMedia.collectWeeklyValues(this);   // v0.26.0
         Vampire.collectWeeklyValues(this);
         Celebrity.collectWeeklyValues(this);

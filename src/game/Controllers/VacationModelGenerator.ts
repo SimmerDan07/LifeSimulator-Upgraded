@@ -13,18 +13,32 @@ import { Utils } from "../Utils/Utils";
 import { KidsLeisure } from "../Managers/KidsLeisure";
 import { Hobbies } from "../Managers/Hobbies";
 import { Seasons } from "../Managers/Seasons";
+import { Activities } from "../World/Activities";
+import { World } from "../World/World";
 
 export class VacationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
+        const p: any = GameStateManager.INSTANCE.getPersonState();
+        // v0.27.0: prison: only the yard (and what the Crime update adds there)
+        if (p.getCrimeState().getIsInJail()) {
+            arrayList.add(new HeaderTitleViewModel("Prison Yard"));
+            for (const l of Leisure.INSTANCE.getJailEvent()) arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, l, null, 2, null));
+            for (const c of VacationModelGenerator.prisonCells(p)) arrayList.add(c);
+            return new GenericListFragmentViewModel(arrayList);
+        }
         arrayList.addAll(this.getPlaytimeViewModels());
         arrayList.addAll(this.getLeisureViewModels());
+        for (const c of Activities.localCells(p)) arrayList.add(c);   // v0.27.0
+        if (p.getAgeInYears() >= 4) for (const c of Activities.categoryCells(p)) arrayList.add(c);
         // v0.26.0: two activities that only happen this season
-        if (GameStateManager.INSTANCE.getPersonState().getAgeInYears() >= 3) for (const c of Seasons.cells()) arrayList.add(c);
+        if (p.getAgeInYears() >= 3) for (const c of Seasons.cells()) arrayList.add(c);
         arrayList.addAll(this.getHobbyViewModels());
-        arrayList.addAll(this.getTravelViewModels());
+        for (const c of World.travelCells(p)) arrayList.add(c);   // v0.27.0: Move Abroad (four regions)
         return new GenericListFragmentViewModel(arrayList);
     }
+    /** Set by the Crime update: prison activities shown under the yard. */
+    static prisonCells: (p: any) => any[] = () => [];
     /** Ages 0–8: things for young children to do (see KidsLeisure.ts). */
     getPlaytimeViewModels(): ArrayList<BaseViewModel> {
         let arrayList: ArrayList = new ArrayList();

@@ -13,6 +13,8 @@ import { Trait } from "./Trait";
 import { Utils } from "../Utils/Utils";
 import { ValueRange } from "../Utils/ValueRange";
 import { Vampire } from "../Lifepaths/Vampire";
+import { ACTIVITY_DEFS, ACTIVITY_BY_ID, ActivityDef } from "../World/ActivityData";
+import { NEW_COUNTRY_DEFS } from "../World/WorldData";
 
 export class Leisure extends JEnum implements ActionDescriptor {
     static readonly take_week_off: Leisure = new Leisure("take_week_off", 0);
@@ -48,7 +50,9 @@ export class Leisure extends JEnum implements ActionDescriptor {
     static readonly travelToSpain: Leisure = new Leisure("travelToSpain", 30);
     static readonly travelToUK: Leisure = new Leisure("travelToUK", 31);
     static readonly travelToChina: Leisure = new Leisure("travelToChina", 32);
-    static values(): Leisure[] { return [Leisure.take_week_off, Leisure.goToPark, Leisure.playGames, Leisure.grab_drinks, Leisure.goToConcert, Leisure.goCamping, Leisure.local_vacation, Leisure.international_vacation, Leisure.luxury_vacation, Leisure.spa, Leisure.smokeCigarette, Leisure.prisonRiot, Leisure.stareAtWall, Leisure.prisonEscape, Leisure.ski, Leisure.iceHockey, Leisure.jpopConcert, Leisure.izakaya, Leisure.watchAnime, Leisure.watchOpera, Leisure.watchSoccer, Leisure.flamingoShow, Leisure.bullfightingShow, Leisure.pub, Leisure.pingpong, Leisure.badminton, Leisure.travelToJapan, Leisure.travelToCanada, Leisure.travelToUnitedStates, Leisure.travelToFrance, Leisure.travelToSpain, Leisure.travelToUK, Leisure.travelToChina]; }
+    static values(): Leisure[] { return [Leisure.take_week_off, Leisure.goToPark, Leisure.playGames, Leisure.grab_drinks, Leisure.goToConcert, Leisure.goCamping, Leisure.local_vacation, Leisure.international_vacation, Leisure.luxury_vacation, Leisure.spa, Leisure.smokeCigarette, Leisure.prisonRiot, Leisure.stareAtWall, Leisure.prisonEscape, Leisure.ski, Leisure.iceHockey, Leisure.jpopConcert, Leisure.izakaya, Leisure.watchAnime, Leisure.watchOpera, Leisure.watchSoccer, Leisure.flamingoShow, Leisure.bullfightingShow, Leisure.pub, Leisure.pingpong, Leisure.badminton, Leisure.travelToJapan, Leisure.travelToCanada, Leisure.travelToUnitedStates, Leisure.travelToFrance, Leisure.travelToSpain, Leisure.travelToUK, Leisure.travelToChina, ...NEW_ACTIVITIES, ...NEW_TRAVEL]; }
+    /** v0.27.0: the activity data for one of the 113 new things to do (null for the original leisure options). */
+    act(): ActivityDef | null { return ACTIVITY_BY_ID[this.name()] ?? null; }
     static valueOf(n: string): Leisure { return (Leisure as any)[n]; }
     static INSTANCE: any;
     constructor(name: string, ordinal: number) { super(name, ordinal); }
@@ -57,7 +61,7 @@ export class Leisure extends JEnum implements ActionDescriptor {
     }
     getAdditionalDescription(): string {
         // v0.15.0: daylight burns vampires
-        const sun = (Vampire.leisureNote(this) ?? "") + (Seasons.leisureNote(this) ?? "");
+        const sun = (Leisure.activityNote(this) ?? "") + (Vampire.leisureNote(this) ?? "") + (Seasons.leisureNote(this) ?? "");
         if (sun) return sun + (ActionDescriptor.DefaultImpls.getAdditionalDescription(this) ?? "");
         return ActionDescriptor.DefaultImpls.getAdditionalDescription(this);
     }
@@ -76,7 +80,10 @@ export class Leisure extends JEnum implements ActionDescriptor {
     requirementNotMetString(player: Player): string {
         Intrinsics.checkParameterIsNotNull(player, "player");
         // v0.26.0 seasons: no skiing without snow
-        if (this === Leisure.ski && !Seasons.is("winter", player)) return "Ski season is December–February";
+        if (this === Leisure.ski && !Seasons.is("winter", player)) return Seasons.southern(player) ? "Ski season is June–August here" : "Ski season is December–February";
+        // v0.27.0: activities (seasons, festivals, singles only…), moving abroad (language, prison) — see Activities.ts
+        const lock = Leisure.activityLock(this, player);
+        if (lock) return lock;
         return ActionDescriptor.DefaultImpls.requirementNotMetString(this, player);
     }
     getTitle(): string {
@@ -148,9 +155,15 @@ export class Leisure extends JEnum implements ActionDescriptor {
                 let format: string = String.format(string, Arrays.copyOf(objArr, objArr.length));
                 return format;
             default:
+                if (this.act()) return this.act()!.title;
+                if (this.getTravelCountry() != null) return String.format(Utils.INSTANCE.getString(R.string.Vacation_MoveToCountry), this.getTravelCountry().getTitle());
                 throw new NoWhenBranchMatchedException();
         }
     }
+    /** Set by World/Activities.ts (v0.27.0). */
+    static activityLock: (l: Leisure, p: any) => string | null = () => null;
+    static activityNote: (l: Leisure) => string | null = () => null;
+    static activityCost: (l: Leisure, p: any) => number = (l) => l.act()?.cost ?? 0;
     getCost(): BigInteger {
         let i: number = 800;
         switch (this) {
@@ -218,6 +231,10 @@ export class Leisure extends JEnum implements ActionDescriptor {
             case Leisure.travelToChina:
                 i = 100000;
                 break;
+            default:
+                if (this.act()) i = Leisure.activityCost(this, GameStateManager.INSTANCE.getPersonState());
+                else if (this.getTravelCountry() != null) i = 100000;
+                break;
         }
         if (GameStateManager.INSTANCE.getPersonState().hasPerk(Perk.frugalTraveler)) {
             let d: number = i;
@@ -251,7 +268,7 @@ export class Leisure extends JEnum implements ActionDescriptor {
             case Leisure.travelToChina:
                 return Country.china;
             default:
-                return null;
+                return TRAVEL_TO[this.name()] ? (Country as any)[TRAVEL_TO[this.name()]] : null;
         }
     }
     getModifiers(): Modifiers {
@@ -346,7 +363,8 @@ export class Leisure extends JEnum implements ActionDescriptor {
                 modifiers = new Modifiers(0.0, 0.0, 0.0);
                 break;
             default:
-                modifiers = modifiers2;
+                if (this.act()) { const m = this.act()!.mods; modifiers = new Modifiers(m[0], m[1], m[2]); }
+                else modifiers = modifiers2;
                 break;
         }
         if (GameStateManager.INSTANCE.getPersonState().hasPerk(Perk.excitable)) {
@@ -421,6 +439,8 @@ export class Leisure extends JEnum implements ActionDescriptor {
             case Leisure.badminton:
                 return R.drawable.vacation_badminton;
             default:
+                if (this.act()) return (R.drawable as any)[this.act()!.image];
+                if (this.getTravelCountry() != null) return this.getTravelCountry().getImageId();
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -428,6 +448,11 @@ export class Leisure extends JEnum implements ActionDescriptor {
         let i: Leisure = this;
         if (((i === Leisure.grab_drinks) || (i === Leisure.izakaya)) || (i === Leisure.pub)) {
             return ValueRange.INSTANCE.getWithMinAge(GameStateManager.INSTANCE.getPersonState().getCountry().getLegalDrinkingAge());
+        }
+        const a = this.act();
+        if (a) {
+            const min = a.drink ? Math.max(a.minAge, GameStateManager.INSTANCE.getPersonState().getCountry().getLegalDrinkingAge()) : a.minAge;
+            return min > 0 ? ValueRange.INSTANCE.getWithMinAge(min) : null;
         }
         return null;
     }
@@ -445,6 +470,7 @@ export class Leisure extends JEnum implements ActionDescriptor {
         if ((i === Leisure.international_vacation) || (i === Leisure.luxury_vacation)) {
             return Possession.passport;
         }
+        if (this.act()?.item) return (Possession as any)[this.act()!.item!] ?? null;
         return null;
     }
     action(player: Player): void {
@@ -471,12 +497,24 @@ export namespace Leisure {
         return [Leisure.smokeCigarette, Leisure.stareAtWall, Leisure.prisonRiot, Leisure.prisonEscape];
     }
         getTravelEvents(): Leisure[] {
-        return [Leisure.travelToJapan, Leisure.travelToCanada, Leisure.travelToUnitedStates, Leisure.travelToFrance, Leisure.travelToSpain, Leisure.travelToUK, Leisure.travelToChina];
+        return [Leisure.travelToJapan, Leisure.travelToCanada, Leisure.travelToUnitedStates, Leisure.travelToFrance, Leisure.travelToSpain, Leisure.travelToUK, Leisure.travelToChina, ...NEW_TRAVEL];
     }
         getLeisureOptions(player: Player): Leisure[] {
         Intrinsics.checkParameterIsNotNull(player, "player");
+        // v0.27.0: prison has its own yard
+        if (player.getCrimeState().getIsInJail()) return this.getJailEvent();
         return player.getCountry().getLeisureOptions();
     }
     }
 }
 Leisure.INSTANCE = new Leisure.Companion(null);
+
+/** v0.27.0 "The World Update": 113 new things to do, and a "Move to …" option for each new country. */
+export const NEW_ACTIVITIES: Leisure[] = [];
+export const NEW_TRAVEL: Leisure[] = [];
+const TRAVEL_TO: Record<string, string> = {};
+ACTIVITY_DEFS.forEach((d, i) => { const l = new Leisure(d.id, 33 + i); (Leisure as any)[d.id] = l; NEW_ACTIVITIES.push(l); });
+NEW_COUNTRY_DEFS.forEach((c, i) => {
+    const id = "travelTo" + c.id[0].toUpperCase() + c.id.slice(1);
+    const l = new Leisure(id, 33 + ACTIVITY_DEFS.length + i); (Leisure as any)[id] = l; NEW_TRAVEL.push(l); TRAVEL_TO[id] = c.id;
+});

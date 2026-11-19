@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cargentina"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cargentina)">
+  <rect x="0.00" y="66.21" width="384.00" height="84.36" fill="#74ACDF"/>
+  <rect x="0.00" y="150.07" width="384.00" height="84.36" fill="#FFFFFF"/>
+  <rect x="0.00" y="233.93" width="384.00" height="84.36" fill="#74ACDF"/>
+  <line x1="192.0" y1="192.0" x2="226.00" y2="192.00" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="223.41" y2="205.01" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="216.04" y2="216.04" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="205.01" y2="223.41" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="192.00" y2="226.00" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="178.99" y2="223.41" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="167.96" y2="216.04" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="160.59" y2="205.01" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="158.00" y2="192.00" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="160.59" y2="178.99" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="167.96" y2="167.96" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="178.99" y2="160.59" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="192.00" y2="158.00" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="205.01" y2="160.59" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="216.04" y2="167.96" stroke="#F6B40E" stroke-width="5"/>
+  <line x1="192.0" y1="192.0" x2="223.41" y2="178.99" stroke="#F6B40E" stroke-width="5"/>
+  <circle cx="192.00" cy="192.00" r="20.00" fill="#F6B40E"/>
+
+ </g>
+</svg>

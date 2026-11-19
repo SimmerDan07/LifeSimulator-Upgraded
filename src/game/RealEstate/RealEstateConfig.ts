@@ -2,6 +2,7 @@
 // Everything balance-related lives here so it can be tweaked without touching logic.
 // Money values are in US dollars; the game converts them to the player's currency for display.
 
+import { COUNTRY_DEFS } from "../World/WorldData";
 export interface TypeInfo {
     /** Housing enum name this property type corresponds to. */
     housing: string;
@@ -73,6 +74,8 @@ export const COUNTRIES: Record<string, { value: number; taxRate: number; cities:
     uk: { value: 1.2, taxRate: 0.005, cities: ["London", "Manchester", "Edinburgh", "Bristol", "Leeds"], streetFormat: "us" },
     china: { value: 0.9, taxRate: 0.003, cities: ["Shanghai", "Beijing", "Shenzhen", "Hangzhou", "Chengdu"], streetFormat: "us" },
 };
+// v0.27.0: the new countries' housing markets
+for (const c of COUNTRY_DEFS) if (!COUNTRIES[c.id]) COUNTRIES[c.id] = { value: c.value, taxRate: c.tax, cities: c.cities, streetFormat: c.street };
 export const DEFAULT_COUNTRY = "unitedStates";
 
 export const STREETS = ["Maple", "Oak", "Cedar", "Elm", "Willow", "Birch", "Pine", "Lake", "Hill", "River", "Sunset", "Park",

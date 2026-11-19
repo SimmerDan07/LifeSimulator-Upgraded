@@ -22,6 +22,7 @@ import { LifeMoments } from "./LifeMoments";
 import { Vampire, LifeActionDef, LifeActions } from "../Lifepaths/Vampire";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import type { Season } from "../Careers/CareerData";
+import { seasonForMonth, climateOf, hasSnow, COUNTRY_BY_ID } from "../World/WorldData";
 
 export type { Season };
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
@@ -38,16 +39,23 @@ export const SEASON_INFO: Record<Season, { name: string; icon: string; months: s
     fall: { name: "Fall", icon: "🍂", months: "September–November" },
 };
 
-interface Holiday { id: string; month: number; week: number; title: string; image: any; min?: number; run: (p: any) => void }
+interface Holiday { id: string; month: number; week: number; title: string; image: any; min?: number; seasonal?: boolean; run: (p: any) => void }
 
 export const Seasons = {
     monthIndex(p: any = player()): number { try { return p.getCurrentMonthIndex(); } catch { return 0; } },
     weekOfMonth(p: any = player()): number {
         try { return (p.calendarWeeks() % Constants.Time.INSTANCE.getWeeksPerYear()) % Constants.Time.INSTANCE.getWeeksPerMonth(); } catch { return 0; }
     },
-    /** Northern hemisphere (every country in the game is). */
-    ofMonth(m: number): Season { return m === 11 || m <= 1 ? "winter" : m <= 4 ? "spring" : m <= 7 ? "summer" : "fall"; },
-    season(p: any = player()): Season { return Seasons.ofMonth(Seasons.monthIndex(p)); },
+    /** Northern-hemisphere season for a month (v0.27.0: use `season(p)`, which knows the hemisphere). */
+    ofMonth(m: number): Season { return seasonForMonth(m, null); },
+    countryId(p: any = player()): string | null { try { return p.getCountry().name(); } catch { return null; } },
+    /** v0.27.0: seasons are flipped south of the equator (December is summer in Australia). */
+    southern(p: any = player()): boolean { return !!COUNTRY_BY_ID[Seasons.countryId(p) ?? ""]?.south; },
+    climate(p: any = player()) { return climateOf(Seasons.countryId(p)); },
+    snow(p: any = player()): boolean { return hasSnow(Seasons.countryId(p)); },
+    season(p: any = player()): Season { return seasonForMonth(Seasons.monthIndex(p), Seasons.countryId(p)); },
+    /** The months of a season where you live, e.g. "June–August" for winter in Australia. */
+    monthsOf(s: Season, p: any = player()): string { return Seasons.southern(p) ? SEASON_INFO[({ winter: "summer", spring: "fall", summer: "winter", fall: "spring" } as Record<Season, Season>)[s]].months : SEASON_INFO[s].months; },
     is(s: Season, p: any = player()): boolean { return Seasons.season(p) === s; },
     name(p: any = player()): string { return SEASON_INFO[Seasons.season(p)].name; },
     label(p: any = player()): string { const i = SEASON_INFO[Seasons.season(p)]; return `${i.icon} ${i.name}`; },
@@ -71,17 +79,22 @@ export const Seasons = {
         const a = p.getAttributeState(), ms = p.getMoneyState();
         const s = Seasons.season(p), vamp = Vampire.isVampire(p);
         const bill = (n: number, key: string) => MoneyState.updateMoney$default(ms, BigInteger.valueOf(n), MoneyUpdateType.expense, key, null, 8, null);
+        // v0.27.0 climates: cold countries have long dark winters (−2, more heating); tropical and desert countries have
+        // mild winters (no gloom, no heating) and hot summers (more air conditioning).
+        const clim = Seasons.climate(p);
+        const warm = clim === "tropical" || clim === "desert";
         if (s === "winter") {
             if (vamp) a.setDeltaValue(new Modifiers(0, 1, 0), "Long winter nights");
-            else a.setDeltaValue(new Modifiers(0, -1, 0), "Winter: short, dark days");
-            if (Seasons.homeless(p) && !vamp) a.setDeltaValue(new Modifiers(-2, 0, 0), "Freezing outside");
-            if (Seasons.paysBills(p)) bill(Seasons.heating, "Heating");
+            else if (!warm) a.setDeltaValue(new Modifiers(0, clim === "cold" ? -2 : -1, 0), clim === "cold" ? "Winter: long, dark days" : "Winter: short, dark days");
+            if (Seasons.homeless(p) && !vamp && !warm) a.setDeltaValue(new Modifiers(clim === "cold" ? -3 : -2, 0, 0), "Freezing outside");
+            if (Seasons.paysBills(p) && !warm) bill(clim === "cold" ? Seasons.heating + 20 : Seasons.heating, "Heating");
         } else if (s === "spring") {
             a.setDeltaValue(new Modifiers(0, 1, 0), "Spring");
         } else if (s === "summer") {
             if (vamp) a.setDeltaValue(new Modifiers(0, -1, 0), "Long summer days");
             else a.setDeltaValue(new Modifiers(0, 2, 0), "Summer");
-            if (Seasons.paysBills(p)) bill(Seasons.cooling, "Air conditioning");
+            if (Seasons.paysBills(p)) bill(warm ? Seasons.cooling + 20 : Seasons.cooling, "Air conditioning");
+            if (Seasons.homeless(p) && !vamp && clim === "desert") a.setDeltaValue(new Modifiers(-2, 0, 0), "Desert heat");
         } else {
             a.setDeltaValue(new Modifiers(0, 0, 1), "Cosy fall");
         }
@@ -89,10 +102,10 @@ export const Seasons = {
 
     /** Camping in winter is cold. */
     onLeisure(p: any, action: any) {
-        if (action?.name?.() === "goCamping" && Seasons.is("winter", p) && !Vampire.isVampire(p)) attr(p, -3, -2, 0);
+        if (action?.name?.() === "goCamping" && Seasons.is("winter", p) && Seasons.snow(p) && !Vampire.isVampire(p)) attr(p, -3, -2, 0);
     },
     leisureNote(action: any): string | null {
-        if (action?.name?.() === "goCamping" && Seasons.is("winter") && !Vampire.isVampire(player())) return "Winter camping: −3 health, −2 happiness (it's freezing)\n";
+        if (action?.name?.() === "goCamping" && Seasons.is("winter") && Seasons.snow() && !Vampire.isVampire(player())) return "Winter camping: −3 health, −2 happiness (it's freezing)\n";
         return null;
     },
 
@@ -109,7 +122,7 @@ export const Seasons = {
         if (!LifeMoments.canHappen(p)) return;
         const m = Seasons.monthIndex(p), w = Seasons.weekOfMonth(p), st = Seasons.state(p), y = Seasons.year(p);
         for (const h of HOLIDAYS) {
-            if (h.month !== m || h.week !== w || st.done[h.id] === y || p.getAgeInYears() < (h.min ?? 3)) continue;
+            if (Seasons.holidayMonth(h, p) !== m || h.week !== w || st.done[h.id] === y || p.getAgeInYears() < (h.min ?? 3)) continue;
             st.done[h.id] = y;
             try { h.run(p); } catch { /* ignore */ }
             break;
@@ -118,6 +131,8 @@ export const Seasons = {
 
     // ------------------------------------------------------------------ seasonal activities (Leisure tab)
     activities(p: any = player()): LifeActionDef[] { return ACTIVITIES[Seasons.season(p)]; },
+    /** v0.27.0: southern-hemisphere holidays tied to a season (summer fireworks, the harvest) move six months. */
+    holidayMonth(h: Holiday, p: any = player()): number { return h.seasonal && Seasons.southern(p) ? (h.month + 6) % 12 : h.month; },
     cells(p: any = player()): any[] {
         const out: any[] = [new HeaderTitleViewModel(`This Season: ${Seasons.label(p)}`)];
         for (const c of LifeActions.cells(Seasons.activities(p), p)) out.push(c);
@@ -157,7 +172,7 @@ const HOLIDAYS: Holiday[] = [
             ["Galentine's with friends", () => { attr(p, 0, 6, 1); Relationships.friends(p).forEach((f: any) => bond(f, 15)); return "The best Valentine's is with your friends."; }],
         ]);
     } },
-    { id: "fireworks", month: 6, week: 0, title: "Summer Fireworks", image: R.drawable.vacation_concert, min: 3, run: (p) => ask("Summer Fireworks", "The big summer festival is tonight: music, food stalls and fireworks.", R.drawable.vacation_concert, [
+    { id: "fireworks", month: 6, week: 0, seasonal: true, title: "Summer Fireworks", image: R.drawable.vacation_concert, min: 3, run: (p) => ask("Summer Fireworks", "The big summer festival is tonight: music, food stalls and fireworks.", R.drawable.vacation_concert, [
         ["Go with everyone", () => { attr(p, 0, 7, 1); family(p).forEach((x) => bond(x, 10)); return "The whole sky lit up. A perfect summer night."; }],
         ["Watch from the roof", () => { attr(p, 0, 4, 3); return "Quiet, cool, and the best view in town."; }],
     ]) },
@@ -169,7 +184,7 @@ const HOLIDAYS: Holiday[] = [
         opts.push(["Hand out candy at home", () => { attr(p, 0, 4, 3); return "You gave out the good chocolate. The neighbourhood kids will remember."; }]);
         ask("Halloween", "It's Halloween! What's the plan?", R.drawable.icon_vamp_bite, opts);
     } },
-    { id: "harvest", month: 10, week: 3, title: "Harvest Feast", image: R.drawable.diet_balanced, min: 3, run: (p) => {
+    { id: "harvest", month: 10, week: 3, seasonal: true, title: "Harvest Feast", image: R.drawable.diet_balanced, min: 3, run: (p) => {
         const fam = family(p);
         ask("Harvest Feast", fam.length ? "The family is getting together for the big autumn feast." : "It's the big autumn feast weekend.", R.drawable.diet_balanced, [
             [fam.length ? "Host it ($100)" : "Cook a feast for friends ($100)", () => { pay(p, 100); fam.forEach((x) => bond(x, 30)); Relationships.friends(p).forEach((f: any) => bond(f, 10)); attr(p, 1, 6, 0); return "Too much food, too many stories, everyone went home happy. (+30 family)"; }],
@@ -184,9 +199,9 @@ const HOLIDAYS: Holiday[] = [
         if (p.getAgeInYears() < 16) {
             attr(p, 0, 10, 2);
             fam.forEach((x) => bond(x, 15));
-            return LifeMoments.result("Winter Holidays", "Presents, snacks and staying up late. Best week of the year!", R.drawable.achievement_happy);
+            return LifeMoments.result(holidayName(p), "Presents, snacks and staying up late. Best week of the year!", R.drawable.achievement_happy);
         }
-        ask("Winter Holidays", fam.length ? `The holidays are here. Gifts for the family (${fam.length})?` : "The holidays are here.", R.drawable.achievement_happy, [
+        ask(holidayName(p), fam.length ? `The holidays are here. Gifts for the family (${fam.length})?` : "The holidays are here.", R.drawable.achievement_happy, [
             [`Generous gifts (${money(big)})`, () => { pay(p, big); fam.forEach((x) => bond(x, 40)); attr(p, 0, 8, 0); return "Everyone loved their presents. (+40 family)"; }],
             ["Homemade gifts", () => { fam.forEach((x) => bond(x, 20)); attr(p, 0, 5, 2); return "Knitted scarves and cookies. Thoughtful wins. (+20 family)"; }],
             ["Skip the gifts", () => { fam.forEach((x) => bond(x, -10)); attr(p, 0, -2, 1); return "You saved money. The family saved their opinions (mostly)."; }],
@@ -202,10 +217,12 @@ const sunNote = (base: string) => () => {
     const p = player();
     return base + (Vampire.isVampire(p) ? ` Daytime: −${Math.round(Vampire.sunDamage(p))} happiness for a vampire.` : "") + "\n";
 };
+const holidayName = (p: any) => (Seasons.southern(p) ? "Summer Holidays" : "Winter Holidays");
+const noSnow = (p: any) => (Seasons.snow(p) ? null : `It never snows in ${p.getCountry().getTitle()}`);
 const ACTIVITIES: Record<Season, LifeActionDef[]> = {
     winter: [
-        { id: "snowman", title: "Build a Snowman", image: R.drawable.vacation_ski, mods: [1, 6, 1], note: sunNote("Carrot nose mandatory."), run: (p) => sunlit(p) },
-        { id: "iceSkating", title: "Go Ice Skating", image: R.drawable.vacation_hockeymatch, cost: kidsFree(20), mods: [2, 5, 0], note: () => "Graceful? Not really. Fun? Very.\n", run: () => {} },
+        { id: "snowman", title: "Build a Snowman", image: R.drawable.vacation_ski, mods: [1, 6, 1], lock: noSnow, note: sunNote("Carrot nose mandatory."), run: (p) => sunlit(p) },
+        { id: "iceSkating", title: "Go Ice Skating", image: R.drawable.vacation_hockeymatch, cost: kidsFree(20), mods: [2, 5, 0], lock: noSnow, note: () => "Graceful? Not really. Fun? Very.\n", run: () => {} },
     ],
     spring: [
         { id: "picnic", title: "Picnic in the Park", image: R.drawable.vacation_park, cost: kidsFree(20), mods: [0, 5, 2], note: sunNote("Blossoms, sandwiches and a blanket in the sun."), run: (p) => sunlit(p) },

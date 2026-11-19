@@ -84,7 +84,9 @@ check("Vampire screen still works from the menu", /Vampire/.test(text(Array.from
 const workTitles = () => rows(new WorkModelGenerator().generateViewModels()).map((r) => r.title);
 check("Work tab no longer lists Acting/Music/Dance", !text(rows(new WorkModelGenerator().generateViewModels())).match(/Street Performer|Extra|Street Dancer/));
 const screen = celeb();
-check("Celebrity Life lists the three careers", /Extra/.test(text(screen)) && /Street Performer/.test(text(screen)) && /Street Dancer/.test(text(screen)));
+// v0.27.0: the three fame careers live in the Career Center (Entertainment & Fame); Celebrity Life links there
+const fameCareers = rows(new LifepathsModelGenerator().screen("careers:entertainment"));
+check("the Career Center's Entertainment & Fame group lists the three careers; Celebrity Life links to it", /Extra/.test(text(fameCareers)) && /Street Performer/.test(text(fameCareers)) && /Street Dancer/.test(text(fameCareers)) && screen.some((r) => r.title === "Fame Careers"));
 check("…with Fans and Reputation meters", screen.some((r) => r.title === "Fans") && screen.some((r) => r.title === "Reputation"));
 check("…and Acting, Music, Dance, Fame, Your Team, Awards sections", ["Acting", "Music", "Dance", "Fame", "Your Team"].every((h) => screen.some((r) => r.title === h)) && screen.some((r) => /^Awards & Records/.test(r.title ?? "")));
 check("Job titles: Acting starts as Extra; Music ladder reworked; Dance ladder", Job.actor.getJobTitles()[0] === "Extra" && Job.music.getJobTitles()[0] === "Street Performer" && Job.music.getJobTitles().length === 9 && Job.dancer.getJobTitles()[0] === "Street Dancer");
@@ -93,7 +95,7 @@ check("Music & Production degree gates Recording Artist", Job.music.educationReq
 check("Degree descriptions mention Celebrity Life", /Celebrity Life/.test(CompletableAction.college_music.getDescription()) && /Celebrity Life/.test(CompletableAction.college_theater.getDescription()));
 
 // apply for Dance from the Celebrity Life screen
-const danceCard = screen.find((r) => /Street Dancer/.test(r.title ?? ""));
+const danceCard = fameCareers.find((r) => /Street Dancer/.test(r.title ?? ""));
 danceCard.getButton?.()?.getAction?.()?.invoke?.() ?? danceCard.button?.action?.invoke?.();
 if (p.getJobState().getCurrentJob() !== Job.dancer) p.getJobState().switchJob(Job.dancer);
 check("Apply from Celebrity Life: now a Street Dancer", p.getJobState().getCurrentJob() === Job.dancer);
@@ -111,7 +113,7 @@ Celebrity.state(p).fans = 10; Celebrity.state(p).blockShown = null;
 keep(p); p.getJobState().work(Job.dancer, WorkAction.values()[1]);
 check("Not famous enough: no promotion to Dance Captain, with an alert", st.getLevel() === 4 && titlesOf().includes("Not Famous Enough Yet"), titlesOf().join(","));
 clear();
-check("The job card says what fame the next promotion needs", /Next promotion needs: Local Talent/.test(text(celeb())));
+check("The job card (top of the Work tab) says what fame the next promotion needs", /Next promotion needs: Local Talent/.test(text(rows(new WorkModelGenerator().generateViewModels()))));
 Celebrity.state(p).fans = 5000;
 st.setProgress(9999);
 keep(p); p.getJobState().work(Job.dancer, WorkAction.values()[1]); clear();

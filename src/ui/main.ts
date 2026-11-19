@@ -262,7 +262,7 @@ function showAlert(vm: AlertViewModel) {
         if (!b) return;
         const e = document.createElement("button");
         e.className = "btn " + cls;
-        e.textContent = b.getTitle();
+        e.textContent = ExtensionsKt.localizeDollars(b.getTitle());
         e.addEventListener("click", () => close(() => b.getAction().invoke()));
         buttons.appendChild(e);
     };

@@ -21,6 +21,10 @@ import { Utils } from "../Utils/Utils";
 import { GenericListType } from "../Fragments/GenericListType";
 import { WorkModelGenerator } from "./WorkModelGenerator";
 import { Careers } from "../Careers/Careers";
+import { Activities } from "../World/Activities";
+import { World } from "../World/World";
+import { Crime } from "../Crime/Crime";
+import { CrimeScreen } from "../Crime/CrimeScreen";
 
 const text = (s: string) => new TextLabelViewModel(s, null, false, false, null, null);
 const thirstTrend = (n: number) => (n > 0 ? `On your diet the bar fills in ${Vampire.fillText(n)}. When it's full you collapse, and 10 to 40 years can pass before someone finds you.` : `Falls ${-n} a week on your diet.`);
@@ -47,6 +51,13 @@ export class LifepathsModelGenerator {
         } else {
             out.add(row(Vampire.image, "Vampire", this.vampireStatus(p), () => open("vampire")));
         }
+        // v0.27.0: the Underworld (crime, gangs, crime families)
+        if (p.getAgeInYears() < 13 && !Crime.inJail(p)) {
+            out.add(new ActionCellSingleViewModel(R.drawable.locked, "Crime", text("The underworld opens its doors at 13."),
+                new ButtonViewModel("Locked", null, false, false, true, false, false, { invoke: () => null }), null, null));
+        } else {
+            out.add(row(R.drawable.lifepath_crime, "Crime", CrimeScreen.status(p), () => open("crime")));
+        }
         return new GenericListFragmentViewModel(out);
     }
 
@@ -54,7 +65,7 @@ export class LifepathsModelGenerator {
         const s = Celebrity.peek(p);
         const c = Celebrity.career(p);
         if ((s == null || s.peakFans === 0) && c == null)
-            return "Act, sing or dance your way to fame. Three careers you'll only find here, fans to win, scandals to survive, awards, and a star on the Walk of Fame.";
+            return "Act, sing or dance your way to fame. Three fame careers (also in the Career Center), fans to win, scandals to survive, awards, and a star on the Walk of Fame.";
         const job = c ? `${c.title}: ${p.getJobState().getCurrentJobState().getJobTitle()}` : "No celebrity career right now";
         const latest = s?.news?.[s.news.length - 1];
         return `${Celebrity.tierName(p)} · ${Celebrity.fansText(Celebrity.fans(p))} fans${s?.cancelled ? " · Cancelled" : ""}${s?.legend ? " · Legend" : ""}\n${job}${latest ? `\nLatest: ${latest.text}` : ""}`;
@@ -77,6 +88,35 @@ export class LifepathsModelGenerator {
         const p: any = GameStateManager.INSTANCE.getPersonState();
         const out = new ArrayList<BaseViewModel>();
         const header = new ArrayList<BaseViewModel>();
+        if (key === "crime") {
+            header.add(new NavigationBarViewModel("Crime", false, 2, null));
+            for (const c of CrimeScreen.cells(p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key === "crime-murder") {
+            header.add(new NavigationBarViewModel("Murder", false, 2, null));
+            for (const c of CrimeScreen.murderCells(p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key != null && key.startsWith("activities:")) {
+            // v0.27.0 Things to Do: one screen per group (opened from the Leisure tab)
+            const cat = key.slice("activities:".length);
+            header.add(new NavigationBarViewModel(Activities.categoryTitle(cat), false, 2, null));
+            for (const c of Activities.screenCells(cat, p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key != null && key.startsWith("world:")) {
+            // v0.27.0 Move Abroad: one screen per region
+            const r = key.slice("world:".length) as any;
+            header.add(new NavigationBarViewModel(World.regionTitle(r), false, 2, null));
+            for (const c of World.regionCells(r, p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key === "languages") {
+            header.add(new NavigationBarViewModel("Languages", false, 2, null));
+            for (const c of World.languageScreen(p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
         if (key != null && key.startsWith("careers:")) {
             // v0.26.0 Career Center: one screen per career group (opened from the Work tab)
             const cat = key.slice("careers:".length);

@@ -14,6 +14,7 @@ import { HealthEvent } from "../src/game/Enums/HealthEvent";
 import { SideHustle } from "../src/game/Enums/SideHustle";
 import { EducationModelGenerator } from "../src/game/Controllers/EducationModelGenerator";
 import { WorkModelGenerator } from "../src/game/Controllers/WorkModelGenerator";
+import { LifepathsModelGenerator } from "../src/game/Controllers/LifepathsModelGenerator";
 import { GenericListModelGenerator } from "../src/game/Controllers/GenericListModelGenerator";
 import { GenericListType } from "../src/game/Fragments/GenericListType";
 import { Schooling } from "../src/game/Managers/Schooling";
@@ -69,7 +70,7 @@ check("newborn: no schooling", [S.preschool, S.elementarySchool, S.middleSchool,
 check("preschool locked until 3", /Starts at age 3/.test(text(eduRow("Preschool"))), text(eduRow("Preschool")).slice(0, 120));
 check("elementary locked until 5", /Starts at age 5/.test(text(eduRow("Elementary School"))));
 check("middle school needs elementary", /Elementary School/.test(text(eduRow("Middle School"))));
-check("baby can't apply for jobs (14+)", /at least 14/.test(text(Array.from(new WorkModelGenerator().getWorkViewModels() as any).find((r: any) => r.title === "Burger Flipper"))));
+check("baby can't apply for jobs (14+)", /at least 14/.test(text(Array.from(new LifepathsModelGenerator().screen("careers:hospitality").getContentViewModels() as any).find((r: any) => r.title === "Burger Flipper"))));
 check("baby can't take a loan / buy stock (18+)", /at least 18/.test(BankAction.takeLoan.getLockedString() ?? "") && /at least 18/.test(BankAction.buyStock.getLockedString() ?? ""));
 check("baby can't do side hustles", /at least 14/.test(SideHustle.values()[0].requirementNotMetString(p) ?? ""));
 check("skills from 6", (CompletableAction as any).homeChef && /at least 6/.test(text((Array.from(new EducationModelGenerator().getSkillsViewModels() as any) as any[])[1])));
@@ -128,7 +129,7 @@ for (const sc of [LifeScenario.sicklyChild, LifeScenario.orphanChild]) {
 // ---------------------------------------------------------------- age limits at 10, and adults
 {
     const k = start(LifeScenario.sandboxMode, (np) => np.initializeAge(10, true));
-    check("10-year-old: jobs locked", /at least 14/.test(text(Array.from(new WorkModelGenerator().getWorkViewModels() as any).find((r: any) => r.title === "Burger Flipper"))));
+    check("10-year-old: jobs locked", /at least 14/.test(text(Array.from(new LifepathsModelGenerator().screen("careers:hospitality").getContentViewModels() as any).find((r: any) => r.title === "Burger Flipper"))));
     k.getJobState().switchJob(Job.burgerFlipper); k.getJobState().setCurrentJob(null);
     const market = GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.propertyMarket, "", true);
     check("10-year-old: can't buy property", /must be 18 to buy/.test(text(market)));
@@ -144,7 +145,7 @@ for (const sc of [LifeScenario.sicklyChild, LifeScenario.orphanChild]) {
 }
 {
     const a = start(LifeScenario.educatedAndInDebt);
-    check("adult (25): jobs, loans and property open", !/at least/.test(text(Array.from(new WorkModelGenerator().getWorkViewModels() as any).find((r: any) => r.title === "Burger Flipper"))) && BankAction.takeLoan.getLockedString() == null);
+    check("adult (25): jobs, loans and property open", !/at least/.test(text(Array.from(new LifepathsModelGenerator().screen("careers:hospitality").getContentViewModels() as any).find((r: any) => r.title === "Burger Flipper"))) && BankAction.takeLoan.getLockedString() == null);
 }
 
 // ---------------------------------------------------------------- heir keeps the calendar month and gets schooling by age
