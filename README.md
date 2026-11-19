@@ -251,7 +251,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     power, a mortal partner has you declared dead and leaves (a turned one waits), and you wake **Withered**: 20 health,
     then for 2 years health is capped at 50, doesn't heal, −1 happiness a week. Suspicion −30. Feed: Blood Bank Contact, Animal Blood, Hunt (police risk), Your Partner (willing ones).
   - **Suspicion** (red meter; rises yearly, from hunting, frenzies and telling people) — at 80+ hunters may come: Fight (50% win, 25%
-    hurt, 25% death), Flee (lose job, −50 suspicion) or Hide ($10k). Lay Low, Fake Your Death ($20k), Move City ($5k).
+    hurt, 25% death), Flee (lose job, −50 suspicion) or Hide ($10k). Lay Low, Fake Your Death ($20k; v0.23.0: also resets every
+    career to level 1 with no progress and years-in-career 0, `JobState.resetCareers`), Move City ($5k).
   - **Sunlight** (v0.21.1): daytime leisure costs −10 happiness (−5 with Sun Ward) and a week at a day job −2, unless you
     have Night Owl. (Before v0.21.1 it cost health.)
   - **Blood powers** (1 a year, +1 every 10 years): Charm (relationship gains ×1.25), Night Owl (work pays ×1.2, no sun
@@ -275,6 +276,10 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   | Gym Membership | $50 | +2 health | 14+ |
   | Gym Coach | $150 | +3 health | 14+, a Gym Membership |
   | Therapist | $200 | +4 sanity | 12+ |
+
+  **Automatic Savings (v0.23.0)** is the first row: free, Set Up / Change opens a chooser (25%, 50%, 75%, 80%,
+  Turn Off). That share of every paycheck (`JobState.work` → `Subscriptions.payCheck`) goes straight to savings, the rest
+  to cash. `Player.autoSavePercent` / `Player.autoSaved` (total, shown on the row); off in older saves.
 
   Subscribing or cancelling is instant; the first payment comes at the end of the week. They show in the weekly cash
   flow and weekly modifiers, pause while you're in jail, and are all cancelled if you end a week in debt. Cancelling the

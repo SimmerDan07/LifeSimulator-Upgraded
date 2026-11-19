@@ -28,6 +28,7 @@ import { WorkAction } from "../Enums/WorkAction";
 import { Retirement } from "./Retirement";
 import { Vampire } from "../Lifepaths/Vampire";
 import { Celebrity } from "../Lifepaths/Celebrity";
+import { Subscriptions } from "./Subscriptions";
 
 export class JobState {
     static INSTANCE: any;
@@ -47,6 +48,10 @@ export class JobState {
     }
     getCurrentJob(): Job {
         return this.currentJob;
+    }
+    /** v0.23.0: a whole new identity (Fake Your Death): every career back to its first level, no progress, years-in-career 0. */
+    resetCareers(): void {
+        for (const st of this.states) { st.level = 1; st.progress = 0; st.weeksInCareer = 0; }
     }
     setCurrentJob(job: Job): void {
         this.currentJob = job;
@@ -107,9 +112,8 @@ export class JobState {
         let state: JobState.JobStateSingle = this.getState(job);
         AttributeState.setDeltaValue$default(personState.getAttributeState(), job.modifiers(state.getLevel()), null, 2, null);
         let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * workAction.getPayModifier() * Vampire.onWork(personState);
-        let moneyState: MoneyState = personState.getMoneyState();
-        let valueOf: BigInteger = BigInteger.valueOf(JMath.toInt(randomValue));
-        MoneyState.updateMoney$default(moneyState, valueOf, MoneyUpdateType.workIncome, null, null, 12, null);
+        // v0.23.0 Automatic Savings: part of the paycheck can go straight to savings
+        Subscriptions.payCheck(JMath.toInt(randomValue), personState);
         // v0.19.0 Celebrity Life: celebrity careers earn fans and skill
         Celebrity.onWork(personState, job, state.getLevel(), workAction.getPayModifier());
         if (!state.isMaxLevel()) {

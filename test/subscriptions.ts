@@ -13,6 +13,7 @@ import { MoneyUpdateType } from "../src/game/Enums/MoneyUpdateType";
 import { SaveCodec } from "../src/game/save/SaveCodec";
 import { BigInteger } from "../src/game/runtime";
 import { Subscriptions } from "../src/game/Managers/Subscriptions";
+import { WorkAction } from "../src/game/Enums/WorkAction";
 import fs from "fs";
 
 let fixture: string | null = fs.readFileSync("test/fixtures/save-v0.3-landlord.txt", "utf8");
@@ -23,7 +24,8 @@ let failures = 0;
 const check = (n: string, ok: boolean, x = "") => { if (!ok) failures++; console.log((ok ? "PASS " : "FAIL ") + n + (x ? "  (" + x + ")" : "")); };
 const clear = () => { while (alerts.length) AlertManager.INSTANCE.alertDismissed(alerts.shift()); };
 const profile = () => Array.from(new ProfileModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
-const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return i < 0 ? [] : r.slice(i + 1, i + 4); };
+const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return i < 0 ? [] : r.slice(i + 2, i + 5); };
+const autoRow = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return r[i + 1]; };
 const delta = (p: any, attr: any, key: string) => { p.collectWeeklyValues(); const list = Array.from(p.getAttributeState().getDeltaThisWeek(attr) as any) as any[]; p.resetValuesThisWeek(); const hit = list.find((x) => x.getFirst() === key); return hit ? Number(hit.getSecond()) : 0; };
 const flow = (p: any) => p.getTotalCashFlowPerWeek().intValue();
 const start = (sc: any, tweak?: (np: any) => void) => {
@@ -41,6 +43,7 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     check("old save: no subscriptions", Subscriptions.active(p).length === 0);
     const rows = subRows();
     check("Profile tab: a Subscriptions section with Gym Membership, Gym Coach, Therapist", rows.map((r) => r.title).join(",") === "Gym Membership,Gym Coach,Therapist", rows.map((r) => r.title).join(","));
+    check("old save: Automatic Savings is first in Subscriptions, off, button Set Up", /^Automatic Savings$/.test(autoRow()?.title) && autoRow().actionButton.title === "Set Up" && Subscriptions.autoSave(p) === 0, autoRow()?.title);
     check("rows have their pictures and weekly prices", rows.every((r) => r.imageId != null) && /\$50\/wk/.test(JSON.stringify(rows[0])));
 }
 
@@ -84,6 +87,49 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), Mo
     const cancelled = alerts.some((a) => a.getTitle?.() === "Subscriptions Cancelled");
     clear();
     check("ending a week in debt cancels them all (with a message)", p.getMoneyState().getCash().intValue() >= 0 || (Subscriptions.active(p).length === 0 && cancelled), `cash ${p.getMoneyState().getCash()} subs ${Subscriptions.active(p)}`);
+}
+
+// ---------------------------------------------------------------- v0.23.0 Automatic Savings
+{
+    const ms = () => p.getMoneyState();
+    const num = (b: any) => Number(b.toString());
+    p.getJobState().switchJob(p.getJobState().statesForPlayer(p)[0].getType());
+    const job = p.getJobState().getCurrentJob();
+    check("a job to test with", job != null);
+    // open the chooser from the row
+    autoRow().actionButton.action.invoke();
+    const a = alerts.find((x) => x.getTitle?.() === "Automatic Savings");
+    const labels = a ? [a.getPositiveButton().getTitle(), ...Array.from(a.getAdditionalButtons() as any).map((b: any) => b.getTitle()), a.getNegativeButton().getTitle()] : [];
+    check("Set Up asks: 25%, 50%, 75%, 80% (or Cancel)", labels.join(",") === "25%,50%,75%,80%,Cancel", labels.join(","));
+    const pick = (label: string) => { const x = alerts.find((y) => y.getTitle?.() === "Automatic Savings"); const all = [x.getPositiveButton(), ...Array.from(x.getAdditionalButtons() as any), x.getNegativeButton()] as any[]; all.find((b) => b.getTitle().startsWith(label)).getAction().invoke(); clear(); };
+    pick("50%");
+    check("picking 50% turns it on; the row shows it", Subscriptions.autoSave(p) === 50 && autoRow().title === "Automatic Savings: 50%" && autoRow().actionButton.title === "Change", autoRow().title);
+    for (const pct of [25, 50, 75, 80]) {
+        Subscriptions.setAutoSave(pct, p);
+        const c0 = num(ms().getCash()), s0 = num(ms().getSavings());
+        const saved = Subscriptions.payCheck(1000, p);
+        check(`${pct}% of a $1,000 paycheck goes to savings, the rest to cash`, saved === pct * 10 && num(ms().getSavings()) - s0 === pct * 10 && num(ms().getCash()) - c0 === 1000 - pct * 10, `${num(ms().getSavings()) - s0} / ${num(ms().getCash()) - c0}`);
+    }
+    // a real week of work
+    Subscriptions.setAutoSave(75, p);
+    const t1 = Subscriptions.autoSaved(p);
+    const real = Subscriptions.payCheck; let pay = 0, part = 0;
+    (Subscriptions as any).payCheck = (n: number, q: any) => { pay = n; part = real(n, q); return part; };
+    p.getJobState().work(job, WorkAction.normal); clear();
+    (Subscriptions as any).payCheck = real;
+    check("working a week pays through Automatic Savings: 75% to savings", pay > 0 && part === Math.floor(pay * 0.75) && Subscriptions.autoSaved(p) - t1 === part, `pay ${pay}, saved ${part}`);
+    check("the row counts what you've saved so far", /Saved so far: \$/.test(JSON.stringify(autoRow())));
+    const round: any = SaveCodec.decode(SaveCodec.encode(GameStateManager.INSTANCE.getGlobalStateManager()));
+    const rp = round.getSaveState().currentSlot().getPersonState();
+    check("saved and loaded (75%, total saved)", rp.autoSavePercent === 75 && rp.autoSaved === Subscriptions.autoSaved(p));
+    // turn it off
+    autoRow().actionButton.action.invoke();
+    const b = alerts.find((x) => x.getTitle?.() === "Automatic Savings");
+    check("when on, the chooser marks the current one and offers Turn Off", b != null && Array.from(b.getAdditionalButtons() as any).some((x: any) => x.getTitle() === "75% ✓") && b.getNegativeButton().getTitle() === "Turn Off");
+    pick("Turn Off");
+    const s2 = num(ms().getSavings());
+    Subscriptions.payCheck(1000, p);
+    check("Turn Off: the whole paycheck goes to cash again", Subscriptions.autoSave(p) === 0 && num(ms().getSavings()) === s2 && autoRow().title === "Automatic Savings");
 }
 
 // ---------------------------------------------------------------- a child

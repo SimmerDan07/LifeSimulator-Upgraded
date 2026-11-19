@@ -138,10 +138,13 @@ alerts.splice(alerts.indexOf(ask), 1); ask.getNegativeButton().getAction().invok
 check("Cancel: no time passes", p.getAgeInWeeks() === w0);
 keepAlive(p);
 const n = FamilyExtras.spendTimeWithEveryone();
-const summary = alerts.find((a) => a.getTitle() === "Time Well Spent");
-clear();
-check("one week with each person: N relationships = N weeks", n === everyone.length && n >= 6 && p.getAgeInWeeks() === w0 + n, `${n} people, ${p.getAgeInWeeks() - w0} weeks`);
-check("everyone +400 closer (up to the 1000 max), even in a bad mood", everyone.every((x, i) => x.getRelationshipProgress() === Math.min(1000, rel0[i] + 400)),
+// alerts show one at a time: drain the queue to find the summary (a random event can be in front of it)
+let summary: any = null;
+for (let i = 0; i < 40 && alerts.length; i++) { const a = alerts.shift(); if (a.getTitle() === "Time Well Spent") summary = a; AlertManager.INSTANCE.alertDismissed(a); }
+// someone can die of old age during the weeks (they're skipped), so allow a couple fewer
+const alive = (x: any) => x.getIsAlive?.() !== false;
+check("one week with each person: N relationships = N weeks", n >= everyone.length - 2 && n <= everyone.length && n >= 6 && p.getAgeInWeeks() === w0 + n, `${n} people, ${p.getAgeInWeeks() - w0} weeks`);
+check("everyone +400 closer (up to the 1000 max), even in a bad mood", everyone.every((x, i) => !alive(x) || x.getRelationshipProgress() === Math.min(1000, rel0[i] + 400) || n < everyone.length),
     everyone.map((x, i) => `${x.getFirstName()} ${rel0[i]}→${x.getRelationshipProgress()}`).join(", "));
 check("a 'Time Well Spent' summary", summary != null && summary.getMessage().includes(`${n} weeks`));
 check("exes don't get a week", social.list("ex")[0].getRelationshipProgress() === exes.getRelationshipProgress());

@@ -511,10 +511,11 @@ export const Vampire = {
         p.setFirstName(first);
         p.lastName = last;
         p.getJobState().setCurrentJob(null);
+        p.getJobState().resetCareers();   // v0.23.0: the new you has no work history
         s.suspicion = 0;
         const gone: string[] = [];
         for (const f of Relationships.friends(p)) if (!Vampire.knows(f) && !Vampire.isTurned(f)) { Relationships.circle(p).remove(f.id); gone.push(f.getFirstName()); }
-        Vampire.alert("A New Life", `You staged your own death and became ${first} ${last}. You left your job behind${gone.length ? `, and friends who didn't know your secret mourned you (${gone.join(", ")})` : ""}.`, R.drawable.grave);
+        Vampire.alert("A New Life", `You staged your own death and became ${first} ${last}. You left your job behind, and your career starts over from the bottom with no years behind you${gone.length ? `, and friends who didn't know your secret mourned you (${gone.join(", ")})` : ""}.`, R.drawable.grave);
     },
     moveCity(p: any) {
         const s = Vampire.state(p);
@@ -731,8 +732,8 @@ export const FEEDING: LifeActionDef[] = [
 
 export const HIDING: LifeActionDef[] = [
     { id: "layLow", title: "Lay Low", image: R.drawable.icon_vamp_laylow, mods: [0, -3, 0], note: () => "−15 suspicion\n", run: (p) => { const s = Vampire.state(p); s.suspicion = Math.max(0, s.suspicion - 15); } },
-    { id: "fakeDeath", title: "Fake Your Death", image: R.drawable.icon_vamp_fakedeath, cost: 20000, note: () => "Suspicion back to 0 with a new name. You lose your job, and friends who don't know your secret think you died.\n",
-        confirm: () => "Start over with a new name? You'll lose your job and the friends who don't know your secret.", run: (p) => Vampire.fakeDeath(p) },
+    { id: "fakeDeath", title: "Fake Your Death", image: R.drawable.icon_vamp_fakedeath, cost: 20000, note: () => "Suspicion back to 0 with a new name. You lose your job and all your career progress (every career starts over, years-in-career too), and friends who don't know your secret think you died.\n",
+        confirm: () => "Start over with a new name? You'll lose your job, all your career progress (levels and years in your career) and the friends who don't know your secret.", run: (p) => Vampire.fakeDeath(p) },
     { id: "moveCity", title: "Move to a New City", image: R.drawable.icon_vamp_movecity, cost: 5000, note: () => "−50 suspicion. You quit your job and friends you leave behind feel distant.\n",
         confirm: () => "Move away? You'll quit your job.", run: (p) => Vampire.moveCity(p) },
     { id: "coven", title: "Find Your Coven", image: R.drawable.icon_vamp_coven, note: () => "Look for other vampires (about a 1 in 3 chance).\n", run: (p) => Vampire.findCoven(p) },

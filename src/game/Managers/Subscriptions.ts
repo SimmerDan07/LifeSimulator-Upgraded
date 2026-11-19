@@ -7,7 +7,13 @@
 // Subscribing or cancelling is instant (no week passes). The first payment is taken at the end of the week.
 // Payments and benefits show in the weekly cash flow and weekly modifiers. While you're in jail they're paused.
 // If you end a week in debt, every subscription is cancelled. Cancelling the gym also cancels the coach.
-import { BigInteger, R } from "../runtime";
+//
+// v0.23.0 Automatic Savings (free): 25%, 50%, 75% or 80% of every paycheck goes straight to your savings
+// (Player.autoSavePercent; undefined in older saves = off). Player.autoSaved counts the total put away.
+import { ArrayList, BigInteger, R } from "../runtime";
+import { AlertActionViewModel } from "./AlertActionViewModel";
+import { AlertType } from "./AlertType";
+import { MoneyDestination } from "../Enums/MoneyDestination";
 import { GameStateManager } from "./GameStateManager";
 import { AlertManager } from "./AlertManager";
 import { AlertViewModel } from "./AlertViewModel";
@@ -33,6 +39,8 @@ export const SUBSCRIPTIONS: SubscriptionDef[] = [
     { id: "coach", title: "Gym Coach", image: R.drawable.icon_sub_coach, weekly: 150, mods: [3, 0, 0], minAge: 14, requires: "gym", blurb: "A personal trainer at your gym." },
     { id: "therapist", title: "Therapist", image: R.drawable.health_psychologist, weekly: 200, mods: [0, 0, 4], minAge: 12, blurb: "A weekly session for your mental health." },
 ];
+
+export const AUTO_SAVE_OPTIONS = [25, 50, 75, 80];
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
 const money = (n: number) => ExtensionsKt.numberDisplayString(BigInteger.valueOf(n), true);
@@ -90,9 +98,48 @@ export const Subscriptions = {
         } catch { /* no UI */ }
     },
 
+    // ------------------------------------------------------------------ Automatic Savings (v0.23.0)
+    /** 0 (off), 25, 50, 75 or 80. */
+    autoSave(p: any = player()): number { return p.autoSavePercent ?? 0; },
+    setAutoSave(pct: number, p: any = player()) {
+        p.autoSavePercent = AUTO_SAVE_OPTIONS.includes(pct) ? pct : 0;
+    },
+    /** Total put away by Automatic Savings so far. */
+    autoSaved(p: any = player()): number { return p.autoSaved ?? 0; },
+    /** Pay a paycheck: the Automatic Savings share goes to savings, the rest to cash. Returns the part saved. */
+    payCheck(amount: number, p: any = player()): number {
+        const ms = p.getMoneyState();
+        const pct = Subscriptions.autoSave(p);
+        const saved = pct > 0 && amount > 0 ? Math.floor((amount * pct) / 100) : 0;
+        MoneyState.updateMoney$default(ms, BigInteger.valueOf(amount - saved), MoneyUpdateType.workIncome, null, null, 12, null);
+        if (saved > 0 && !MoneyState.frozen) {
+            MoneyState.updateMoney$default(ms, BigInteger.valueOf(saved), MoneyUpdateType.workIncome, null, MoneyDestination.savings, 4, null);
+            p.autoSaved = Subscriptions.autoSaved(p) + saved;
+        }
+        return saved;
+    },
+    /** The Set Up / Change button: pick a percentage (or turn it off). */
+    askAutoSave(p: any = player()) {
+        const cur = Subscriptions.autoSave(p);
+        const opt = (n: number): [string, () => void] => [`${n}%${cur === n ? " ✓" : ""}`, () => Subscriptions.setAutoSave(n, p)];
+        const options: [string, () => void][] = [...AUTO_SAVE_OPTIONS.map(opt), cur > 0 ? ["Turn Off", () => Subscriptions.setAutoSave(0, p)] : ["Cancel", () => {}]];
+        const first = options[0], last = options[options.length - 1];
+        const extra = new ArrayList<AlertActionViewModel>();
+        for (const [label, fn] of options.slice(1, -1)) extra.add(new AlertActionViewModel(label, { invoke: () => { fn(); refreshUI(); return null; } }));
+        try {
+            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Automatic Savings",
+                "How much of every paycheck should go straight into your savings? The rest goes to your cash like before." +
+                (cur > 0 ? `\n\nRight now: ${cur}%.` : ""), R.drawable.hud_bank, null, null,
+                new AlertActionViewModel(first[0], { invoke: () => { first[1](); refreshUI(); return null; } }),
+                new AlertActionViewModel(last[0], { invoke: () => { last[1](); refreshUI(); return null; } }),
+                extra, AlertType.Alert, 0, null), false, 2, null);
+        } catch { /* no UI */ }
+    },
+
     // ------------------------------------------------------------------ Profile tab rows
     cells(): ActionCellSingleViewModel[] {
-        return SUBSCRIPTIONS.map((d) => ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new SubscriptionCell(d) as any, null));
+        return [ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new AutoSaveCell() as any, null),
+            ...SUBSCRIPTIONS.map((d) => ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new SubscriptionCell(d) as any, null))];
     },
 };
 
@@ -125,4 +172,25 @@ class SubscriptionCell {
         else Subscriptions.subscribe(this.d.id, p);
         refreshUI();
     }
+}
+
+/** Automatic Savings (v0.23.0): free. The button says "Set Up" or "Change". */
+class AutoSaveCell {
+    on(): boolean { return Subscriptions.autoSave() > 0; }
+    getTitle(): string { return this.on() ? `Automatic Savings: ${Subscriptions.autoSave()}%` : "Automatic Savings"; }
+    getImageId(): any { return R.drawable.hud_bank; }
+    getCost(): BigInteger { return BigInteger.valueOf(0); }
+    getModifiers(): Modifiers { return new Modifiers(0, 0, 0); }
+    getActionTitle(): string { return this.on() ? "Change" : "Set Up"; }
+    getAdditionalDescription(): string {
+        if (this.on()) return `${Subscriptions.autoSave()}% of every paycheck goes straight to your savings. Saved so far: ${money(Subscriptions.autoSaved())}.`;
+        return "Free. Send 25%, 50%, 75% or 80% of every paycheck straight to your savings.";
+    }
+    getAgeRange(): any { return null; }
+    getRequiredItem(): any { return null; }
+    overrideCost(_m: any): any { return null; }
+    overrideImageId(_m: any): any { return null; }
+    overrideTitle(_m: any): any { return null; }
+    requirementNotMetString(_p: any): string | null { return null; }
+    action(p: any): void { Subscriptions.askAutoSave(p); }
 }

@@ -372,6 +372,23 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     s.thirst = 0; s.suspicion = 0;
 }
 
+// ---------------------------------------------------------------- v0.23.0: Fake Your Death resets your career
+{
+    const js = p.getJobState();
+    const job = js.statesForPlayer(p)[0].getType();
+    js.switchJob(job);
+    const st = js.getState(job); st.level = 3; st.progress = 5; st.weeksInCareer = 200;
+    const other = js.states.find((x: any) => x.getType() !== job); other.level = 2; other.weeksInCareer = 50;
+    rich(p, 100000);
+    const fd = def(HIDING, "fakeDeath");
+    check("Fake Your Death warns that your career progress resets", /career progress/.test(new LifeActionCell(fd).getAdditionalDescription?.() ?? fd.note()) && /career progress/.test(fd.confirm()));
+    Vampire.fakeDeath(p);
+    const msg = alerts.find((a) => (a.getTitle?.() ?? a.title) === "A New Life");
+    clear();
+    check("Fake Your Death: job gone, every career back to level 1 with no progress", js.getCurrentJob() == null && st.level === 1 && st.progress === 0 && other.level === 1, `${st.level} ${st.progress} ${other.level}`);
+    check("…and the years-in-career counter resets too", st.weeksInCareer === 0 && other.weeksInCareer === 0 && /career starts over/.test(text(msg)));
+}
+
 // ---------------------------------------------------------------- save, the Cure, Final Rest
 {
     const back: any = SaveCodec.decode(SaveCodec.encode(GameStateManager.INSTANCE.getGlobalStateManager()));
