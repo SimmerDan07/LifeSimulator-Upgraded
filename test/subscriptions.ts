@@ -14,6 +14,8 @@ import { SaveCodec } from "../src/game/save/SaveCodec";
 import { BigInteger } from "../src/game/runtime";
 import { Subscriptions } from "../src/game/Managers/Subscriptions";
 import { WorkAction } from "../src/game/Enums/WorkAction";
+import { MoneyDestination } from "../src/game/Enums/MoneyDestination";
+import { BankModelGenerator } from "../src/game/Controllers/BankModelGenerator";
 import fs from "fs";
 
 let fixture: string | null = fs.readFileSync("test/fixtures/save-v0.3-landlord.txt", "utf8");
@@ -24,7 +26,8 @@ let failures = 0;
 const check = (n: string, ok: boolean, x = "") => { if (!ok) failures++; console.log((ok ? "PASS " : "FAIL ") + n + (x ? "  (" + x + ")" : "")); };
 const clear = () => { while (alerts.length) AlertManager.INSTANCE.alertDismissed(alerts.shift()); };
 const profile = () => Array.from(new ProfileModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
-const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return i < 0 ? [] : r.slice(i + 2, i + 5); };
+const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return i < 0 ? [] : r.slice(i + 3, i + 6); };
+const billsRow = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return r[i + 2]; };
 const autoRow = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return r[i + 1]; };
 const delta = (p: any, attr: any, key: string) => { p.collectWeeklyValues(); const list = Array.from(p.getAttributeState().getDeltaThisWeek(attr) as any) as any[]; p.resetValuesThisWeek(); const hit = list.find((x) => x.getFirst() === key); return hit ? Number(hit.getSecond()) : 0; };
 const flow = (p: any) => p.getTotalCashFlowPerWeek().intValue();
@@ -130,6 +133,42 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), Mo
     const s2 = num(ms().getSavings());
     Subscriptions.payCheck(1000, p);
     check("Turn Off: the whole paycheck goes to cash again", Subscriptions.autoSave(p) === 0 && num(ms().getSavings()) === s2 && autoRow().title === "Automatic Savings");
+}
+
+// ---------------------------------------------------------------- v0.24.0 Pay Bills from Savings
+{
+    const ms = () => p.getMoneyState();
+    const num = (b: any) => Number(b.toString());
+    check("Pay Bills from Savings row: Off, Turn On", billsRow()?.title === "Pay Bills from Savings: Off" && billsRow().actionButton.title === "Turn On", billsRow()?.title);
+    const bank = Array.from(new BankModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
+    check("the Bank tab has both rows too", bank.some((r) => /^Automatic Savings/.test(r.title)) && bank.some((r) => /^Pay Bills from Savings/.test(r.title)));
+    billsRow().actionButton.action.invoke();
+    check("Turn On", Subscriptions.billsFromSavings(p) && billsRow().title === "Pay Bills from Savings: On" && billsRow().actionButton.title === "Turn Off");
+    // put money in savings, then a week of bills
+    MoneyState.updateMoney$default(ms(), BigInteger.valueOf(10_000_000), MoneyUpdateType.workIncome, null, MoneyDestination.savings, 4, null);
+    Subscriptions.subscribe("gym", p);
+    p.collectWeeklyValues();
+    const sDelta = Array.from((ms() as any).savingsDeltaThisWeek as any).map((x: any) => [x.getFirst(), num(x.getSecond())]) as any[];
+    const cDelta = Array.from((ms() as any).cashDeltaThisWeek as any).map((x: any) => [x.getFirst(), num(x.getSecond())]) as any[];
+    p.resetValuesThisWeek();
+    check("bills go to savings, not cash", sDelta.some(([k, v]) => k === "Gym Membership (from savings)" && v === -50) && sDelta.some(([k]) => /^Rent/.test(k)) && !cDelta.some(([, v]) => v < 0), `savings ${JSON.stringify(sDelta)} cash ${JSON.stringify(cDelta)}`);
+    // savings can't cover it → cash
+    const s0 = num(ms().getSavings());
+    MoneyState.updateMoney$default(ms(), BigInteger.valueOf(s0), MoneyUpdateType.directSpend, null, MoneyDestination.savings, 4, null);
+    check("(savings emptied)", num(ms().getSavings()) === 0);
+    p.collectWeeklyValues();
+    const c2 = Array.from((ms() as any).cashDeltaThisWeek as any).some((x: any) => x.getFirst() === "Gym Membership" && num(x.getSecond()) === -50);
+    p.resetValuesThisWeek();
+    check("…when savings can't cover a bill, it comes out of cash", c2);
+    const round: any = SaveCodec.decode(SaveCodec.encode(GameStateManager.INSTANCE.getGlobalStateManager()));
+    check("saved and loaded (On)", round.getSaveState().currentSlot().getPersonState().billsFromSavings === true);
+    billsRow().actionButton.action.invoke();
+    MoneyState.updateMoney$default(ms(), BigInteger.valueOf(5000), MoneyUpdateType.workIncome, null, MoneyDestination.savings, 4, null);
+    p.collectWeeklyValues();
+    const c3 = Array.from((ms() as any).cashDeltaThisWeek as any).some((x: any) => x.getFirst() === "Gym Membership");
+    p.resetValuesThisWeek();
+    check("Turn Off: bills come out of cash again", !Subscriptions.billsFromSavings(p) && c3);
+    Subscriptions.cancel("gym", p);
 }
 
 // ---------------------------------------------------------------- a child

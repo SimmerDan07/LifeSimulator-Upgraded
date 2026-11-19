@@ -122,6 +122,8 @@ export class Player {
     /** v0.23.0 Automatic Savings: % of every paycheck sent to savings (0/25/50/75/80) and the total saved. Undefined in older saves. */
     autoSavePercent: number = null;
     autoSaved: number = null;
+    /** v0.24.0 Pay Bills from Savings (On/Off). Undefined in older saves = off. */
+    billsFromSavings: boolean = null;
     /** The Vampire lifepath (v0.15.0). Undefined in older saves: human. */
     vampire: VampireState = null;
     /** Celebrity Life (v0.19.0): fans, reputation, records. Undefined in older saves: never famous. */

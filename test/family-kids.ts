@@ -127,6 +127,8 @@ const everyone = FamilyExtras.everyone();
 check("everyone = partner, parents, siblings, extended family, friends and pets (not exes)",
     ["Maya", "Leo", "Ava", "Sam"].every((n) => everyone.some((x) => x.getFirstName() === n)) && !everyone.some((x) => x.getFirstName() === "Rex") && everyone.includes(p.getFamilyState().getPartner()),
     everyone.map((x) => x.getFirstName()).join(", "));
+check("v0.24.0: everyone's true age shows (even when it's the same as their age)", everyone.filter((x) => x.getPetType?.() == null).every((x) => new RegExp(`^${x.getAgeInYears()} \\(true age \\d+\\)$`).test(FamilyExtras.ageText(x))), everyone.slice(0, 3).map((x) => FamilyExtras.ageText(x)).join(" | "));
+check("…and on the Love tab cards", rows(new LoveModelGenerator()).filter((r) => /Age: \d+/.test(text(r))).every((r) => /true age/.test(text(r))));
 const cell = FamilyExtras.spendTimeCell();
 check("the Love tab button says how many weeks", text(cell).includes(`${everyone.length} weeks`), text(cell).slice(0, 300));
 const rel0 = everyone.map((x) => x.getRelationshipProgress());

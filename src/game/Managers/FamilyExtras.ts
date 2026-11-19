@@ -40,10 +40,10 @@ export const FamilyExtras = {
         if ((person.trueAgeInWeeks ?? 0) < person.getAgeInWeeks()) person.trueAgeInWeeks = person.getAgeInWeeks();
         return Math.floor(person.trueAgeInWeeks / WPY());
     },
-    /** "34" or "34 (true age 44)". */
+    /** "34 (true age 34)" / "34 (true age 44)" — v0.24.0: everyone's true age is always shown. */
     ageText(person: any): string {
         const age = person.getAgeInYears(), trueAge = FamilyExtras.trueAgeYears(person);
-        return trueAge > age ? `${age} (true age ${trueAge})` : `${age}`;
+        return `${age} (true age ${Math.max(age, trueAge)})`;
     },
 
     // ---------------------------------------------------------------- elixir for others

@@ -10,6 +10,8 @@
 //
 // v0.23.0 Automatic Savings (free): 25%, 50%, 75% or 80% of every paycheck goes straight to your savings
 // (Player.autoSavePercent; undefined in older saves = off). Player.autoSaved counts the total put away.
+// v0.24.0 Pay Bills from Savings (free, On/Off): weekly bills come out of savings while savings can cover them
+// (Player.billsFromSavings; the hook is MoneyState.billsFromSavings). Both rows also show on the Bank tab.
 import { ArrayList, BigInteger, R } from "../runtime";
 import { AlertActionViewModel } from "./AlertActionViewModel";
 import { AlertType } from "./AlertType";
@@ -136,9 +138,18 @@ export const Subscriptions = {
         } catch { /* no UI */ }
     },
 
+    // ------------------------------------------------------------------ Pay Bills from Savings (v0.24.0)
+    billsFromSavings(p: any = player()): boolean { return !!p?.billsFromSavings; },
+    setBillsFromSavings(on: boolean, p: any = player()) { p.billsFromSavings = on; },
+
     // ------------------------------------------------------------------ Profile tab rows
-    cells(): ActionCellSingleViewModel[] {
+    /** The two free money rows (also on the Bank tab). */
+    moneyCells(): ActionCellSingleViewModel[] {
         return [ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new AutoSaveCell() as any, null),
+            ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new BillsCell() as any, null)];
+    },
+    cells(): ActionCellSingleViewModel[] {
+        return [...Subscriptions.moneyCells(),
             ...SUBSCRIPTIONS.map((d) => ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new SubscriptionCell(d) as any, null))];
     },
 };
@@ -194,3 +205,29 @@ class AutoSaveCell {
     requirementNotMetString(_p: any): string | null { return null; }
     action(p: any): void { Subscriptions.askAutoSave(p); }
 }
+
+/** Pay Bills from Savings (v0.24.0): free. The button says "Turn On" or "Turn Off". */
+class BillsCell {
+    on(): boolean { return Subscriptions.billsFromSavings(); }
+    getTitle(): string { return `Pay Bills from Savings: ${this.on() ? "On" : "Off"}`; }
+    getImageId(): any { return R.drawable.bank_withdrawal; }
+    getCost(): BigInteger { return BigInteger.valueOf(0); }
+    getModifiers(): Modifiers { return new Modifiers(0, 0, 0); }
+    getActionTitle(): string { return this.on() ? "Turn Off" : "Turn On"; }
+    getAdditionalDescription(): string {
+        if (this.on()) return "Your weekly bills (rent, food, subscriptions, loans and the rest) come out of your savings. If your savings can't cover a bill, it comes out of your cash.";
+        return "Free. Have your weekly bills taken from your savings instead of your cash.";
+    }
+    getAgeRange(): any { return null; }
+    getRequiredItem(): any { return null; }
+    overrideCost(_m: any): any { return null; }
+    overrideImageId(_m: any): any { return null; }
+    overrideTitle(_m: any): any { return null; }
+    requirementNotMetString(_p: any): string | null { return null; }
+    action(p: any): void { Subscriptions.setBillsFromSavings(!Subscriptions.billsFromSavings(p), p); refreshUI(); }
+}
+
+// v0.24.0: weekly bills for the current player come out of savings when they've turned it on
+MoneyState.billsFromSavings = (ms: any): boolean => {
+    try { const p = player(); return p != null && p.getMoneyState() === ms && !!p.billsFromSavings; } catch { return false; }
+};

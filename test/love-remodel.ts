@@ -123,7 +123,7 @@ check("no Past Relationships group yet", !hs.includes("Past Relationships"));
 const cs = cards(rows);
 check("every person is a card with a head picture and a score", cs.length >= 7 && cs.every((c) => /^head_|^hv_|^pet_/.test(String(c.imageId)) && c.score != null), cs.map((c) => c.imageId).join(","));
 const marcene = cs.find((c) => c.name.startsWith("Marcene"))!;
-check("card reads like the concept: 'Daughter - Marcene …', 'Age: 9'", marcene.relation === "Daughter" && marcene.ageText === "Age: 9", `${marcene.relation} / ${marcene.ageText}`);
+check("card reads like the concept: 'Daughter - Marcene …', 'Age: 9 (true age 9)'", marcene.relation === "Daughter" && marcene.ageText === "Age: 9 (true age 9)", `${marcene.relation} / ${marcene.ageText}`);
 const childOrder = cs.filter((c) => c.relation === "Daughter" || c.relation === "Son").map((c) => c.name.split(" ")[0]);
 check("children oldest first", childOrder[0] === "Marcene" && childOrder[1] === "Leo", childOrder.join(","));
 const sibOrder = cs.filter((c) => c.relation === "Brother" || c.relation === "Sister").map((c) => c.name.split(" ")[0]);

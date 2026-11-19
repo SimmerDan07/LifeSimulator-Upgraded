@@ -37,7 +37,7 @@ export const FamilyTree = {
             id: x.getId(),
             name: x.getFirstName(),
             relation: relation ?? FamilyTree.relationOf(x),
-            sub: dead ? "Deceased" : `Age ${x.getAgeInYears()}`,
+            sub: dead ? "Deceased" : `Age ${x.getAgeInYears()}` + (x.getTrueAgeInYears?.() > x.getAgeInYears() ? ` (true ${x.getTrueAgeInYears()})` : ""),
             imageId: LoveScreens.headImage(x),
             dead,
             you: false,

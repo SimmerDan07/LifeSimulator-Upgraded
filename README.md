@@ -280,6 +280,11 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   **Automatic Savings (v0.23.0)** is the first row: free, Set Up / Change opens a chooser (25%, 50%, 75%, 80%,
   Turn Off). That share of every paycheck (`JobState.work` → `Subscriptions.payCheck`) goes straight to savings, the rest
   to cash. `Player.autoSavePercent` / `Player.autoSaved` (total, shown on the row); off in older saves.
+  **Pay Bills from Savings (v0.24.0)**, second row, On/Off: weekly bills (`MoneyUpdateType.expense`) go to the savings
+  delta (labelled "(from savings)" in Weekly Cash Flow) while savings can cover them, else cash (`MoneyState.billsFromSavings`
+  hook, `Player.billsFromSavings`). Both rows also show at the end of the Bank tab's Bank section.
+- **True ages (v0.24.0)**: every person card shows "Age: N (true age M)" (`FamilyExtras.ageText`); the Family Tree adds
+  "(true N)" when it differs.
 
   Subscribing or cancelling is instant; the first payment comes at the end of the week. They show in the weekly cash
   flow and weekly modifiers, pause while you're in jail, and are all cancelled if you end a week in debt. Cancelling the

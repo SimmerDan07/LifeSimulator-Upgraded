@@ -10,6 +10,7 @@ import { CompletableActionType } from "../Enums/CompletableActionType";
 import { GameStateManager } from "../Managers/GameStateManager";
 import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentViewModel";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
+import { Subscriptions } from "../Managers/Subscriptions";
 import { IViewModelGenerator } from "./IViewModelGenerator";
 import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
@@ -57,6 +58,8 @@ export class BankModelGenerator implements IViewModelGenerator {
                 throw new TypeCastException("null cannot be cast to non-null type kotlin.Array<T>");
             }
         }
+        // v0.24.0: Automatic Savings and Pay Bills from Savings (same rows as Profile › Subscriptions)
+        for (const c of Subscriptions.moneyCells()) arrayList.add(c);
         return arrayList;
     }
 }

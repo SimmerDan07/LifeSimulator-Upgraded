@@ -121,6 +121,15 @@ export class MoneyState {
     }
     /** v0.22.0: while a vampire lies collapsed for years, their money is untouched (no pay, no bills). */
     static frozen: boolean = false;
+    /** v0.24.0: set by Subscriptions — whether weekly bills for this money state should come out of savings. */
+    static billsFromSavings: ((ms: MoneyState) => boolean) | null = null;
+    /** Savings after this week's pending savings changes. */
+    pendingSavings(): BigInteger {
+        let s: BigInteger = this.savings;
+        const it = this.savingsDeltaThisWeek.iterator();
+        while (it.hasNext()) s = s.add((it.next() as any).getSecond());
+        return s;
+    }
     updateMoney(amount: BigInteger, type: MoneyUpdateType, key: string, destination: MoneyDestination): void {
         if (MoneyState.frozen) return;
         Intrinsics.checkParameterIsNotNull(amount, "amount");
@@ -154,6 +163,12 @@ export class MoneyState {
             }
         }
         if ((type === MoneyUpdateType.passiveIncome) || (type === MoneyUpdateType.expense)) {
+            // v0.24.0 Pay Bills from Savings: a weekly bill comes out of savings when savings can cover it
+            if (type === MoneyUpdateType.expense && destination === MoneyDestination.cash && MoneyState.billsFromSavings?.(this)
+                && amount.compareTo(BigInteger.valueOf(0)) < 0 && this.pendingSavings().add(amount).compareTo(BigInteger.valueOf(0)) >= 0) {
+                destination = MoneyDestination.savings;
+                if (key != null) key = `${key} (from savings)`;
+            }
             let i2: MoneyDestination = destination;
             if (i2 === MoneyDestination.cash) {
                 this.cashDeltaThisWeek.add(new Pair(key, amount));
