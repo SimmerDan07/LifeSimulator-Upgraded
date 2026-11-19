@@ -53,7 +53,8 @@ export const Subscriptions = {
     /** Active subscription ids (Player.subscriptions; undefined in older saves). */
     active(p: any = player()): string[] { return p.subscriptions ?? (p.subscriptions = []); },
     has(id: string, p: any = player()): boolean { return Subscriptions.active(p).includes(id); },
-    paused(p: any = player()): boolean { try { return !!p.getCrimeState().getIsInJail(); } catch { return false; } },
+    /** In jail, or (v0.25.2) a vampire lying collapsed: no gym, no coach, no therapist. */
+    paused(p: any = player()): boolean { if (p?.vampire?.inTorpor) return true; try { return !!p.getCrimeState().getIsInJail(); } catch { return false; } },
     weeklyTotal(p: any = player()): number { return Subscriptions.active(p).reduce((t, id) => t + (Subscriptions.def(id)?.weekly ?? 0), 0); },
 
     /** Why you can't subscribe right now, or null. */

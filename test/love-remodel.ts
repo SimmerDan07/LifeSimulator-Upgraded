@@ -399,7 +399,7 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     const dec: any = SaveCodec.decode(enc);
     const p2 = dec.getSaveState().currentSlot().getPersonState();
     const c2 = p2.getSocial();
-    check("save keeps siblings, friends, exes and per-person notes", c2.list().length === c.list().length && c2.list("sibling").length === 2 && c2.list()[0] instanceof SocialPerson && JSON.stringify(c2.meta) === JSON.stringify(c.meta));
+    check("save keeps siblings, friends, exes and per-person notes", c2.list().length === c.list().length && c2.list("sibling").length === c.list("sibling").length && c.list("sibling").length >= 2 && c2.list()[0] instanceof SocialPerson && JSON.stringify(c2.meta) === JSON.stringify(c.meta));
     p.getCrimeState().setIsInJail?.(true);
     if (p.getCrimeState().getIsInJail()) check("in jail: relationship actions are locked", new LoveActionCell(loveAction("hangOut"), sis).requirementNotMetString(p) === "Not while you're in jail");
 }

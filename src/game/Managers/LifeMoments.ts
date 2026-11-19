@@ -248,7 +248,11 @@ export const MOMENTS: Moment[] = [
     { id: "raceInvite", min: 18, max: 60, title: "Run With Me?", image: R.drawable.health_workout, make: (p) => ({
         text: "A friend signed you both up for a charity 10K. It's in a month.",
         options: [
-            ["Train for it", () => { Hobbies.addSkill("running", 10, p); attr(p, 6, 6, 2); return "You trained every morning and crossed the line together. (+10 running)"; }],
+            ["Train for it", () => {
+                Hobbies.addSkill("running", 10, p); attr(p, 6, 6, 2);
+                if (Vampire.isVampire(p)) { const n = Vampire.sunDamage(p); attr(p, 0, -n, 0); return `You trained every night and crossed the line together, squinting in the morning sun. (+10 running, −${n} happiness)`; }
+                return "You trained every morning and crossed the line together. (+10 running)";
+            }],
             ["Cheer from the sidelines", () => { attr(p, 0, 4, 0); return "You held the best sign at the finish line."; }],
         ] }) },
     { id: "plumbing", min: 18, max: 120, title: "Flooded Kitchen", image: R.drawable.housing_small_apartment, make: (p) => ({
@@ -416,6 +420,7 @@ export const LifeMoments = {
         if (due.length) {
             s.pending = s.pending.filter((x) => x.week > now);
             for (const d of due) {
+                if (now - d.week > 48) continue;   // v0.25.2: years later (after a collapse) nobody remembers that loan
                 if (d.amount > 0) { earn(p, d.amount); LifeMoments.banner("Paid Back", `${d.name} paid back the loan, plus a little extra: ${money(d.amount)}.`); }
                 else LifeMoments.banner("Still Waiting", `${d.name} hasn't paid you back. They keep changing the subject.`);
             }

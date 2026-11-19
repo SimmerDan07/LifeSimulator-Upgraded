@@ -224,6 +224,7 @@ const CelebrityBase = {
         const s = Celebrity.peek(p);
         if (s == null) return;
         try { if (p.getCrimeState().getIsInJail()) return; } catch { /* ignore */ }
+        if (Vampire.isInTorpor(p)) return;   // v0.25.2: nobody's running your career while you lie collapsed
         for (const c of Celebrity.weeklyCosts(p)) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(c.amount), MoneyUpdateType.expense, c.label, null, 8, null);
         const r = Celebrity.royalties(p);
         if (r > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(r), MoneyUpdateType.passiveIncome, "Fame royalties", null, 8, null);
@@ -237,6 +238,8 @@ const CelebrityBase = {
         try { if (!GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) return; } catch { /* ignore */ }
         // fans fade when you go quiet (less with a publicist, a fan club or a country sound; never for a Legend)
         if (now(p) - (s.lastActive ?? 0) > 2 && !s.legend) s.fans = Math.max(0, Math.round(s.fans * (1 - Celebrity.fadeRate(p))));
+        if (Vampire.isInTorpor(p)) return;   // v0.25.2: missing stars don't win awards, get photographed or sign deals
+        try { if (p.getCrimeState().getIsInJail()) return; } catch { /* ignore */ }   // …and neither do stars in jail
         World.weekly(p);
         if (s.fans < 1000) return;
         const t = Celebrity.tier(p);

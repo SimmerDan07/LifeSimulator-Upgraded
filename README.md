@@ -84,6 +84,14 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     can't feed on a partner you turned (`Vampire.willingPartner` / `partnerFeedLock`); life moments don't offer
     choices you can't pay for; Final Rest says "less than a year" instead of "0 years"; free Lifepaths actions say
     "Go" instead of "$0".
+  - **v0.25.2 contradictions fixed**: vampires can't buy Assisted Dying (`AssistedDying.available`; they have Final
+    Rest); the Cure clears Withered; while a vampire lies collapsed (or is in jail) nothing happens "for" them: no
+    automatic anniversaries or new friends (`Relationships.away`), no subscription benefits (`Subscriptions.paused`),
+    no celebrity business/events/awards (only fans fading), a running TV series is cancelled, and loans older than a
+    year are forgotten. Fake Your Death: a partner who doesn't know grieves and leaves, family who don't know drop 300
+    (they think you're dead), pending loans vanish, and the dead star's catalogue/awards/royalty counters/rivals/
+    celebrity friends move to `CelebrityState.former` (restored by Return from the Dead). Hobbies: kids' supplies are
+    free; gardening (and running races) cost a vampire happiness in daylight; the charity 10K moment too.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

@@ -394,7 +394,7 @@ export const Relationships = {
         if (partner != null && partner.getIsAlive()) {
             const years = Relationships.anniversaryYears(partner, now);
             const m = Relationships.meta(partner, p);
-            if (years != null && m.annivYear !== years && Relationships.autoAnniversary(p)) {
+            if (years != null && m.annivYear !== years && Relationships.autoAnniversary(p) && !Relationships.away(p)) {   // not from a storm drain or a jail cell
                 // v0.25.0: celebrated automatically — a nice dinner if you can afford it, a cosy night in if you can't
                 m.annivYear = years;
                 const can = p.getMoneyState().getCash().compareTo(BigInteger.valueOf(Relationships.anniversaryCost)) >= 0;
@@ -418,7 +418,12 @@ export const Relationships = {
             const everyone: any[] = [...Array.from(fam.getFamilyMembers() as any).filter((x: any) => x.getIsAlive() && !x.getNotYetBorn() && x.getPetType() == null), ...c.list().filter((s) => s.getIsAlive())];
             for (const x of everyone) Relationships.setMood(x, Relationships.rollMood(x));
         }
-        Relationships.maybeMakeFriend(p);
+        if (!Relationships.away(p)) Relationships.maybeMakeFriend(p);   // v0.25.2: not while collapsed or in jail
+    },
+    /** v0.25.2: you're not out living your life: a vampire lying collapsed, or in jail. */
+    away(p: any): boolean {
+        if (p?.vampire?.inTorpor) return true;
+        try { return !!p.getCrimeState().getIsInJail(); } catch { return false; }
     },
     /** Making friends at school or work on your own (once a week; can be turned off on the Love tab). */
     maybeMakeFriend(p: any = player()): SocialPerson | null {

@@ -53,6 +53,15 @@ export const RETURN_FROM_DEAD: LifeActionDef = {
     run: (p) => {
         const s = Celebrity.state(p);
         s.returned = true;
+        // v0.25.2: everything the dead star made and won is yours again
+        const f = s.former;
+        if (f) {
+            s.works = [...(f.works ?? []), ...(s.works ?? [])]; s.awards = [...(f.awards ?? []), ...(s.awards ?? [])];
+            for (const k of ["hits", "albums", "singles", "movies", "roles", "tours"]) (s as any)[k] = ((s as any)[k] ?? 0) + (f[k] ?? 0);
+            s.walkOfFame = s.walkOfFame || f.walkOfFame; s.hallOfFame = s.hallOfFame || f.hallOfFame;
+            s.foundation = s.foundation ?? f.foundation; s.memoir = s.memoir ?? f.memoir;
+            s.former = null;
+        }
         const back = Celebrity.addFans(p, s.formerFans * 0.4);
         Celebrity.rep(p, 5);
         const v = Vampire.peek(p);
@@ -80,13 +89,24 @@ export const Crossover = {
             s.tierShown = Celebrity.tierOf(s.fans);
             s.reputation = 50; s.cancelled = false; s.legend = false;
             s.brand = null; s.fanClub = false; s.series = null;
+            // v0.25.2: the catalogue, awards and royalties belong to the dead star; rivals and celebrity friends mourn them
+            const f = s.former ?? (s.former = { works: [], awards: [], hits: 0, albums: 0, singles: 0, movies: 0, roles: 0, tours: 0, walkOfFame: false, hallOfFame: false, foundation: null, memoir: null });
+            f.works = [...(f.works ?? []), ...(s.works ?? [])]; f.awards = [...(f.awards ?? []), ...(s.awards ?? [])];
+            for (const k of ["hits", "albums", "singles", "movies", "roles", "tours"]) { f[k] = (f[k] ?? 0) + ((s as any)[k] ?? 0); (s as any)[k] = 0; }
+            f.walkOfFame = f.walkOfFame || s.walkOfFame; f.hallOfFame = f.hallOfFame || s.hallOfFame;
+            f.foundation = f.foundation ?? s.foundation; f.memoir = f.memoir ?? s.memoir;
+            s.works = []; s.awards = []; s.walkOfFame = false; s.hallOfFame = false; s.foundation = null; s.memoir = null;
+            s.rivals = {}; s.friends = []; s.songs = 0;
             World.news(p, `${oldName} found dead at ${p.getAgeInYears()}. Fans hold candlelight vigils around the world`);
             return `\n\nThe world mourned ${oldName}. As ${p.getFullName()}, almost nobody knows who you are: ${fansText(before)} → ${fansText(s.fans)} fans.` +
                 (before >= 100000 ? " (One day you could stage a comeback: Celebrity Life › Fame › Return from the Dead.)" : "");
         };
+        Vampire.forgetCelebPartner = (p) => { const s = Celebrity.peek(p); if (s) { s.partnerId = null; s.weddingNews = false; } };
         Vampire.hooks.collapseStart = (p) => {
             const f = Celebrity.fans(p);
             collapseFans.set(p, f);
+            const cs = Celebrity.peek(p);
+            if (cs?.series) cs.series = null;   // v0.25.2: the show can't go on without its star
             if (f >= 1000) World.news(p, `${p.getFullName()} has vanished. Police search for the missing star`);
         };
         Vampire.hooks.collapseEnd = (p, years) => {

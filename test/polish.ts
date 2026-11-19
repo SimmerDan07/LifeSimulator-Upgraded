@@ -25,6 +25,8 @@ import { Celebrity, FAME } from "../src/game/Lifepaths/Celebrity";
 import { SUPERFAN, MIDNIGHT_SHOW, RETURN_FROM_DEAD } from "../src/game/Lifepaths/Crossover";
 import { Job } from "../src/game/Enums/Job";
 import strings from "../src/game/data/strings.json";
+import { AssistedDying } from "../src/game/Managers/AssistedDying";
+import { Subscriptions } from "../src/game/Managers/Subscriptions";
 
 const alerts: any[] = [];
 UIBridge.install({ broadcast() {}, reloadGenericList() {}, navigateTo() {}, backToMainGame() {}, showAlert(vm) { alerts.push(vm); }, readFile: () => null, writeFile() {} });
@@ -266,6 +268,83 @@ LifeMoments.enabled = false;   // turned on where tested
     check("collapsing while famous: missing/found headlines and a fans line in the alert", s.news.some((h: any) => /has vanished/.test(h.text)) && s.news.some((h: any) => /FOUND ALIVE/.test(h.text)) && /fans moved on/.test(c?.getMessage?.() ?? ""));
     const back: any = SaveCodec.decode(SaveCodec.encode(GameStateManager.INSTANCE.getGlobalStateManager()));
     check("saved (formerName, returned)", back.getSaveState().currentSlot().getPersonState().celebrity?.formerName === oldName && back.getSaveState().currentSlot().getPersonState().celebrity?.returned === true);
+}
+
+// ---------------------------------------------------------------- v0.25.2: features that contradicted each other
+{
+    // vampires can't buy Assisted Dying (they have Final Rest)
+    let p = start(40);
+    check("Assisted Dying is there for humans", AssistedDying.available(p));
+    Vampire.rise(p); clear();
+    check("v0.25.2: …but not for vampires", !AssistedDying.available(p) && AssistedDying.cell() == null);
+    // kids don't pay for hobby supplies; vampires burn in daylight hobbies
+    p = start(9);
+    const c0 = cash(p);
+    const pr = Hobbies.practice("painting", p);
+    check("v0.25.2: kids' hobby supplies are free (parents pay)", Hobbies.costFor(Hobbies.def("painting"), p) === 0 && pr && cash(p) >= c0, `${pr} ${c0} → ${cash(p)} ${Hobbies.blocked(Hobbies.def("painting"), p)}`);
+    clear();
+    p = start(30); rich(p); Vampire.rise(p); clear();
+    keep(p);
+    const h0 = p.getAttributeState().getHappiness();
+    p.getAttributeState().setDeltaValueImmediate(new Modifiers(0, -50, 0));
+    const h1 = p.getAttributeState().getHappiness();
+    Hobbies.practice("gardening", p); drain();
+    const gardenRow = rows(new VacationModelGenerator()).find((r) => /^Gardening/.test(r.title));
+    check("v0.25.2: gardening in daylight costs a vampire happiness (and says so)", /Daytime: −10 happiness for a vampire/.test(text(gardenRow)), `${h0} ${h1}`);
+    const chess = rows(new VacationModelGenerator()).find((r) => /^Chess/.test(r.title));
+    check("…indoor hobbies don't", !/Daytime/.test(text(chess)));
+    // collapse: nothing keeps happening "for you"
+    p = start(30); rich(p, 100000);
+    Vampire.rise(p); clear();
+    const ana = lover(p, "Ana", 900);
+    Relationships.meta(ana, p).knows = true; Relationships.meta(ana, p).vampire = true;
+    Relationships.setAutoAnniversary(true, p);
+    Subscriptions.subscribe("gym", p);
+    const friends0 = new Set(Relationships.friends(p).map((f) => f.id));
+    const cs = Celebrity.state(p); cs.fans = 500000; cs.tierShown = Celebrity.tierOf(cs.fans); cs.series = { title: "Night Shift", weeksLeft: 10, season: 1 };
+    const awards0 = cs.awards.length;
+    Vampire.state(p).inTorpor = true;
+    check("v0.25.2: while collapsed: no gym/therapist, no making friends, no auto anniversary", Subscriptions.paused(p) && Relationships.away(p));
+    Vampire.state(p).inTorpor = false;
+    clear();
+    Vampire.collapse(p, 12);
+    const col = drain().find((a) => a.getTitle() === "You Collapsed");
+    const newFriends = Relationships.friends(p).filter((f) => !friends0.has(f.id));
+    check("…after 12+ years collapsed: only the passer-by is a new friend", newFriends.length <= 1, newFriends.map((f) => f.getFirstName()).join(","));
+    check("…no awards won and no TV series kept while you were missing", cs.awards.length === awards0 && cs.series == null);
+    check("…and nothing in the 'while you were gone' list was celebrated or photographed for you", !/Happy Anniversary|Strange Photos|Paparazzi|Endorsement/.test(col?.getMessage?.() ?? ""), (col?.getMessage?.() ?? "").slice(-200));
+    // stale loans are forgotten
+    LifeMoments.enabled = true;
+    LifeMoments.state(p).pending.push({ week: LifeMoments.now(p) - 500, amount: 999, name: "Old Friend" });
+    const c1 = cash(p);
+    LifeMoments.state(p).last = LifeMoments.now(p);
+    LifeMoments.afterWeek(p);
+    check("v0.25.2: a loan from decades ago isn't suddenly paid back", cash(p) === c1 && !T(drain()).includes("Paid Back"));
+    LifeMoments.enabled = false;
+}
+{
+    // fake your death: everyone who doesn't know thinks you're dead
+    const p = start(35); rich(p, 5_000_000);
+    Vampire.rise(p); clear();
+    const wife = lover(p, "Clara", 900);
+    const mom = Array.from(p.getFamilyState().getFamilyMembers() as any).find((x: any) => x.getRelationship?.() === Relationship.mother) as any;
+    const mom0 = mom?.getRelationshipProgress();
+    const cs = Celebrity.state(p); cs.fans = 1_500_000; cs.tierShown = Celebrity.tierOf(cs.fans);
+    cs.works.push({ kind: "movie", title: "Blood Moon Rising", age: 30, result: "Blockbuster", score: 140, extra: "" } as any); cs.awards.push("Best Actor 2031"); cs.movies = 3; cs.hits = 2;
+    cs.rivals = { actor: { first: "Max", last: "Steel", female: false, fans: 900000, wins: 0, losses: 0, made: 0 } as any };
+    clear();
+    Vampire.fakeDeath(p);
+    const msg = drain().find((a) => a.getTitle() === "A New Life")?.getMessage?.() ?? "";
+    check("v0.25.2: Fake Your Death: a partner who doesn't know your secret grieves and is gone", p.getFamilyState().getPartner() == null && /Clara buried an empty coffin/.test(msg), msg.slice(0, 200));
+    check("…your family thinks you're dead too (−300)", mom == null || (mom.getRelationshipProgress() === Math.max(0, mom0 - 300) && /Your family believes you're gone/.test(msg)), `${mom0} → ${mom?.getRelationshipProgress()}`);
+    check("…the dead star's movies, awards, royalties and rivals aren't yours any more", cs.works.length === 0 && cs.awards.length === 0 && cs.movies === 0 && cs.hits === 0 && Object.keys(cs.rivals).length === 0 && cs.former?.works?.length === 1);
+    RETURN_FROM_DEAD.run(p); clear();
+    check("…until you Return from the Dead: they're yours again", cs.works.some((w: any) => w.title === "Blood Moon Rising") && cs.awards.includes("Best Actor 2031") && cs.movies === 3 && cs.hits === 2 && cs.former == null);
+    // a partner who knows stays
+    const q = start(35); Vampire.rise(q); clear();
+    const ally = lover(q, "Rhea", 900); Relationships.meta(ally, q).knows = true;
+    Vampire.fakeDeath(q); clear();
+    check("…a partner who knows your secret stays with you", q.getFamilyState().getPartner() === ally);
 }
 
 console.log(failures ? `${failures} FAILED` : "ALL PASSED");

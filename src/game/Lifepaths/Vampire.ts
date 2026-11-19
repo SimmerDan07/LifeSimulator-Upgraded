@@ -281,6 +281,7 @@ export const Vampire = {
             s.cureWeeks--;
             if (s.cureWeeks === 0) {
                 s.isVampire = false; s.cured = true; s.thirst = 0; s.suspicion = 0; s.weeksAtMaxThirst = 0; s.diet = "hand";
+                s.witheredWeeks = 0; s.collapsePending = false;   // v0.25.2: a human body isn't Withered
                 Vampire.alert("Human Again", `The Vampiric Cure has done its work. Your heart beats again, and you'll start ageing from ${p.getAgeInYears()}. The vampire's path is closed to you for the rest of this life.` + (() => { const pt = p.getFamilyState?.()?.getPartner?.(); return pt != null && pt.getIsAlive() && Vampire.isTurned(pt) ? ` ${pt.getFirstName()} is still a vampire; your Eternal Bond is broken.` : ""; })(), R.drawable.health_youthelixir);
             }
             return;
@@ -522,6 +523,8 @@ export const Vampire = {
         collapseEnd: null as ((p: any, years: number) => string) | null,
         yearly: null as ((p: any, years: number) => void) | null,
     },
+    /** Set by Crossover: a celebrity power couple ends when you fake your death. */
+    forgetCelebPartner: null as ((p: any) => void) | null,
     fakeDeath(p: any) {
         const s = Vampire.state(p);
         const oldName = p.getFullName();
@@ -534,8 +537,35 @@ export const Vampire = {
         s.suspicion = 0;
         const gone: string[] = [];
         for (const f of Relationships.friends(p)) if (!Vampire.knows(f) && !Vampire.isTurned(f)) { Relationships.circle(p).remove(f.id); gone.push(f.getFirstName()); }
+        // v0.25.2: everyone who doesn't know your secret believes you're dead
+        const fam = p.getFamilyState();
+        const partner = fam.getPartner();
+        let widowed: string | null = null;
+        if (partner != null && partner.getIsAlive() && !Vampire.knows(partner) && !Vampire.isTurned(partner)) {
+            widowed = partner.getFirstName();
+            try { fam.breakUp(); } catch { /* ignore */ }
+            Vampire.forgetCelebPartner?.(p);
+        }
+        const mourners: string[] = [];
+        for (const x of Array.from(fam.getFamilyMembers() as any) as any[]) {
+            if (!x.getIsAlive() || x.getNotYetBorn?.() || x.getPetType?.() != null || x === partner) continue;
+            if (Vampire.knows(x) || Vampire.isTurned(x)) continue;
+            x.setRelationshipProgress(Math.max(0, x.getRelationshipProgress() - 300));
+            mourners.push(x.getFirstName());
+        }
+        for (const x of Relationships.circle(p).list()) {
+            if (!x.getIsAlive() || x.kind === "friend" || x.kind === "ex" || Vampire.knows(x) || Vampire.isTurned(x)) continue;
+            x.setRelationshipProgress(Math.max(0, x.getRelationshipProgress() - 300));
+        }
+        if (p.moments?.pending) p.moments.pending = [];   // friends who owed you money think you're dead
         const extra = Vampire.hooks.fakeDeath ? Vampire.hooks.fakeDeath(p, oldName) : "";
-        Vampire.alert("A New Life", `You staged your own death and became ${first} ${last}. You left your job behind, and your career starts over from the bottom with no years behind you${gone.length ? `, and friends who didn't know your secret mourned you (${gone.join(", ")})` : ""}.${extra}`, R.drawable.grave);
+        const lines = [
+            `You staged your own death and became ${first} ${last}. You left your job behind, and your career starts over from the bottom with no years behind you.`,
+            gone.length ? `Friends who didn't know your secret mourned you: ${gone.join(", ")}.` : "",
+            widowed ? `${widowed} buried an empty coffin and grieves for you. You can't be together any more.` : "",
+            mourners.length ? `Your family believes you're gone (${mourners.slice(0, 4).join(", ")}${mourners.length > 4 ? ` and ${mourners.length - 4} more` : ""}). You can still watch over them, from a distance (−300 relationship).` : "",
+        ].filter(Boolean);
+        Vampire.alert("A New Life", lines.join("\n\n") + extra, R.drawable.grave);
     },
     moveCity(p: any) {
         const s = Vampire.state(p);

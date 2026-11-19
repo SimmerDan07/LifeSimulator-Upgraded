@@ -17,6 +17,7 @@ import { MoneyUpdateType } from "../Enums/MoneyUpdateType";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { Celebrity } from "../Lifepaths/Celebrity";
+import { Vampire } from "../Lifepaths/Vampire";
 
 export interface HobbyState { skill: number; practiced: number; shows: number; lastShow: number; wins: number; earned: number }
 
@@ -31,6 +32,8 @@ export const LEVELS = [
 type Show = { title: string | ((s: number) => string); note: (s: number) => string; run: (p: any, h: HobbyState) => string };
 export interface HobbyDef {
     id: string; title: string; who: string; minAge: number; cost: number; image: any;
+    /** v0.25.2: done in daylight (vampires lose happiness to the sun): "practice", "show" or both. */
+    sun?: ("practice" | "show")[];
     mods: [number, number, number];   // health, happiness, sanity — per practice
     blurb: string;
     show: Show;
@@ -73,12 +76,12 @@ export const HOBBIES: HobbyDef[] = [
                 if (roll(Hobbies.winChance(h.skill))) { const n = Hobbies.prize(h.skill); earn(p, n, h); attr(p, 0, 10, 3); h.wins++; return `Your dish won first place: ${money(n)} and a shiny trophy.`; }
                 attr(p, 0, 2, 0); return "The judges liked it, but someone else's dish won. Next time.";
             } } },
-    { id: "gardening", title: "Gardening", who: "gardener", minAge: 6, cost: 10, image: R.drawable.business_farm_new, mods: [1, 2, 4],
+    { id: "gardening", title: "Gardening", who: "gardener", minAge: 6, cost: 10, image: R.drawable.business_farm_new, mods: [1, 2, 4], sun: ["practice", "show"],
         blurb: "Dirt under your nails and the calmest mind in town.",
         show: { title: "Sell at the Farmers' Market", note: (s) => `Sales of about ${money(s * 15)}.`,
             run: (p, h) => { const n = h.skill * 15 * (0.7 + Math.random() * 0.6); earn(p, n, h); attr(p, 1, 4, 3); return `You sold out of vegetables and flowers: ${money(n)}.`; } } },
-    { id: "running", title: "Running", who: "runner", minAge: 8, cost: 0, image: R.drawable.health_workout, mods: [3, 2, 1],
-        blurb: "One more mile. Great for your health.",
+    { id: "running", title: "Running", who: "runner", minAge: 8, cost: 0, image: R.drawable.health_workout, mods: [3, 2, 1], sun: ["show"],
+        blurb: "One more mile. Great for your health. (Vampires train at night; races are in daylight.)",
         show: { title: (s) => Hobbies.race(s), note: (s) => `${Hobbies.race(s)}: +health and a medal. Masters can win prize money.`,
             run: (p, h) => {
                 attr(p, 5, 8, 3);
@@ -157,6 +160,18 @@ export const Hobbies = {
         }
         return h.skill;
     },
+    /** v0.25.2: kids under 18 don't pay for supplies (their parents do). */
+    costFor(d: HobbyDef, p: any = player()): number { return p.getAgeInYears() < 18 ? 0 : d.cost; },
+    /** v0.25.2: vampires lose happiness to sunlight for daytime hobbies. Returns the happiness lost. */
+    sunburn(d: HobbyDef, what: "practice" | "show", p: any = player()): number {
+        if (!d.sun?.includes(what) || !Vampire.isVampire(p)) return 0;
+        const n = Vampire.sunDamage(p);
+        attr(p, 0, -n, 0);
+        return n;
+    },
+    sunNote(d: HobbyDef, what: "practice" | "show", p: any = player()): string {
+        return d.sun?.includes(what) && Vampire.isVampire(p) ? ` Daytime: −${Vampire.sunDamage(p)} happiness for a vampire (sunlight).` : "";
+    },
     /** Why you can't practice, or null. */
     blocked(d: HobbyDef, p: any = player()): string | null {
         if (p.getAgeInYears() < d.minAge) return `Must be at least ${d.minAge} years old`;
@@ -166,10 +181,12 @@ export const Hobbies = {
     practice(id: string, p: any = player()): boolean {
         const d = Hobbies.def(id);
         if (Hobbies.blocked(d, p) != null) return false;
-        if (d.cost > 0 && p.getMoneyState().getCash().compareTo(BigInteger.valueOf(d.cost)) < 0) return false;
+        const cost = Hobbies.costFor(d, p);
+        if (cost > 0 && p.getMoneyState().getCash().compareTo(BigInteger.valueOf(cost)) < 0) return false;
         const h = Hobbies.state(id, p);
-        if (d.cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.cost), MoneyUpdateType.directSpend, null, null, 12, null);
+        if (cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(cost), MoneyUpdateType.directSpend, null, null, 12, null);
         attr(p, d.mods[0], d.mods[1], d.mods[2]);
+        Hobbies.sunburn(d, "practice", p);
         h.practiced++;
         Hobbies.addSkill(id, Hobbies.gain(h.skill) + (Math.random() < 0.3 ? 1 : 0), p);
         if (id === "guitar") { try { if (p.getAgeInYears() >= 6) Celebrity.train(p, "music", 1); } catch { /* ignore */ } }
@@ -190,7 +207,8 @@ export const Hobbies = {
         h.lastShow = Hobbies.now(p);
         h.shows++;
         const result = d.show.run(p, h);
-        Hobbies.alert(titleOf(d.show, h.skill), result, d.image);
+        const burn = Hobbies.sunburn(d, "show", p);
+        Hobbies.alert(titleOf(d.show, h.skill), result + (burn ? ` The sun was brutal, though (−${burn} happiness).` : ""), d.image);
         p.applyWeekly();
         return result;
     },
@@ -224,9 +242,9 @@ class PracticeCell {
         return h && h.skill > 0 ? `${this.d.title} · ${Hobbies.levelName(h.skill)} ${Math.floor(h.skill)}` : this.d.title;
     }
     getImageId(): any { return this.d.image; }
-    getCost(): BigInteger { return BigInteger.valueOf(this.d.cost); }
+    getCost(): BigInteger { return BigInteger.valueOf(Hobbies.costFor(this.d)); }
     getModifiers(): Modifiers { return new Modifiers(this.d.mods[0], this.d.mods[1], this.d.mods[2]); }
-    getActionTitle(): string | null { return this.d.cost > 0 ? null : "Practice"; }
+    getActionTitle(): string | null { return Hobbies.costFor(this.d) > 0 ? null : "Practice"; }
     getAdditionalDescription(): string {
         const h = this.h();
         const s = h?.skill ?? 0;
@@ -234,7 +252,8 @@ class PracticeCell {
         const prog = h && h.skill > 0
             ? (next ? `Practice to reach ${next.name} at ${next.min}.` : "Master level. Keep it up for fun.")
             : `${this.d.blurb} Practice to reach Amateur at 20.`;
-        return `${prog} Every practice: `;
+        const kid = this.d.cost > 0 && Hobbies.costFor(this.d) === 0 ? " Your parents buy the supplies." : "";
+        return `${prog}${kid}${Hobbies.sunNote(this.d, "practice")} Every practice: `;
     }
     getAgeRange(): any { return null; }
     getRequiredItem(): any { return null; }
@@ -257,7 +276,7 @@ class ShowCell {
     getAdditionalDescription(): string {
         const h = Hobbies.peek(this.d.id);
         const rec = h && h.shows ? ` So far: ${h.shows} time${h.shows === 1 ? "" : "s"}${h.wins ? `, ${h.wins} win${h.wins === 1 ? "" : "s"}` : ""}${h.earned ? `, ${money(h.earned)} earned` : ""}.` : "";
-        return `${this.d.show.note(this.skill())}${rec}`;
+        return `${this.d.show.note(this.skill())}${rec}${Hobbies.sunNote(this.d, "show")}`;
     }
     getAgeRange(): any { return null; }
     getRequiredItem(): any { return null; }

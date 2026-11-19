@@ -45,6 +45,8 @@ export class CelebrityState {
     formerName: string = null;
     formerFans: number = 0;
     returned: boolean = false;
+    /** v0.25.2: the dead star's catalogue and honours, put away when you fake your death (back if you return). */
+    former: any = null;
 
     // ---- v0.20.0 "The Fame Update" (all undefined in v0.19 saves: Celebrity.state() fills them in)
     /** Tabloid headlines about you, newest last. */

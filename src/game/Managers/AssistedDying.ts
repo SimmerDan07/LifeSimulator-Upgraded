@@ -19,7 +19,8 @@ export const AssistedDying = {
     minAge: 18,
 
     price(): BigInteger { return BigInteger.valueOf(AssistedDying.cost); },
-    available(player: any): boolean { return player.getAgeInYears() >= AssistedDying.minAge; },
+    /** v0.25.2: not for vampires (medicine can't end an immortal life; they have Final Rest on the Lifepaths tab). */
+    available(player: any): boolean { return player.getAgeInYears() >= AssistedDying.minAge && !player?.vampire?.isVampire; },
 
     cell(): ActionCellSingleViewModel | null {
         const p = GameStateManager.INSTANCE.getPersonState();
