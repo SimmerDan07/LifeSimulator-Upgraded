@@ -1,0 +1,240 @@
+// Deep fuzz (v0.25.1): plays from many starting situations (child, teen, family adult, old age, vampire, celebrity,
+// vampire celebrity, collapsed-soon vampire) by clicking random enabled buttons on every tab, the lifepath screens and
+// the person screens, answering every pop-up at random. After every step it checks invariants:
+//   attributes 0–100, money finite, relationships 0–1000, fame/vampire/hobby numbers in range, no "undefined"/"NaN"
+//   in anything on screen, and every 150 steps the save survives a round trip unchanged.
+// Usage: node dist-test/deepfuzz.mjs [steps per scenario] [seed]
+import { UIBridge, MainGameFragment } from "../src/game/ui/bridge";
+import { GameStateManager } from "../src/game/Managers/GameStateManager";
+import { AlertManager } from "../src/game/Managers/AlertManager";
+import { LifeScenario } from "../src/game/Enums/LifeScenario";
+import { MainGameTab } from "../src/game/Enums/MainGameTab";
+import { GenericListModelGenerator } from "../src/game/Controllers/GenericListModelGenerator";
+import { GenericListType } from "../src/game/Fragments/GenericListType";
+import { ProfileModelGenerator } from "../src/game/Controllers/ProfileModelGenerator";
+import { VacationModelGenerator } from "../src/game/Controllers/VacationModelGenerator";
+import { LoveModelGenerator } from "../src/game/Controllers/LoveModelGenerator";
+import { EducationModelGenerator } from "../src/game/Controllers/EducationModelGenerator";
+import { WorkModelGenerator } from "../src/game/Controllers/WorkModelGenerator";
+import { HealthModelGenerator } from "../src/game/Controllers/HealthModelGenerator";
+import { BankModelGenerator } from "../src/game/Controllers/BankModelGenerator";
+import { LifepathsModelGenerator } from "../src/game/Controllers/LifepathsModelGenerator";
+import { ButtonViewModel } from "../src/game/Models/ButtonViewModel";
+import { SaveCodec } from "../src/game/save/SaveCodec";
+import { SpannableStringBuilder, BigInteger } from "../src/game/runtime";
+import { Modifiers } from "../src/game/Managers/Modifiers";
+import { MoneyState } from "../src/game/Managers/MoneyState";
+import { MoneyUpdateType } from "../src/game/Enums/MoneyUpdateType";
+import { Vampire } from "../src/game/Lifepaths/Vampire";
+import { Celebrity } from "../src/game/Lifepaths/Celebrity";
+import { Hobbies } from "../src/game/Managers/Hobbies";
+import { Relationships } from "../src/game/Social/Relationships";
+import { Person } from "../src/game/Managers/Person";
+import { Relationship } from "../src/game/Enums/Relationship";
+import { RomanticRelationshipStatus } from "../src/game/Enums/RomanticRelationshipStatus";
+import { LoverPersonality } from "../src/game/Enums/LoverPersonality";
+import { Sex } from "../src/game/Enums/Sex";
+import { Job } from "../src/game/Enums/Job";
+
+const STEPS = parseInt(process.argv[2] ?? "1500", 10);
+let seed = parseInt(process.argv[3] ?? "4242", 10);
+const rng = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+Math.random = rng;   // reproducible
+
+const files = new Map<string, string>();
+const queue: any[] = [];
+let navs: { type: GenericListType; key: string }[] = [];
+UIBridge.install({
+    broadcast() {}, reloadGenericList() {},
+    navigateTo(type, key) { navs.push({ type, key }); },
+    backToMainGame() { navs = []; },
+    showAlert(vm) { queue.push(vm); },
+    readFile: (n) => files.get(n) ?? null, writeFile: (n, t) => { files.set(n, t); },
+});
+class FakeMain extends MainGameFragment { updateUI() {} updateHUD() {} reloadTab() {} getSelectedTab() { return MainGameTab.Profile; } }
+const gens: Record<string, any> = {
+    Profile: new ProfileModelGenerator(), Leisure: new VacationModelGenerator(), Love: new LoveModelGenerator(),
+    Education: new EducationModelGenerator(), Work: new WorkModelGenerator(), Health: new HealthModelGenerator(),
+    Bank: new BankModelGenerator(), Lifepaths: new LifepathsModelGenerator(),
+};
+const lp = new LifepathsModelGenerator();
+
+const lastAlerts: string[] = [];
+const ends: Record<string, string[]> = {};
+const problems = new Map<string, { n: number; where: string }>();
+const report = (kind: string, msg: string, where: string) => { const k = `${kind}: ${msg}`; const x = problems.get(k); if (x) x.n++; else problems.set(k, { n: 1, where }); };
+
+function actions(vm: any, out: { label: string; fn: () => void }[], seen = new Set<any>(), depth = 0) {
+    if (!vm || typeof vm !== "object" || seen.has(vm) || depth > 7) return;
+    seen.add(vm);
+    if (vm instanceof ButtonViewModel) {
+        if (vm.getEnabled() && !vm.getHidden() && !vm.getShowLock()) out.push({ label: vm.getTitle(), fn: () => vm.component8().invoke() });
+        return;
+    }
+    if (vm instanceof SpannableStringBuilder) return;
+    for (const k of Object.keys(vm)) {
+        const v = vm[k];
+        if (v && typeof v === "object" && typeof v.invoke === "function" && /click|tap|action|select/i.test(k)) out.push({ label: (vm.title ?? vm.constructor?.name) + "." + k, fn: () => v.invoke() });
+        else if (Array.isArray(v)) for (const x of v) actions(x, out, seen, depth + 1);
+        else if (v && typeof v === "object") actions(v, out, seen, depth + 1);
+    }
+}
+/** Strings shown on screen that look broken. */
+function badText(vm: any, where: string, seen = new Set<any>(), depth = 0) {
+    if (vm == null || depth > 8) return;
+    if (typeof vm === "string") {
+        if (/\bundefined\b|\bNaN\b|\[object Object\]|\bnull\b(?! ?:)|Infinity/.test(vm) && !/^https?:|null cannot/.test(vm)) report("TEXT", vm.slice(0, 120), where);
+        return;
+    }
+    if (typeof vm !== "object" || seen.has(vm)) return;
+    seen.add(vm);
+    if (vm instanceof SpannableStringBuilder) { badText(vm.toString(), where, seen, depth + 1); return; }
+    for (const k of Object.keys(vm)) if (k !== "parent" && typeof vm[k] !== "function") badText(vm[k], where, seen, depth + 1);
+}
+function handleAlerts() {
+    for (let g = 0; g < 60 && queue.length; g++) {
+        const vm = queue.shift();
+        lastAlerts.push(`${vm.getTitle?.()}: ${(vm.getMessage?.() ?? vm.getAttributedMessage?.()?.toString?.() ?? "").slice(0, 90)}`); if (lastAlerts.length > 6) lastAlerts.shift();
+        badText(vm.getTitle?.(), "alert"); badText(vm.getMessage?.(), "alert:" + vm.getTitle?.());
+        if (vm.getAttributedMessage?.()) badText(vm.getAttributedMessage(), "alert:" + vm.getTitle?.());
+        const btns = [vm.getPositiveButton(), vm.getNegativeButton(), ...(vm.getAdditionalButtons() ?? [])].filter(Boolean);
+        const tf = vm.getEditableTextFieldViewModel?.();
+        if (tf) try { tf.getOnTextChanged?.()?.invoke?.("Testname"); } catch { /* ignore */ }
+        // don't end lives on purpose (Assisted Dying, Final Rest): say no
+        const ender = /^(Assisted Dying|Final Rest)$/.test(vm.getTitle?.() ?? "");
+        try { if (btns.length) (ender ? (vm.getNegativeButton() ?? btns[btns.length - 1]) : btns[Math.floor(rng() * btns.length)]).getAction().invoke(); }
+        catch (e: any) { report("ERROR", (e?.message ?? String(e)), "alert " + vm.getTitle?.() + " | " + (e?.stack?.split("\n").slice(1, 3).join(" <- ") ?? "")); }
+        AlertManager.INSTANCE.alertDismissed(vm);
+    }
+}
+function screens(): { name: string; models: any }[] {
+    const out: { name: string; models: any }[] = [];
+    for (const [name, g] of Object.entries(gens)) out.push({ name, models: g.generateViewModels() });
+    out.push({ name: "vampire", models: lp.screen("vampire") });
+    out.push({ name: "celebrity", models: lp.screen("celebrity") });
+    for (const k of ["celebrity-news", "celebrity-works", "celebrity-milestones"]) out.push({ name: k, models: lp.screen(k) });
+    for (const n of navs.slice(-1)) out.push({ name: "list:" + n.type.name(), models: GenericListModelGenerator.INSTANCE.genericListViewModels(n.type, n.key, true) });
+    return out;
+}
+const num = (b: any) => Number(b?.toString?.() ?? NaN);
+function invariants(where: string) {
+    const p: any = GameStateManager.INSTANCE.getPersonState();
+    const a = p.getAttributeState();
+    for (const [n, v] of [["health", a.getHealth()], ["happiness", a.getHappiness()], ["sanity", a.getSanity()]] as [string, number][])
+        if (!Number.isFinite(v) || v < 0 || v > 100) report("ATTR", `${n}=${v}`, where);
+    const c = num(p.getMoneyState().getCash()), s = num(p.getMoneyState().getSavings());
+    if (!Number.isFinite(c) || !Number.isFinite(s)) report("MONEY", `cash=${c} savings=${s}`, where);
+    const people = [...(Array.from(p.getFamilyState().getFamilyMembers() as any) as any[]), ...Relationships.circle(p).list()];
+    for (const x of people) {
+        const r = x.getRelationshipProgress();
+        if (!Number.isFinite(r) || r < 0 || r > 1000) report("REL", `${x.getTitle?.() ?? x.kind} ${x.getFirstName?.()} = ${r}`, where);
+        const ag = x.getAgeInWeeks?.();
+        if (ag != null && (!Number.isFinite(ag) || ag < 0)) report("AGE", `${x.getFirstName?.()} ageWeeks=${ag}`, where);
+    }
+    const cs = Celebrity.peek(p);
+    if (cs) {
+        if (!Number.isFinite(cs.fans) || cs.fans < 0) report("FAME", `fans=${cs.fans}`, where);
+        if (!Number.isFinite(cs.reputation) || cs.reputation < 0 || cs.reputation > 100) report("FAME", `rep=${cs.reputation}`, where);
+        for (const k of ["acting", "music", "dance"]) if (!Number.isFinite(cs[k] ?? 0) || (cs[k] ?? 0) < 0 || (cs[k] ?? 0) > 100) report("FAME", `${k}=${cs[k]}`, where);
+    }
+    const vs = Vampire.peek(p);
+    if (vs?.isVampire) {
+        if (!Number.isFinite(vs.thirst) || vs.thirst < 0 || vs.thirst > 100) report("VAMP", `thirst=${vs.thirst}`, where);
+        if (!Number.isFinite(vs.suspicion) || vs.suspicion < 0 || vs.suspicion > 100) report("VAMP", `suspicion=${vs.suspicion}`, where);
+        if (vs.bloodPower < 0) report("VAMP", `bloodPower=${vs.bloodPower}`, where);
+        if (vs.inTorpor || AlertManager.muted != null || MoneyState.frozen) report("VAMP", "collapse flags left on", where);
+    }
+    for (const [id, h] of Object.entries(p.hobbies ?? {}) as [string, any][]) if (!Number.isFinite(h.skill) || h.skill < 0 || h.skill > 100) report("HOBBY", `${id}=${h.skill}`, where);
+    if (Relationships.together != null) report("STATE", "Relationships.together left set", where);
+}
+
+// ---------------------------------------------------------------- scenarios
+const W = 48;
+const rich = (p: any, n: number) => MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(n), MoneyUpdateType.workIncome, null, null, 12, null);
+const lover = (p: any, first: string) => {
+    const x = new Person(Relationship.lover, Sex.female, "Vale", 30 * W); x.setFirstName(first); x.setLoverPersonality(LoverPersonality.cheerful);
+    x.setRelationshipProgress(800); p.getFamilyState().date(x); p.setRomanticRelationshipStatus(RomanticRelationshipStatus.married); return x;
+};
+const SCENARIOS: Record<string, () => void> = {
+    child: () => start(6, () => {}),
+    teen: () => start(15, (p) => { rich(p, 2000); }),
+    family: () => start(32, (p) => { rich(p, 300000); lover(p, "Mia"); const k = new Person(Relationship.child, Sex.male, p.getLastName(), 8 * W); k.setFirstName("Leo"); p.getFamilyState().getFamilyMembers().add(k); Relationships.makeFriend("work", p); }),
+    old: () => start(74, (p) => { rich(p, 80000); }),
+    broke: () => start(22, () => {}),
+    vampire: () => start(30, (p) => { rich(p, 500000); Vampire.rise(p); const s = Vampire.state(p); s.bloodPower = 8; s.thirst = 50; const x = lover(p, "Ana"); Relationships.meta(x).knows = true; }),
+    thirsty: () => start(30, (p) => { rich(p, 50000); Vampire.rise(p); Vampire.state(p).thirst = 99.5; }),
+    celebrity: () => start(24, (p) => { rich(p, 2_000_000); p.getJobState().switchJob(Job.music); const s = Celebrity.state(p); s.fans = 600_000; s.music = 60; }),
+    vampstar: () => start(34, (p) => { rich(p, 5_000_000); Vampire.rise(p); p.getJobState().switchJob(Job.actor); const s = Celebrity.state(p); s.fans = 3_000_000; s.acting = 70; Vampire.state(p).bloodPower = 10; }),
+    hobbyist: () => start(40, (p) => { rich(p, 100000); for (const id of ["painting", "running", "writing"]) Hobbies.state(id, p).skill = 85; }),
+};
+function start(age: number, tweak: (p: any) => void) {
+    GameStateManager.INSTANCE.startNewGameFlow(LifeScenario.sandboxMode);
+    const np: any = GameStateManager.INSTANCE.getNewGamePlayerState();
+    np.initializeAge(age, true);
+    GameStateManager.INSTANCE.startNewGame(np);
+    handleAlerts();
+    const p: any = GameStateManager.INSTANCE.getPersonState();
+    p.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100));
+    tweak(p);
+    handleAlerts();
+    navs = [];
+}
+
+GameStateManager.INSTANCE.init();
+GameStateManager.INSTANCE.setMainGameFragment(new FakeMain());
+const only = process.env.ONLY;
+const clicks: Record<string, number> = {};
+let lastClick = "";
+for (const [name, setup] of Object.entries(SCENARIOS)) {
+    if (only && only !== name) continue;
+    setup();
+    let lives = 1, weeks0 = 0;
+    for (let step = 0; step < STEPS; step++) {
+        const where = `${name}#${step}`;
+        try {
+            handleAlerts();
+            const gsm = GameStateManager.INSTANCE.getGlobalStateManager();
+            if (!gsm.getSaveState().getHasGameStarted()) {
+                const pp: any = GameStateManager.INSTANCE.getPersonState();
+                (ends[name] ??= []).push(`age ${pp.getAgeInYears()} after "${lastClick}": ${lastAlerts.slice(-2).join(" / ")}`);
+                setup(); lives++; continue;
+            }
+            const p: any = GameStateManager.INSTANCE.getPersonState();
+            // keep long-running scenarios alive enough to explore (not for 'broke' and 'thirsty')
+            if (name !== "broke" && name !== "thirsty" && step % 25 === 0) p.getAttributeState().setDeltaValueImmediate(new Modifiers(30, 30, 30));
+            const all: { label: string; fn: () => void; screen: string }[] = [];
+            for (const s of screens()) {
+                badText(s.models, s.name);
+                const acts: any[] = []; actions(s.models, acts);
+                for (const a of acts) all.push({ ...a, screen: s.name });
+            }
+            const safe = all.filter((a) => !/Assisted Dying|Final Rest|Restart|New Game|Delete|Suicide/i.test(a.label));
+            if (!safe.length) { p.applyWeekly(); continue; }
+            const pick = safe[Math.floor(rng() * safe.length)];
+            clicks[pick.screen] = (clicks[pick.screen] ?? 0) + 1;
+            lastClick = pick.screen + "/" + pick.label;
+            pick.fn();
+            if (rng() < 0.3) navs = [];
+            handleAlerts();
+            invariants(where + " after " + pick.screen + "/" + pick.label);
+            if (step % 150 === 0) {
+                const a1 = SaveCodec.encode(gsm);
+                const back = SaveCodec.decode(a1);
+                const a2 = SaveCodec.encode(back);
+                if (a1 !== a2) report("SAVE", "round trip changed the save", where);
+                GameStateManager.INSTANCE.setGlobalStateManager(back);
+            }
+        } catch (e: any) {
+            report("ERROR", e?.message ?? String(e), where + " | " + (e?.stack?.split("\n").slice(1, 4).join(" <- ") ?? ""));
+            queue.length = 0;
+            try { AlertManager.INSTANCE.setCurrentlyShowing(false); } catch { /* ignore */ }
+            AlertManager.muted = null; MoneyState.frozen = false; Relationships.together = null;
+        }
+    }
+    const p: any = GameStateManager.INSTANCE.getPersonState();
+    console.log(`${name}: ${lives} li${lives === 1 ? "fe" : "ves"}, now age ${p.getAgeInYears()}`);
+}
+console.log("clicks:", JSON.stringify(clicks));
+for (const [n, xs] of Object.entries(ends)) for (const x of xs) console.log(`  END ${n}: ${x}`);
+console.log(`problems: ${problems.size}`);
+for (const [k, v] of [...problems.entries()].sort((a, b) => b[1].n - a[1].n)) console.log(`  x${v.n}  ${k}\n        @ ${v.where.slice(0, 260)}`);

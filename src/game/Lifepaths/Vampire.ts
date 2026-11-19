@@ -504,9 +504,16 @@ export const Vampire = {
     hasMedicalJob(p: any): boolean {
         try { const j = p.getJobState().getCurrentJob(); return j != null && /doctor|nurse|medic|surgeon|research/i.test(j.name() + " " + (j.getJobTitles?.() ?? []).join(" ")); } catch { return false; }
     },
+    /** A living, human partner who knows your secret. v0.25.1: never one you turned (vampire blood won't feed you). */
     willingPartner(p: any): any {
         const partner = p.getFamilyState().getPartner();
-        return partner != null && partner.getIsAlive() && Vampire.knows(partner) ? partner : null;
+        return partner != null && partner.getIsAlive() && Vampire.knows(partner) && !Vampire.isTurned(partner) ? partner : null;
+    },
+    /** Why you can't feed on your partner, or null. */
+    partnerFeedLock(p: any): string | null {
+        const partner = p.getFamilyState?.()?.getPartner?.();
+        if (partner != null && partner.getIsAlive() && Vampire.isTurned(partner)) return `${partner.getFirstName()} is a vampire too: there's no living blood to share. Hunt Together instead`;
+        return Vampire.willingPartner(p) ? null : "Your partner must know your secret";
     },
     /** v0.25.0 cross content (set by Crossover.ts, which knows about Celebrity Life). Each returns extra alert text. */
     hooks: {
@@ -592,7 +599,7 @@ export const Vampire = {
     // ------------------------------------------------------------------ endings
     startCure(p: any) { Vampire.state(p).cureWeeks = Vampire.cureWeeks; },
     finalRest(p: any) {
-        Vampire.die(p, `After ${Vampire.years(p)} years in the dark, ${p.getFirstName()} chose to rest at last and watched one final sunrise.`, "Final Rest");
+        Vampire.die(p, `After ${Vampire.years(p) < 1 ? "less than a year" : Vampire.years(p) === 1 ? "a year" : `${Vampire.years(p)} years`} in the dark, ${p.getFirstName()} chose to rest at last and watched one final sunrise.`, "Final Rest");
         refreshUI();
     },
 
@@ -669,7 +676,7 @@ export class LifeActionCell {
     costValue(): number { const c = this.def.cost; return typeof c === "function" ? c() : c ?? 0; }
     getCost(): BigInteger { return BigInteger.valueOf(this.costValue()); }
     getModifiers(): Modifiers { const m = this.def.mods ?? [0, 0, 0]; return new Modifiers(m[0], m[1], m[2]); }
-    getActionTitle(): string | null { return this.def.actionTitle?.() ?? null; }
+    getActionTitle(): string | null { return this.def.actionTitle?.() ?? (this.costValue() > 0 ? null : "Go"); }   // v0.25.1: free actions say "Go", not "$0"
     getAdditionalDescription(): string | null { return this.def.note?.() ?? null; }
     getAgeRange(): any { return null; }
     getRequiredItem(): any { return null; }
@@ -738,7 +745,7 @@ export const FEEDING: LifeActionDef[] = [
             }
         } },
     { id: "partner", title: () => `Feed on ${Vampire.willingPartner(player())?.getFirstName() ?? "a Willing Partner"}`, image: R.drawable.icon_vamp_feedpartner,
-        lock: (p) => (Vampire.willingPartner(p) ? null : "Your partner must know your secret"),
+        lock: (p) => Vampire.partnerFeedLock(p),
         note: () => thirstNote(30) + "−20 relationship with your partner.\n",
         run: (p) => { Vampire.feed(p, 30, 0); const w = Vampire.willingPartner(p); if (w) w.setRelationshipProgress(w.getRelationshipProgress() - 20); } },
 ];

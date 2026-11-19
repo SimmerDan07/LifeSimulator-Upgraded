@@ -78,6 +78,12 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     same" headlines (+2% fans). Turning a celebrity partner: a "forever young" headline. *Feed on a Superfan*
     (Rising Star+), *Midnight Show* (vampire with a celebrity career). Charm gives +20% fan gains; paparazzi can catch
     a vampire on camera (`Celebrity.vampirePhotos`: +8 suspicion, +3% fans). Hooks: `Vampire.hooks`.
+  - **v0.25.1 bug hunt**: `npm run test:deep` (`test/deepfuzz.ts`) plays 10 starting situations (child, teen, family,
+    old age, broke, vampire, thirsty vampire, celebrity, vampire celebrity, hobbyist) by random clicks on every tab,
+    lifepath screen and person screen, checking ranges, broken text and save round trips after every step. Fixes: you
+    can't feed on a partner you turned (`Vampire.willingPartner` / `partnerFeedLock`); life moments don't offer
+    choices you can't pay for; Final Rest says "less than a year" instead of "0 years"; free Lifepaths actions say
+    "Go" instead of "$0".
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

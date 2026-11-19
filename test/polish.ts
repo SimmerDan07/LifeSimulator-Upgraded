@@ -154,6 +154,17 @@ LifeMoments.enabled = false;   // turned on where tested
     check("at least 40 moments across childhood, teens, adults and later life",
         MOMENTS.length >= 40 && MOMENTS.some((m) => m.max <= 13) && MOMENTS.some((m) => m.min >= 13 && m.max <= 18) && MOMENTS.some((m) => m.min >= 45));
 
+    // v0.25.1: priced choices only when you can pay
+    {
+        const p = start(30);
+        MoneyState.updateMoney$default(p.getMoneyState(), p.getMoneyState().getCash(), MoneyUpdateType.directSpend, null, null, 12, null);
+        clear();
+        LifeMoments.trigger(p, "plumbing");
+        const a = drain().find((x) => x.getTitle() === "Flooded Kitchen");
+        const labels = a ? [a.getPositiveButton()?.getTitle(), a.getNegativeButton()?.getTitle(), ...Array.from((a.getAdditionalButtons() ?? []) as any).map((b: any) => b.getTitle())].filter(Boolean) : [];
+        check("v0.25.1: with no money, life moments don't offer choices that cost money", cash(p) <= 0 && labels.length >= 1 && !labels.some((l) => /\$/.test(l)), labels.join(" | "));
+    }
+
     // weekly: 12% chance, never in jail, gap, cooldown
     LifeMoments.enabled = true;
     const p = start(30);

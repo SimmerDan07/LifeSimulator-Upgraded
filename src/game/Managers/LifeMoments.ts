@@ -319,7 +319,7 @@ export const MOMENTS: Moment[] = [
         const n = 2000;
         return { text: `${x.getFirstName()} is moving house and could use some help (and a little money).`,
             options: [
-                ["Help with money", () => { pay(p, n); bond(x, 80); return `${x.getFirstName()} said you're the best kid anyone could ask for.`; }],
+                ["Help with money ($2,000)", () => { pay(p, n); bond(x, 80); return `${x.getFirstName()} said you're the best kid anyone could ask for.`; }],
                 ["Help in person", () => { bond(x, 50); attr(p, -3, 2, 0); return "A week of boxes and old photo albums. Your back hurts. Worth it."; }],
                 ["Can't right now", () => { bond(x, -40); attr(p, 0, -2, -1); return `${x.getFirstName()} said it's fine. You could hear that it wasn't.`; }],
             ] };
@@ -432,6 +432,9 @@ export const LifeMoments = {
         for (const x of list) { r -= x.weight ?? 1; if (r <= 0) { m = x; break; } }
         const built = safe(() => m.make(p));
         if (built == null) return null;
+        // v0.25.1: don't offer choices you can't pay for (labels with a price, like "Go ($800)")
+        const affordable = built.options.filter((o) => { const mm = /\$([\d,]+)/.exec(o[0]); return mm == null || cash(p) >= Number(mm[1].replace(/,/g, "")); });
+        if (affordable.length) built.options = affordable;
         const s = LifeMoments.state(p);
         s.last = LifeMoments.now(p);
         s.seen[m.id] = s.last;

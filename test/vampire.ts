@@ -216,6 +216,9 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     check("…better odds against hunters (70%)", Vampire.fightWinChance(p) === 0.7);
     check("…Hunt Together, Dance Through the Night and Eternal Vows on their screen", ["Hunt Together", "Dance Through the Night", "Eternal Vows"].every((t) => titles(rows()).includes(t)));
     check("…and an Eternal Bond card on the Lifepaths tab", tab().some((r) => r.title === "Eternal Bond with Ana"));
+    // v0.25.1: a partner you turned is a vampire too — no feeding on them
+    const fp = new LifeActionCell(def(FEEDING, "partner"));
+    check("v0.25.1: you can't feed on a partner you turned (locked, says why)", Vampire.willingPartner(p) == null && /Ana is a vampire too/.test(fp.requirementNotMetString(p) ?? "") && !LifeActions.perform(def(FEEDING, "partner"), p), fp.requirementNotMetString(p) ?? "");
     {
         const s = Vampire.state(p); s.thirst = 80; s.suspicion = 10; const sus = s.suspicion;
         withRandom(0.99, () => { LoveActions.perform(loveAction("huntTogether"), ana, p); }); clear();
