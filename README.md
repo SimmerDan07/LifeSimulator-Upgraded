@@ -92,6 +92,38 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     (they think you're dead), pending loans vanish, and the dead star's catalogue/awards/royalty counters/rivals/
     celebrity friends move to `CelebrityState.former` (restored by Return from the Dead). Hobbies: kids' supplies are
     free; gardening (and running races) cost a vampire happiness in daylight; the charity 10K moment too.
+  - **v0.26.0 The Career Update**:
+    - **40 new careers** (`src/game/Careers/CareerData.ts` data, `Careers.ts` rules) in 8 groups — Healthcare, Skilled
+      Trades, Public Service, Tech & Office, Creative & Media, Hospitality & Travel, Science & Nature, Sports & Online —
+      registered as real `Job` values (ordinals 26–65; `Job.def()` gives the data, enum switches fall through to it).
+      The Work tab ends with a **Career Center** (8 groups → `GenericListType.lifepath` key `careers:<group>`); your
+      Career Center job also shows at the top of the Work tab. Rules: age ranges (pro athletes hired to 30, astronauts
+      to 50), fitness (firefighter 60, astronaut 70, pro athlete 75 health; 4 weeks below it and you're let go),
+      promotions that need social media followers (politician up to President at 2M, content creator, fashion
+      designer, film director, celebrity chef) or a hobby (game developer: Gaming 45, journalist: Writing 45, chef:
+      Cooking 45), seasonal pay (lifeguard ×1.5 summer, ski instructor ×1.6 winter, accountant ×1.4 in tax season and
+      −2 sanity, …), pro athletes retire at 38 (option: coach as a Personal Trainer), pilots and flight attendants pay
+      half for vacations and travel, on-the-job moments per group, career random events.
+    - **37 new degrees and trainings** (`CompletableAction` values 100+): 18 college degrees, Pharmacy/Veterinary/
+      Dental School after Biology, and 16 trainings in a new **Trade School & Training** section of the Education tab.
+    - **Seasons** (`src/game/Managers/Seasons.ts`): Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov fall (the
+      HUD shows it). Weekly mood (winter −1 happiness, spring +1, summer +2, fall +1 sanity), heating ($40) and air
+      conditioning ($30) bills where you pay bills, homeless winters hurt; vampires love winter (half sun damage) and
+      hate summer (×1.5). Six holidays with a choice (New Year, Valentine's, Summer Fireworks, Halloween, Harvest
+      Feast, Winter Holidays), two seasonal activities a season in the Leisure tab, skiing only in winter, winter
+      camping is cold, and Life Moments respect the calendar (`Moment.seasons`: snow days in winter, lemonade in
+      summer, school events not in summer, prom in spring).
+    - **Social media** (new **Social** tab, key 8; `src/game/Social/SocialMedia.ts`, `Player.social`): from 13, an
+      account on Snapgram, ClipTok, Chirper and VidTube; 11 kinds of post (3 a week, instant; Go Live takes the week),
+      viral posts and backlash, trolls, collabs, brand deals, ad revenue from 10K followers, Get Verified (25K real
+      followers), Buy Followers (risky), Digital Detox. Celebrity fans follow you; posts win fans back. Vampires
+      don't show on camera without Glamour; Fake Your Death turns the account into a memorial page; collapsing
+      leaves it dormant.
+    - **8 more blood powers** (14 in all): Beast Tongue, Glamour, Bat Form, Shadow Step, Ancient Scholar, Blood
+      Alchemy, Regeneration, Hypnotic Gaze. Night jobs (bartender) never see the sun; outdoor day jobs burn twice as
+      much; the new medical careers count for Blood Bank Bags.
+    - Tests: `test/careers.ts` (in `npm run test:features`); `test:deep` adds worker, influencer and vampire-creator
+      scenarios and the Career Center screens.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

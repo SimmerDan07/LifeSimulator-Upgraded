@@ -14,6 +14,7 @@ export class EducationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
         arrayList.addAll(this.getEducationViewModels());
+        arrayList.addAll(this.getTrainingViewModels());
         arrayList.addAll(this.getSkillsViewModels());
         arrayList.addAll(this.getLanguagesViewModels());
         return new GenericListFragmentViewModel(arrayList);
@@ -22,7 +23,17 @@ export class EducationModelGenerator implements IViewModelGenerator {
         let arrayList: ArrayList = new ArrayList();
         arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.tab_name_education)));
         for (const completableActionStateSingle of GameStateManager.INSTANCE.getPersonState().getCompletableActionState().getStates(CompletableActionType.education)) {
+            if (completableActionStateSingle.getType().isTraining()) continue;   // v0.26.0: trainings have their own section
             arrayList.add(completableActionStateSingle.getViewModel());
+        }
+        return arrayList;
+    }
+    /** v0.26.0: Trade School & Training (certificates and licences for the new careers). */
+    getTrainingViewModels(): ArrayList<BaseViewModel> {
+        let arrayList: ArrayList = new ArrayList();
+        arrayList.add(new HeaderTitleViewModel("Trade School & Training"));
+        for (const s of GameStateManager.INSTANCE.getPersonState().getCompletableActionState().getStates(CompletableActionType.education)) {
+            if (s.getType().isTraining()) arrayList.add(s.getViewModel());
         }
         return arrayList;
     }

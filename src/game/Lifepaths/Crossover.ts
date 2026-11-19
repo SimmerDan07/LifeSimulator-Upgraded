@@ -16,6 +16,7 @@ import { Vampire, FEEDING, LifeActionDef } from "./Vampire";
 import { Celebrity, FAME, TIERS } from "./Celebrity";
 import { World } from "./CelebrityWorld";
 import { Relationships } from "../Social/Relationships";
+import { SocialMedia } from "../Social/SocialMedia";
 import { GameStateManager } from "../Managers/GameStateManager";
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
@@ -79,7 +80,8 @@ export const Crossover = {
         if (!FEEDING.includes(SUPERFAN)) FEEDING.push(SUPERFAN);
         if (!FAME.includes(MIDNIGHT_SHOW)) FAME.push(MIDNIGHT_SHOW, RETURN_FROM_DEAD);
 
-        Vampire.hooks.fakeDeath = (p, oldName) => {
+        Vampire.hooks.fakeDeath = (p, oldName) => fakeDeathFame(p, oldName) + SocialMedia.fakeDeath(p, oldName);
+        const fakeDeathFame = (p: any, oldName: string): string => {
             const s = Celebrity.peek(p);
             if (s == null || s.fans < 100) return "";
             const before = s.fans;
@@ -103,13 +105,15 @@ export const Crossover = {
         };
         Vampire.forgetCelebPartner = (p) => { const s = Celebrity.peek(p); if (s) { s.partnerId = null; s.weddingNews = false; } };
         Vampire.hooks.collapseStart = (p) => {
+            SocialMedia.collapseStart(p);
             const f = Celebrity.fans(p);
             collapseFans.set(p, f);
             const cs = Celebrity.peek(p);
             if (cs?.series) cs.series = null;   // v0.25.2: the show can't go on without its star
             if (f >= 1000) World.news(p, `${p.getFullName()} has vanished. Police search for the missing star`);
         };
-        Vampire.hooks.collapseEnd = (p, years) => {
+        Vampire.hooks.collapseEnd = (p, years) => collapseFame(p, years) + SocialMedia.collapseEnd(p, years);
+        const collapseFame = (p: any, years: number): string => {
             const before = collapseFans.get(p) ?? 0;
             collapseFans.delete(p);
             if (before < 1000) return "";

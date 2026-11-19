@@ -11,6 +11,7 @@ import { GameStateManager } from "../Managers/GameStateManager";
 import { Modifiers } from "../Managers/Modifiers";
 import { Player } from "../Managers/Player";
 import { Utils } from "../Utils/Utils";
+import { CAREERS, CAREER_BY_ID, CareerDef } from "../Careers/CareerData";
 
 const M = (h: number, hap: number, san: number) => new Modifiers(h, hap, san);
 /** v0.19.0 Celebrity Life career ladders (music reworked; dance is new). */
@@ -46,8 +47,11 @@ export class Job extends JEnum {
     static readonly retail: Job = new Job("retail", 24);
     /** v0.19.0 Celebrity Life: a dance career that starts as a Street Dancer (Lifepaths tab only). */
     static readonly dancer: Job = new Job("dancer", 25);
-    static values(): Job[] { return [Job.panHandler, Job.burgerFlipper, Job.dataEntry, Job.uber, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.police, Job.army, Job.lawyer, Job.artist, Job.actor, Job.barista, Job.sushiChef, Job.animeArtist, Job.pastryChef, Job.tourGuide, Job.sommelier, Job.royalGuard, Job.constructionWorker, Job.retail, Job.dancer]; }
+    static values(): Job[] { return [...Job.BASE(), ...NEW_JOBS]; }
+    static BASE(): Job[] { return [Job.panHandler, Job.burgerFlipper, Job.dataEntry, Job.uber, Job.music, Job.business, Job.medical, Job.finance, Job.research, Job.programmer, Job.teacher, Job.police, Job.army, Job.lawyer, Job.artist, Job.actor, Job.barista, Job.sushiChef, Job.animeArtist, Job.pastryChef, Job.tourGuide, Job.sommelier, Job.royalGuard, Job.constructionWorker, Job.retail, Job.dancer]; }
     static valueOf(n: string): Job { return (Job as any)[n]; }
+    /** v0.26.0: the data for one of the 40 new careers (null for the original ones). */
+    def(): CareerDef | null { return CAREER_BY_ID[this.name()] ?? null; }
     static INSTANCE: any;
     constructor(name: string, ordinal: number) { super(name, ordinal); }
     getImageId(): number {
@@ -105,6 +109,7 @@ export class Job extends JEnum {
             case Job.dancer:
                 return R.drawable.icon_celeb_dance;
             default:
+                if (this.def()) return (R.drawable as any)[this.def()!.image];
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -163,6 +168,7 @@ export class Job extends JEnum {
             case Job.dancer:
                 return DANCE_TITLES;
             default:
+                if (this.def()) return this.def()!.titles;
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -246,7 +252,12 @@ export class Job extends JEnum {
                 table = [R(0, 800), W(500), W(900), W(1400), W(2200), W(3500), W(6000), R(8000, 20000), R(15000, 40000)];
                 careerTrait = Trait.entertainer;
                 break;
-            default: throw new NoWhenBranchMatchedException();
+            default: {
+                const d = this.def();
+                if (!d) throw new NoWhenBranchMatchedException();
+                table = d.pay.map((x) => (Array.isArray(x) ? R(x[0], x[1]) : W(x)));
+                if (d.trait) careerTrait = (Trait as any)[d.trait] ?? null;
+            }
         }
         let vr = table[level - 1];
         if (careerTrait != null && personState.getTraitState().hasTrait(careerTrait)) {
@@ -341,6 +352,7 @@ export class Job extends JEnum {
                 modifiersArr = [M(1, -1, 0), M(1, 0, 0), M(1, 0, -1), M(1, 1, -1), M(1, 1, -1), M(0, 1, -2), M(0, 2, -2)];
                 break;
             default:
+                if (this.def()) { modifiersArr = this.def()!.mods.map((m) => M(m[0], m[1], m[2])); break; }
                 throw new NoWhenBranchMatchedException();
         }
         return modifiersArr[level - 1];
@@ -449,6 +461,11 @@ export class Job extends JEnum {
             case Job.dancer:
                 // v0.19.0: street dancing needs no degree; the Theater degree is needed from Dance Captain (level 5)
                 return level >= 5 ? CompletableAction.college_theater : null;
+            default: {
+                // v0.26.0 careers: the degree or training for each level (from CareerData)
+                const name = this.def()?.edu[level - 1];
+                return name ? (CompletableAction as any)[name] ?? null : null;
+            }
         }
     }
     getRequiredItem(): Possession {
@@ -490,3 +507,7 @@ export namespace Job {
     }
 }
 Job.INSTANCE = new Job.Companion(null);
+
+/** v0.26.0 "The Career Update": the 40 new careers become real Job values (saved by name like the others). */
+export const NEW_JOBS: Job[] = [];
+CAREERS.forEach((d, i) => { const j = new Job(d.id, 26 + i); (Job as any)[d.id] = j; NEW_JOBS.push(j); });

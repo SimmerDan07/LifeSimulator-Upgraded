@@ -12,12 +12,15 @@ import { Player } from "../Managers/Player";
 import { Utils } from "../Utils/Utils";
 import { KidsLeisure } from "../Managers/KidsLeisure";
 import { Hobbies } from "../Managers/Hobbies";
+import { Seasons } from "../Managers/Seasons";
 
 export class VacationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
         arrayList.addAll(this.getPlaytimeViewModels());
         arrayList.addAll(this.getLeisureViewModels());
+        // v0.26.0: two activities that only happen this season
+        if (GameStateManager.INSTANCE.getPersonState().getAgeInYears() >= 3) for (const c of Seasons.cells()) arrayList.add(c);
         arrayList.addAll(this.getHobbyViewModels());
         arrayList.addAll(this.getTravelViewModels());
         return new GenericListFragmentViewModel(arrayList);

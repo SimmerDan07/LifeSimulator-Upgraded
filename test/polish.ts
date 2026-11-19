@@ -284,7 +284,7 @@ LifeMoments.enabled = false;   // turned on where tested
     check("v0.25.2: kids' hobby supplies are free (parents pay)", Hobbies.costFor(Hobbies.def("painting"), p) === 0 && pr && cash(p) >= c0, `${pr} ${c0} → ${cash(p)} ${Hobbies.blocked(Hobbies.def("painting"), p)}`);
     clear();
     p = start(30); rich(p); Vampire.rise(p); clear();
-    keep(p);
+    keep(p); p.setBirthMonth(3 - Math.floor((p.calendarWeeks() % 48) / 4));   // v0.26.0: spring sun
     const h0 = p.getAttributeState().getHappiness();
     p.getAttributeState().setDeltaValueImmediate(new Modifiers(0, -50, 0));
     const h1 = p.getAttributeState().getHappiness();

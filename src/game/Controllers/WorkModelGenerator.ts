@@ -28,6 +28,7 @@ import { WorkButtonsViewModel } from "../Models/WorkButtonsViewModel";
 import { WorkType } from "../Enums/WorkType";
 import { Retirement } from "../Managers/Retirement";
 import { Celebrity } from "../Lifepaths/Celebrity";
+import { Careers } from "../Careers/Careers";
 import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
 
 export class WorkModelGenerator implements IViewModelGenerator {
@@ -50,11 +51,14 @@ export class WorkModelGenerator implements IViewModelGenerator {
             arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
             arrayList.add(new SingleLabelCellViewModel("CelebrityWorkNote", new TextLabelViewModel(`Your ${celeb.title.toLowerCase()} career is part of Celebrity Life: open Lifepaths › Celebrity Life for auditions, songs, shows, fans and your team.`, null, false, false, null, null, 62, null)));
         }
+        // v0.26.0: a job from the Career Center shows at the top (the rest of its group lives in the Career Center)
+        if (Careers.current(personState) != null) arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
         for (const jobStateSingle of personState.getJobState().statesForPlayer(personState)) {
             arrayList.add(jobStateSingle.getViewModel());
         }
         const retirement = Retirement.cell();
         if (retirement != null) arrayList.add(retirement);
+        for (const c of Careers.centerCells(personState)) arrayList.add(c);
         return arrayList;
     }
     /** Ported from Vineflower output (jadx could not decompile it). */

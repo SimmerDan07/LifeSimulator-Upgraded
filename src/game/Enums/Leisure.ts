@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Seasons } from "../Managers/Seasons";
 import { Arrays, BigInteger, Double, Intrinsics, JEnum, JMath, NoWhenBranchMatchedException, R, StringCompanionObject } from "../runtime";
 import { ActionDescriptor } from "./ActionDescriptor";
 import { Country } from "./Country";
@@ -56,7 +57,7 @@ export class Leisure extends JEnum implements ActionDescriptor {
     }
     getAdditionalDescription(): string {
         // v0.15.0: daylight burns vampires
-        const sun = Vampire.leisureNote(this);
+        const sun = (Vampire.leisureNote(this) ?? "") + (Seasons.leisureNote(this) ?? "");
         if (sun) return sun + (ActionDescriptor.DefaultImpls.getAdditionalDescription(this) ?? "");
         return ActionDescriptor.DefaultImpls.getAdditionalDescription(this);
     }
@@ -74,6 +75,8 @@ export class Leisure extends JEnum implements ActionDescriptor {
     }
     requirementNotMetString(player: Player): string {
         Intrinsics.checkParameterIsNotNull(player, "player");
+        // v0.26.0 seasons: no skiing without snow
+        if (this === Leisure.ski && !Seasons.is("winter", player)) return "Ski season is December–February";
         return ActionDescriptor.DefaultImpls.requirementNotMetString(this, player);
     }
     getTitle(): string {
@@ -222,9 +225,15 @@ export class Leisure extends JEnum implements ActionDescriptor {
             Double.isNaN(d);
             i = JMath.toInt((d * frugalTravelerDiscountModifier));
         }
+        // v0.26.0: pilots and flight attendants fly for half price
+        if (i > 0 && (this === Leisure.local_vacation || this === Leisure.international_vacation || this === Leisure.luxury_vacation || this.getTravelCountry() != null)) {
+            i = Math.round(i * Leisure.travelDiscount(GameStateManager.INSTANCE.getPersonState()));
+        }
         let valueOf: BigInteger = BigInteger.valueOf(i);
         return valueOf;
     }
+    /** Set by Careers (v0.26.0). */
+    static travelDiscount: (p: any) => number = () => 1;
     getTravelCountry(): Country {
         switch (this) {
             case Leisure.travelToJapan:

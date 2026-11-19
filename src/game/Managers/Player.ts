@@ -77,6 +77,9 @@ import { WorkType } from "../Enums/WorkType";
 import { SocialCircle } from "../Social/SocialCircle";
 import { Subscriptions } from "./Subscriptions";
 import { LifeMoments } from "./LifeMoments";
+import { Seasons } from "./Seasons";
+import { Careers } from "../Careers/Careers";
+import { SocialMedia } from "../Social/SocialMedia";
 import { Vampire } from "../Lifepaths/Vampire";
 import { Celebrity } from "../Lifepaths/Celebrity";
 import { CelebrityState } from "../Lifepaths/CelebrityState";
@@ -501,6 +504,7 @@ export class Player {
             AlertManager.showAlert$default(alertManager, new AlertViewModel(string, format, Integer.valueOf(travelCountry.getImageId()), null, null, null, null, null, null, 504, null), false, 2, null);
         }
         Vampire.onLeisure(this, action);
+        Seasons.onLeisure(this, action);
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForLeisure(action), false, 2, null);
         this.applyWeekly();
     }
@@ -868,6 +872,9 @@ export class Player {
         if (!collapsed) {
             Vampire.afterWeekEnd(this);
             LifeMoments.afterWeek(this);   // v0.25.0: a story with a choice, now and then
+            Seasons.afterWeek(this);       // v0.26.0: holidays
+            Careers.afterWeek(this);       // v0.26.0: career rules (fitness, retirement from sports)
+            SocialMedia.afterWeek(this);   // v0.26.0: followers, deals, drama
             if (Vampire.isInTorpor(this) === false && mainGameFragment != null) MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
         }
     }
@@ -1022,6 +1029,8 @@ export class Player {
         realEstate.collectWeeklyValues(this);
         Retirement.collectWeeklyValues(this);
         Subscriptions.collectWeeklyValues(this);
+        Seasons.collectWeeklyValues(this);       // v0.26.0
+        SocialMedia.collectWeeklyValues(this);   // v0.26.0
         Vampire.collectWeeklyValues(this);
         Celebrity.collectWeeklyValues(this);
         this.attributeState.setDeltaValue(PersonAttribute.health, Utils.INSTANCE.getString(R.string.identity_name_age), this.getHealthStatus().getHealthModifier());

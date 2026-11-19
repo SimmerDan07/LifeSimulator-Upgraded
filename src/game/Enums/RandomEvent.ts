@@ -2482,6 +2482,14 @@ export namespace RandomEvent {
             case Job.retail:
                 CollectionsKt.addAll(mutableList, [RandomEvent.workAwardedBonus, RandomEvent.workNapping, RandomEvent.workFreeDonuts, RandomEvent.anyTerribleTraffic, RandomEvent.workDifficultCustomer]);
                 break;
+            default: {
+                // v0.26.0: the Career Center careers
+                const d: any = (job as any).def?.();
+                CollectionsKt.addAll(mutableList, randomEventArr);
+                if (d?.medical) CollectionsKt.addAll(mutableList, [RandomEvent.workSavedLives, RandomEvent.workMultipleDeath]);
+                if (d?.category === "hospitality") CollectionsKt.addAll(mutableList, [RandomEvent.workBigTip, RandomEvent.workDifficultCustomer]);
+                break;
+            }
         }
         let arrayList: ArrayList = new ArrayList();
         for (const obj of mutableList) {

@@ -48,11 +48,20 @@ const attr = (p: any, h: number, hap: number, san: number) => p.getAttributeStat
 export interface PowerDef { id: string; title: string; cost: number; image: any; blurb: string }
 export const POWERS: PowerDef[] = [
     { id: "charm", title: "Charm", cost: 1, image: R.drawable.icon_power_charm, blurb: "Dating works more often; relationship gains +25%." },
-    { id: "nightOwl", title: "Night Owl", cost: 1, image: R.drawable.icon_power_nightowl, blurb: "You work night shifts: no sunlight at work and 20% more pay." },
+    { id: "nightOwl", title: "Night Owl", cost: 1, image: R.drawable.icon_power_nightowl, blurb: "You work night shifts: no sunlight at work and 20% more pay (not in outdoor jobs)." },
     { id: "bloodBank", title: "Blood Bank Contact", cost: 2, image: R.drawable.icon_power_bloodbank, blurb: "Unlocks Buy from a Blood Bank." },
     { id: "mistStep", title: "Mist Step", cost: 2, image: R.drawable.icon_power_miststep, blurb: "Hunting no longer risks police trouble." },
     { id: "sunWard", title: "Sun Ward", cost: 3, image: R.drawable.icon_power_sunward, blurb: "Sunlight drains you half as much." },
     { id: "mindFog", title: "Mind Fog", cost: 3, image: R.drawable.icon_power_mindfog, blurb: "Suspicion drops by 5 by itself every week." },
+    // v0.26.0: eight more powers
+    { id: "beastTongue", title: "Beast Tongue", cost: 1, image: R.drawable.icon_power_beast, blurb: "Animals adore you: Rats & Strays costs no happiness, and vets, zookeepers and marine biologists get +2 happiness a week at work." },
+    { id: "glamour", title: "Glamour", cost: 2, image: R.drawable.icon_power_glamour, blurb: "You show up in mirrors and photos: selfies are safe and the paparazzi never catch anything strange." },
+    { id: "batForm", title: "Bat Form", cost: 2, image: R.drawable.icon_power_batform, blurb: "Fly off into the night: hunting raises suspicion half as much, and +20% to beat vampire hunters." },
+    { id: "shadowStep", title: "Shadow Step", cost: 2, image: R.drawable.icon_power_shadowstep, blurb: "Vanish into the shadows: Lay Low takes 25 suspicion off and costs no happiness, and fleeing vampire hunters no longer costs you your job." },
+    { id: "ancientScholar", title: "Ancient Scholar", cost: 2, image: R.drawable.icon_power_scholar, blurb: "Centuries of reading: degrees, trainings, skills and languages take 25% less time." },
+    { id: "bloodAlchemy", title: "Blood Alchemy", cost: 3, image: R.drawable.icon_power_alchemy, blurb: "Your body wastes nothing: thirst rises 25% slower on any diet." },
+    { id: "regeneration", title: "Regeneration", cost: 3, image: R.drawable.icon_power_regen, blurb: "Wounds close as you watch: +2 more healing a week, and a Withered body recovers twice as fast." },
+    { id: "hypnoticGaze", title: "Hypnotic Gaze", cost: 4, image: R.drawable.icon_power_gaze, blurb: "Your boss can't say no: promotions come twice as fast (you still need the degree)." },
 ];
 
 /** Leisure that happens in daylight (burns a vampire). */
@@ -153,7 +162,17 @@ export const Vampire = {
         }
     },
     /** Chance of beating the hunters (better with your bonded partner at your side). */
-    fightWinChance(p: any = player()): number { return Vampire.bonded(p) ? 0.7 : 0.5; },
+    fightWinChance(p: any = player()): number { return (Vampire.bonded(p) ? 0.7 : 0.5) + (Vampire.has("batForm", p) ? 0.2 : 0); },
+    /** v0.26.0 Ancient Scholar: every third week of study counts twice (25% less time). */
+    studyBonus(p: any = player()): number {
+        if (!Vampire.isVampire(p) || !Vampire.has("ancientScholar", p)) return 0;
+        const s = Vampire.state(p); s.studyWeeks = ((s.studyWeeks ?? 0) + 1) % 3;
+        return s.studyWeeks === 0 ? 1 : 0;
+    },
+    /** v0.26.0 Hypnotic Gaze: an extra week of promotion progress for every week worked. */
+    promotionBonus(p: any = player()): number { return Vampire.isVampire(p) && Vampire.has("hypnoticGaze", p) ? 1 : 0; },
+    /** v0.26.0 Glamour: photos and mirrors show you. */
+    photogenic(p: any = player()): boolean { return !Vampire.isVampire(p) || Vampire.has("glamour", p); },
     /** Vampires you turned (not your partner, not coven friends): each one raises suspicion by 2 a year. */
     turnedLovedOnes(p: any = player()): any[] {
         const partner = p.getFamilyState?.()?.getPartner?.();
@@ -225,12 +244,13 @@ export const Vampire = {
         const two = Vampire.bonded(p);
         const label = "Blood Diet - " + d.title + (two && d.cost > 0 ? " (for two)" : "");
         if (d.cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.cost * (two ? 2 : 1)), MoneyUpdateType.expense, label, null, 8, null);
-        p.getAttributeState().setDeltaValue(new Modifiers(d.mods[0], d.mods[1], d.mods[2]), label);
+        const dm = Vampire.dietMods(p, d);
+        p.getAttributeState().setDeltaValue(new Modifiers(dm[0], dm[1], dm[2]), label);
         // v0.21.1: undead bodies mend themselves while fed
         // v0.22.0: after a collapse your body is Withered for two years: no healing, health capped at 50
         if ((s.witheredWeeks ?? 0) > 0) p.getAttributeState().setDeltaValue(new Modifiers(0, -1, 0), "Withered body");
         else if (s.thirst < 60 && s.weeksAtMaxThirst === 0 && p.getAttributeState().getHealth() < 100)
-            p.getAttributeState().setDeltaValue(new Modifiers(Vampire.healPerWeek, 0, 0), "Vampire healing");
+            p.getAttributeState().setDeltaValue(new Modifiers(Vampire.healPerWeek + (Vampire.has("regeneration", p) ? 2 : 0), 0, 0), "Vampire healing");
     },
     /** A vampire's health never decays: only vampire dangers (starving, hunters) can lower it. */
     protectHealth(p: any) {
@@ -256,7 +276,11 @@ export const Vampire = {
     },
     chosenDiet(p: any = player()): BloodDiet { return BLOOD_DIETS.find((x) => x.id === (Vampire.peek(p)?.diet ?? "hand")) ?? BLOOD_DIETS[0]; },
     /** Thirst change per week on your current diet (Feed by Hand: +15). */
-    thirstPerWeekFor(p: any = player()): number { return Vampire.diet(p).thirst; },
+    thirstPerWeekFor(p: any = player()): number { return Vampire.thirstRate(p, Vampire.diet(p)); },
+    /** v0.26.0: Blood Alchemy slows a rising thirst by 25%. */
+    thirstRate(p: any, d: BloodDiet): number { return d.thirst > 0 && Vampire.has("bloodAlchemy", p) ? d.thirst * 0.75 : d.thirst; },
+    dietMods(p: any, d: BloodDiet): [number, number, number] { return d.id === "rats" && Vampire.has("beastTongue", p) ? [d.mods[0], 0, d.mods[2]] : d.mods; },
+    dietSuspicion(p: any, d: BloodDiet): number { return d.suspicion && d.id === "hunting" && Vampire.has("batForm", p) ? Math.ceil(d.suspicion / 2) : d.suspicion ?? 0; },
     chooseDiet(p: any, id: string) { Vampire.state(p).diet = id; },
     openDietMenu() { Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.chooseDiet, null, false, 6, null); },
     dietCells(p: any = player()): ActionCellSingleViewModel[] {
@@ -288,9 +312,9 @@ export const Vampire = {
         }
         if (s.inTorpor) return;   // lying collapsed somewhere: nothing happens to you
         const d = Vampire.diet(p);
-        s.thirst = Math.max(0, Math.min(100, s.thirst + d.thirst));
+        s.thirst = Math.max(0, Math.min(100, s.thirst + Vampire.thirstRate(p, d)));
         s.weeksAtMaxThirst = s.thirst >= 100 ? s.weeksAtMaxThirst + 1 : 0;
-        if (d.suspicion) s.suspicion = Math.max(0, Math.min(100, s.suspicion + d.suspicion));
+        if (d.suspicion) s.suspicion = Math.max(0, Math.min(100, s.suspicion + Vampire.dietSuspicion(p, d)));
         if (d.id === "hunting" && !Vampire.has("mistStep", p) && roll(0.05)) {
             pay(p, 2000);
             s.suspicion = Math.min(100, s.suspicion + 10);
@@ -308,7 +332,7 @@ export const Vampire = {
             Vampire.hooks.yearly?.(p, s.yearsAwarded);
         }
         if ((s.witheredWeeks ?? 0) > 0) {
-            s.witheredWeeks--;
+            s.witheredWeeks = Math.max(0, s.witheredWeeks - (Vampire.has("regeneration", p) ? 2 : 1));
             const a = p.getAttributeState();
             if (a.getHealth() > WITHERED_CAP) a.setHealth(WITHERED_CAP);
         }
@@ -462,8 +486,13 @@ export const Vampire = {
     },
     flee(p: any) {
         const s = Vampire.state(p);
-        p.getJobState().setCurrentJob(null);
         s.suspicion = Math.max(0, s.suspicion - 50);
+        if (Vampire.has("shadowStep", p)) {   // v0.26.0
+            Vampire.alert("Into the Shadows", "You stepped into the shadows and the hunters lost your trail. By morning you were back at work as if nothing happened.");
+            refreshUI();
+            return;
+        }
+        p.getJobState().setCurrentJob(null);
         Vampire.alert("A New City", "You packed a bag and left before dawn. You lost your job, but the hunters lost your trail.");
         refreshUI();
     },
@@ -472,7 +501,13 @@ export const Vampire = {
     },
 
     // ------------------------------------------------------------------ sunlight
-    sunDamage(p: any): number { return Vampire.has("sunWard", p) ? 5 : 10; },
+    /** v0.26.0: sunlight depends on the season (half in winter, ×1.5 in summer). */
+    sunDamage(p: any): number {
+        const base = Vampire.has("sunWard", p) ? 5 : 10;
+        let m = 0; try { m = p.getCurrentMonthIndex(); } catch { /* ignore */ }
+        const f = m === 11 || m <= 1 ? 0.5 : m >= 5 && m <= 7 ? 1.5 : 1;
+        return Math.round(base * f);
+    },
     isDaytime(action: any): boolean { return action != null && DAYTIME.has(action.name()); },
     /** v0.21.1: sunlight drains a vampire's happiness (it no longer touches health). */
     onLeisure(p: any, action: any) {
@@ -485,8 +520,12 @@ export const Vampire = {
         return `Daytime: −${Vampire.sunDamage(p)} happiness for a vampire (sunlight)\n`;
     },
     /** Working a week: day shifts burn (Night Owl works nights and earns 20% more). Returns the pay multiplier. */
-    onWork(p: any): number {
+    onWork(p: any, job: any = null): number {
         if (!Vampire.isVampire(p)) return 1;
+        const d = job?.def?.();
+        if (d?.night) return Vampire.has("nightOwl", p) ? 1.2 : 1;   // v0.26.0: a night job never sees the sun
+        // v0.26.0: outdoor day jobs (lifeguard, park ranger…) can't move to nights, and burn twice as much
+        if (d?.outdoor) { attr(p, 0, -2 * Math.ceil(Vampire.sunDamage(p) / 5), 0); return 1; }
         if (Vampire.has("nightOwl", p)) return 1.2;
         attr(p, 0, -Math.ceil(Vampire.sunDamage(p) / 5), 0);   // v0.21.1: day shifts are tiring (−2 happiness), not deadly
         return 1;
@@ -503,7 +542,7 @@ export const Vampire = {
         s.suspicion = Math.max(0, Math.min(100, s.suspicion + suspicion));
     },
     hasMedicalJob(p: any): boolean {
-        try { const j = p.getJobState().getCurrentJob(); return j != null && /doctor|nurse|medic|surgeon|research/i.test(j.name() + " " + (j.getJobTitles?.() ?? []).join(" ")); } catch { return false; }
+        try { const j = p.getJobState().getCurrentJob(); return j != null && (!!j.def?.()?.medical || /doctor|nurse|medic|surgeon|research/i.test(j.name() + " " + (j.getJobTitles?.() ?? []).join(" "))); } catch { return false; }
     },
     /** A living, human partner who knows your secret. v0.25.1: never one you turned (vampire blood won't feed you). */
     willingPartner(p: any): any {
@@ -661,7 +700,7 @@ export interface LifeActionDef {
     title: string | (() => string);
     image: any;
     cost?: number | (() => number);
-    mods?: [number, number, number];
+    mods?: [number, number, number] | (() => [number, number, number]);
     note?: () => string | null;
     lock?: (p: any) => string | null;
     show?: (p: any) => boolean;
@@ -677,12 +716,12 @@ export class BloodDietCell {
     getTitle(): string { return this.d.title; }
     getImageId(): any { return this.d.image; }
     getCost(): BigInteger { return BigInteger.valueOf(this.d.cost); }
-    getModifiers(): Modifiers { return new Modifiers(this.d.mods[0], this.d.mods[1], this.d.mods[2]); }
+    getModifiers(): Modifiers { const m = Vampire.dietMods(player(), this.d); return new Modifiers(m[0], m[1], m[2]); }
     getActionTitle(): string { return "Drink"; }
     getAdditionalDescription(): string {
-        const t = this.d.thirst;
+        const t = Vampire.thirstRate(player(), this.d);
         const thirst = t > 0 ? `Thirst bar fills in ${Vampire.fillText(t)}` : `Thirst −${-t} a week`;
-        const sus = this.d.suspicion ? `, suspicion +${this.d.suspicion} a week` : "";
+        const sus = this.d.suspicion ? `, suspicion +${Vampire.dietSuspicion(player(), this.d)} a week` : "";
         return `${money(this.d.cost)} a week · ${thirst}${sus}\n${this.d.blurb}\n`;
     }
     getAgeRange(): any { return null; }
@@ -705,7 +744,7 @@ export class LifeActionCell {
     getImageId(): any { const i = this.def.image; return typeof i === "function" ? i() : i; }
     costValue(): number { const c = this.def.cost; return typeof c === "function" ? c() : c ?? 0; }
     getCost(): BigInteger { return BigInteger.valueOf(this.costValue()); }
-    getModifiers(): Modifiers { const m = this.def.mods ?? [0, 0, 0]; return new Modifiers(m[0], m[1], m[2]); }
+    getModifiers(): Modifiers { const m = (typeof this.def.mods === "function" ? this.def.mods() : this.def.mods) ?? [0, 0, 0]; return new Modifiers(m[0], m[1], m[2]); }
     getActionTitle(): string | null { return this.def.actionTitle?.() ?? (this.costValue() > 0 ? null : "Go"); }   // v0.25.1: free actions say "Go", not "$0"
     getAdditionalDescription(): string | null { return this.def.note?.() ?? null; }
     getAgeRange(): any { return null; }
@@ -765,9 +804,9 @@ export const FEEDING: LifeActionDef[] = [
         note: () => thirstNote(40, 2), run: (p) => Vampire.feed(p, 40, 2) },
     { id: "animal", title: "Animal Blood", image: R.drawable.icon_vamp_animal, cost: 50, mods: [0, -5, 0], note: () => thirstNote(20), run: (p) => Vampire.feed(p, 20, 0) },
     { id: "hunt", title: "Hunt at Night", image: R.drawable.icon_vamp_hunt,
-        note: () => thirstNote(60, 10) + (Vampire.has("mistStep") ? "" : "10% chance of police trouble.\n"),
+        note: () => thirstNote(60, Vampire.has("batForm") ? 5 : 10) + (Vampire.has("mistStep") ? "" : "10% chance of police trouble.\n"),
         run: (p) => {
-            Vampire.feed(p, 60, 10);
+            Vampire.feed(p, 60, Vampire.has("batForm", p) ? 5 : 10);
             if (!Vampire.has("mistStep", p) && roll(0.1)) {
                 pay(p, 2000);
                 Vampire.state(p).suspicion = Math.min(100, Vampire.state(p).suspicion + 10);
@@ -781,7 +820,9 @@ export const FEEDING: LifeActionDef[] = [
 ];
 
 export const HIDING: LifeActionDef[] = [
-    { id: "layLow", title: "Lay Low", image: R.drawable.icon_vamp_laylow, mods: [0, -3, 0], note: () => "−15 suspicion\n", run: (p) => { const s = Vampire.state(p); s.suspicion = Math.max(0, s.suspicion - 15); } },
+    { id: "layLow", title: "Lay Low", image: R.drawable.icon_vamp_laylow, mods: () => (Vampire.has("shadowStep") ? [0, 0, 0] : [0, -3, 0]),
+        note: () => (Vampire.has("shadowStep") ? "−25 suspicion (Shadow Step)\n" : "−15 suspicion\n"),
+        run: (p) => { const s = Vampire.state(p); s.suspicion = Math.max(0, s.suspicion - (Vampire.has("shadowStep", p) ? 25 : 15)); } },
     { id: "fakeDeath", title: "Fake Your Death", image: R.drawable.icon_vamp_fakedeath, cost: 20000, note: () => "Suspicion back to 0 with a new name. You lose your job and all your career progress (every career starts over, years-in-career too), and friends who don't know your secret think you died.\n",
         confirm: () => "Start over with a new name? You'll lose your job, all your career progress (levels and years in your career) and the friends who don't know your secret.", run: (p) => Vampire.fakeDeath(p) },
     { id: "moveCity", title: "Move to a New City", image: R.drawable.icon_vamp_movecity, cost: 5000, note: () => "−50 suspicion. You quit your job and friends you leave behind feel distant.\n",

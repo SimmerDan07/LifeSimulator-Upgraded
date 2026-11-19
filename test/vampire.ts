@@ -168,6 +168,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
 
 // ---------------------------------------------------------------- sunlight, work
 {
+    p.setBirthMonth(3 - Math.floor((p.calendarWeeks() % 48) / 4));   // v0.26.0: April (spring sun: the normal −10)
     const s = Vampire.state(p);
     check("daytime leisure rows warn vampires (sunlight drains happiness)", /Daytime: −10 happiness/.test(Leisure.goToPark.getAdditionalDescription() ?? ""));
     check("night leisure doesn't", !/Daytime/.test(Leisure.pub.getAdditionalDescription() ?? ""));

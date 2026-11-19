@@ -15,6 +15,7 @@ import { WorkModelGenerator } from "../src/game/Controllers/WorkModelGenerator";
 import { HealthModelGenerator } from "../src/game/Controllers/HealthModelGenerator";
 import { BankModelGenerator } from "../src/game/Controllers/BankModelGenerator";
 import { LifepathsModelGenerator } from "../src/game/Controllers/LifepathsModelGenerator";
+import { SocialModelGenerator } from "../src/game/Controllers/SocialModelGenerator";
 import { ButtonViewModel } from "../src/game/Models/ButtonViewModel";
 import { MainGameFragment } from "../src/game/ui/bridge";
 import { SaveCodec } from "../src/game/save/SaveCodec";
@@ -40,7 +41,7 @@ UIBridge.install({
 const gens: Record<string, any> = {
     Profile: new ProfileModelGenerator(), Leisure: new VacationModelGenerator(), Love: new LoveModelGenerator(),
     Education: new EducationModelGenerator(), Work: new WorkModelGenerator(), Health: new HealthModelGenerator(), Bank: new BankModelGenerator(),
-    Lifepaths: new LifepathsModelGenerator(),
+    Lifepaths: new LifepathsModelGenerator(), Social: new SocialModelGenerator(),
 };
 class FakeMain extends MainGameFragment {
     tab = MainGameTab.Profile;

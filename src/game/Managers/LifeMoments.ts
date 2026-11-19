@@ -26,6 +26,8 @@ export interface Moment {
     id: string;
     min: number; max: number;
     when?: (p: any) => boolean;
+    /** v0.26.0: only in these seasons (Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov fall). */
+    seasons?: ("winter" | "spring" | "summer" | "fall")[];
     weight?: number;
     title: string;
     image: any;
@@ -34,6 +36,7 @@ export interface Moment {
 }
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
+const seasonOf = (p: any): "winter" | "spring" | "summer" | "fall" => { let m = 0; try { m = p.getCurrentMonthIndex(); } catch { /* ignore */ } return m === 11 || m <= 1 ? "winter" : m <= 4 ? "spring" : m <= 7 ? "summer" : "fall"; };
 const money = (n: number) => ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(n)), true);
 const roll = (x: number) => Math.random() < x;
 const pickOne = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -62,7 +65,7 @@ export const MOMENTS: Moment[] = [
             ["Put it under your pillow", () => { earn(p, 5); attr(p, 0, 6, 0); return "The Tooth Fairy left you $5. Best night ever."; }],
             ["Keep it in a jar", () => { attr(p, 0, 2, 3); return "It's a little weird, but it's yours."; }],
         ] }) },
-    { id: "schoolPlay", min: 6, max: 12, title: "The School Play", image: R.drawable.love_play, make: (p) => ({
+    { id: "schoolPlay", seasons: ["fall", "winter", "spring"], min: 6, max: 12, title: "The School Play", image: R.drawable.love_play, make: (p) => ({
         text: "Your class is putting on a play and the teacher asks if you want the lead role.",
         options: [
             ["Take the lead", () => {
@@ -78,7 +81,7 @@ export const MOMENTS: Moment[] = [
             ["Tell a teacher", () => { attr(p, 0, 2, 4); return "The teacher handled it. You eat lunch in peace now."; }],
             ["Just hand it over", () => { attr(p, -2, -4, -3); return "Another hungry afternoon."; }],
         ] }) },
-    { id: "scienceFair", min: 8, max: 13, title: "Science Fair", image: R.drawable.education_science, make: (p) => ({
+    { id: "scienceFair", seasons: ["fall", "winter", "spring"], min: 8, max: 13, title: "Science Fair", image: R.drawable.education_science, make: (p) => ({
         text: "The science fair is next week. What's your project?",
         options: [
             ["A baking-soda volcano", () => { attr(p, 0, 4, 1); return "Classic. It erupted on cue and everyone cheered."; }],
@@ -99,20 +102,20 @@ export const MOMENTS: Moment[] = [
                 ["Stay home", () => { attr(p, 0, 0, 3); return "A quiet weekend with your own pillow."; }],
             ] };
     } },
-    { id: "spellingBee", min: 8, max: 12, title: "Spelling Bee", image: R.drawable.education_elementaryschool, make: (p) => ({
+    { id: "spellingBee", seasons: ["fall", "winter", "spring"], min: 8, max: 12, title: "Spelling Bee", image: R.drawable.education_elementaryschool, make: (p) => ({
         text: "You made it into the school spelling bee.",
         options: [
             ["Study all week", () => { if (roll(0.6)) { attr(p, 0, 12, 2); bondParents(p, 20); return "You spelled \"necessary\" correctly and won. (It has one c and two s's.)"; } attr(p, 0, 3, 0); return "Second place. Still pretty great."; }],
             ["Wing it", () => { if (roll(0.25)) { attr(p, 0, 12, 0); return "You won without studying. Don't tell anyone."; } attr(p, 0, -2, 0); return "Out in the first round on \"rhythm\". Who spells it like that?"; }],
         ] }) },
 
-    { id: "lemonade", min: 6, max: 12, title: "Lemonade Stand", image: R.drawable.diet_balanced, make: (p) => ({
+    { id: "lemonade", seasons: ["summer"], min: 6, max: 12, title: "Lemonade Stand", image: R.drawable.diet_balanced, make: (p) => ({
         text: "It's the hottest day of the year. Lemonade stand?",
         options: [
             ["Open for business", () => { const n = 10 + Math.floor(Math.random() * 40); earn(p, n); attr(p, 0, 7, 1); return `You sold out by lunchtime and made $${n}. A tycoon is born.`; }],
             ["Drink it all yourself", () => { attr(p, 1, 5, 0); return "Best. Lemonade. Ever."; }],
         ] }) },
-    { id: "fieldTrip", min: 6, max: 12, title: "Field Trip", image: R.drawable.love_museum, make: (p) => {
+    { id: "fieldTrip", seasons: ["fall", "spring"], min: 6, max: 12, title: "Field Trip", image: R.drawable.love_museum, make: (p) => {
         const where = pickOne(["the zoo", "the aquarium", "the science museum", "a chocolate factory", "a farm"]);
         return { text: `Your class is going on a field trip to ${where}. Your partner for the day is the kid nobody talks to.`,
             options: [
@@ -126,7 +129,7 @@ export const MOMENTS: Moment[] = [
             ["Knock and confess", () => { bondParents(p, 15); attr(p, 0, -2, 5); return "The neighbour was so impressed you owned up that they only made you rake their leaves."; }],
             ["Run!", () => { if (roll(0.5)) { attr(p, 0, 2, -4); return "You got away with it. Your stomach hurts every time you walk past their house."; } bondParents(p, -30); attr(p, 0, -6, -2); return `The neighbour had a doorbell camera. ${parentWord(p)[0].toUpperCase() + parentWord(p).slice(1)} paid for the window, and you're paying them back in chores.`; }],
         ] }) },
-    { id: "snowDay", min: 5, max: 12, title: "Snow Day!", image: R.drawable.vacation_ski, make: (p) => ({
+    { id: "snowDay", seasons: ["winter"], min: 5, max: 12, title: "Snow Day!", image: R.drawable.vacation_ski, make: (p) => ({
         text: "School is cancelled. There's a foot of snow outside.",
         options: [
             ["Build the biggest snowman ever", () => { attr(p, 1, 8, 2); return "He's taller than you and has a carrot nose. Legend."; }],
@@ -173,7 +176,7 @@ export const MOMENTS: Moment[] = [
             ["Practice every evening", () => { if (roll(0.85)) { attr(p, 0, 10, 2); return "Passed! Freedom has four wheels."; } attr(p, 0, -5, 0); return "You failed on parallel parking. Everyone does."; }],
             ["You'll be fine", () => { if (roll(0.5)) { attr(p, 0, 10, 0); return "Passed! Barely."; } attr(p, 0, -6, -2); return "You ran a stop sign in front of the examiner. Try again next month."; }],
         ] }) },
-    { id: "prom", min: 16, max: 18, title: "Prom Night", image: R.drawable.love_marry, make: (p) => ({
+    { id: "prom", seasons: ["spring"], min: 16, max: 18, title: "Prom Night", image: R.drawable.love_marry, make: (p) => ({
         text: "Prom is coming up.",
         options: [
             ["Go with a date ($200)", () => { pay(p, 200); attr(p, 0, 12, 2); return "Corsages, photos, and one slow dance you'll remember forever."; }],
@@ -399,7 +402,7 @@ export const LifeMoments = {
     /** Moments that could happen to this player right now. */
     eligible(p: any = player()): Moment[] {
         const age = p.getAgeInYears(), now = LifeMoments.now(p), s = LifeMoments.state(p);
-        return MOMENTS.filter((m) => age >= m.min && age <= m.max && (s.seen[m.id] == null || now - s.seen[m.id] >= LifeMoments.cooldown) && (!m.when || safe(() => m.when!(p))));
+        return MOMENTS.filter((m) => age >= m.min && age <= m.max && (s.seen[m.id] == null || now - s.seen[m.id] >= LifeMoments.cooldown) && (!m.seasons || m.seasons.includes(seasonOf(p))) && (!m.when || safe(() => m.when!(p))));
     },
     canHappen(p: any): boolean {
         try {

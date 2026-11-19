@@ -37,12 +37,13 @@ body.ready { opacity: 1; }
 #hud {
     position: fixed; inset: 0 0 auto 0; height: var(--hud);
     background: var(--primary); color: #f9f9f9;
-    display: grid; grid-template-columns: 230px 230px 1fr auto auto; align-items: center; gap: 24px;
+    display: grid; grid-template-columns: 270px 230px 1fr auto auto; align-items: center; gap: 24px;
     padding: 0 24px; z-index: 30; box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 #hud .who { line-height: 1.25; }
 #hud-name { font-weight: 700; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #hud .date { font-size: 13px; opacity: .85; display: flex; gap: 8px; align-items: center; }
+#hud .date > span { white-space: nowrap; }
 #hud-week { display: inline-flex; gap: 4px; }
 #hud-week .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.25); }
 #hud-week .dot.on { background: #fff; }
@@ -243,6 +244,7 @@ body.no-life #hud .who, body.no-life #hud .stats, body.no-life #hud .money { vis
 .tone-purple .meter-fill { background: #7d4bb3; }
 .tone-gold .meter-fill { background: linear-gradient(90deg, #f5b82e, #ffd95a); }
 .tone-green .meter-fill { background: #3aa66a; }
+.tone-blue .meter-fill { background: #2f7fd6; }
 .meter-note { color: var(--muted); font-size: 13px; margin-top: 5px; }
 #hud .stat.thirst { display: none; }
 body.vampire #hud .stat.thirst { display: grid; }

@@ -4,6 +4,11 @@
 //   attributes 0–100, money finite, relationships 0–1000, fame/vampire/hobby numbers in range, no "undefined"/"NaN"
 //   in anything on screen, and every 150 steps the save survives a round trip unchanged.
 // Usage: node dist-test/deepfuzz.mjs [steps per scenario] [seed]
+import { SocialModelGenerator } from "../src/game/Controllers/SocialModelGenerator";
+import { SocialMedia, POSTS_PER_WEEK } from "../src/game/Social/SocialMedia";
+import { Careers } from "../src/game/Careers/Careers";
+import { CAREER_CATEGORIES } from "../src/game/Careers/CareerData";
+import { CompletableAction } from "../src/game/Enums/CompletableAction";
 import { UIBridge, MainGameFragment } from "../src/game/ui/bridge";
 import { GameStateManager } from "../src/game/Managers/GameStateManager";
 import { AlertManager } from "../src/game/Managers/AlertManager";
@@ -55,7 +60,7 @@ class FakeMain extends MainGameFragment { updateUI() {} updateHUD() {} reloadTab
 const gens: Record<string, any> = {
     Profile: new ProfileModelGenerator(), Leisure: new VacationModelGenerator(), Love: new LoveModelGenerator(),
     Education: new EducationModelGenerator(), Work: new WorkModelGenerator(), Health: new HealthModelGenerator(),
-    Bank: new BankModelGenerator(), Lifepaths: new LifepathsModelGenerator(),
+    Bank: new BankModelGenerator(), Lifepaths: new LifepathsModelGenerator(), Social: new SocialModelGenerator(),
 };
 const lp = new LifepathsModelGenerator();
 
@@ -113,6 +118,9 @@ function screens(): { name: string; models: any }[] {
     out.push({ name: "vampire", models: lp.screen("vampire") });
     out.push({ name: "celebrity", models: lp.screen("celebrity") });
     for (const k of ["celebrity-news", "celebrity-works", "celebrity-milestones"]) out.push({ name: k, models: lp.screen(k) });
+    // v0.26.0 Career Center: one group screen per step (rotating) keeps the action list a sensible size
+    const cat = CAREER_CATEGORIES[Math.floor(rng() * CAREER_CATEGORIES.length)].id;
+    out.push({ name: "careers:" + cat, models: lp.screen("careers:" + cat) });
     for (const n of navs.slice(-1)) out.push({ name: "list:" + n.type.name(), models: GenericListModelGenerator.INSTANCE.genericListViewModels(n.type, n.key, true) });
     return out;
 }
@@ -146,6 +154,16 @@ function invariants(where: string) {
     }
     for (const [id, h] of Object.entries(p.hobbies ?? {}) as [string, any][]) if (!Number.isFinite(h.skill) || h.skill < 0 || h.skill > 100) report("HOBBY", `${id}=${h.skill}`, where);
     if (Relationships.together != null) report("STATE", "Relationships.together left set", where);
+    const sm = SocialMedia.peek(p);
+    if (sm) {
+        for (const [k, v] of Object.entries(sm.f ?? {}) as [string, number][]) if (!Number.isFinite(v) || v < 0) report("SOCIAL", `${k}=${v}`, where);
+        if (sm.posts > POSTS_PER_WEEK) report("SOCIAL", `posts=${sm.posts}`, where);
+        if (sm.bought < 0) report("SOCIAL", `bought=${sm.bought}`, where);
+    }
+    const job = p.getJobState().getCurrentJob();
+    if (job != null && Careers.applyBlock(job, p) != null && !/up to age/.test(Careers.applyBlock(job, p)!) && !/health/.test(Careers.applyBlock(job, p)!)) report("CAREER", `working as ${job.name()} but: ${Careers.applyBlock(job, p)}`, where);
+    const lvl = p.getJobState().getCurrentJobState?.()?.getLevel?.();
+    if (job != null && (lvl < 1 || lvl > job.getMaxLevels())) report("CAREER", `${job.name()} level ${lvl}`, where);
 }
 
 // ---------------------------------------------------------------- scenarios
@@ -165,6 +183,9 @@ const SCENARIOS: Record<string, () => void> = {
     thirsty: () => start(30, (p) => { rich(p, 50000); Vampire.rise(p); Vampire.state(p).thirst = 99.5; }),
     celebrity: () => start(24, (p) => { rich(p, 2_000_000); p.getJobState().switchJob(Job.music); const s = Celebrity.state(p); s.fans = 600_000; s.music = 60; }),
     vampstar: () => start(34, (p) => { rich(p, 5_000_000); Vampire.rise(p); p.getJobState().switchJob(Job.actor); const s = Celebrity.state(p); s.fans = 3_000_000; s.acting = 70; Vampire.state(p).bloodPower = 10; }),
+    worker: () => start(23, (p) => { rich(p, 60000); for (const n of ["highSchool", "college_biology", "nursing", "emtTraining", "electricalTrade", "cdl", "fireAcademy", "culinarySchool", "gameDesign"]) p.getCompletableActionState().completeAction((CompletableAction as any)[n]); }),
+    influencer: () => start(19, (p) => { rich(p, 20000); SocialMedia.createAccount(p); SocialMedia.addFollowers(p, 40000, "cliptok"); p.getJobState().switchJob((Job as any).contentCreator); }),
+    vampcreator: () => start(26, (p) => { rich(p, 200000); Vampire.rise(p); Vampire.state(p).bloodPower = 20; SocialMedia.createAccount(p); SocialMedia.addFollowers(p, 15000, "snapgram"); }),
     hobbyist: () => start(40, (p) => { rich(p, 100000); for (const id of ["painting", "running", "writing"]) Hobbies.state(id, p).skill = 85; }),
 };
 function start(age: number, tweak: (p: any) => void) {

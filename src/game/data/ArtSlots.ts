@@ -1,5 +1,6 @@
 // Art slots (v0.18.0): rows that still borrow an icon from somewhere else in the game. Each has its own file name;
 // drop a PNG or SVG with that name into assets/images and the game uses it instead of the stand-in (fallback).
+import { CAREERS, DEGREES } from "../Careers/CareerData";
 export interface ArtSlot { name: string; fallback: string; where: string; row: string }
 
 export const ART_SLOTS: ArtSlot[] = [
@@ -82,5 +83,38 @@ export const ART_SLOTS: ArtSlot[] = [
     { name: "icon_celeb_news", fallback: "will", where: "Celebrity Life › Headlines", row: "Headline cards" },
     { name: "icon_celeb_works", fallback: "menu_saves", where: "Celebrity Life › Awards & Records", row: "Discography & Filmography" },
     { name: "icon_celeb_milestones", fallback: "menu_badge", where: "Celebrity Life › Awards & Records", row: "Milestones" },
+    // v0.26.0: eight more blood powers
+    { name: "icon_power_beast", fallback: "pet_cat", where: "Lifepaths › Powers", row: "Beast Tongue" },
+    { name: "icon_power_glamour", fallback: "skill_hygieneexpert", where: "Lifepaths › Powers", row: "Glamour" },
+    { name: "icon_power_batform", fallback: "mosquito", where: "Lifepaths › Powers", row: "Bat Form" },
+    { name: "icon_power_shadowstep", fallback: "leisure_prison_escape", where: "Lifepaths › Powers", row: "Shadow Step" },
+    { name: "icon_power_scholar", fallback: "education_phd", where: "Lifepaths › Powers", row: "Ancient Scholar" },
+    { name: "icon_power_alchemy", fallback: "vdiet_bloodbag", where: "Lifepaths › Powers", row: "Blood Alchemy" },
+    { name: "icon_power_regen", fallback: "health_youthelixir", where: "Lifepaths › Powers", row: "Regeneration" },
+    { name: "icon_power_gaze", fallback: "loupe_icon", where: "Lifepaths › Powers", row: "Hypnotic Gaze" },
+    // v0.26.0 Social tab
+    { name: "icon_social_account", fallback: "tab_social", where: "Social", row: "Your profile / Create an account" },
+    { name: "icon_social_snapgram", fallback: "menu_share2", where: "Social › Platforms", row: "Snapgram" },
+    { name: "icon_social_cliptok", fallback: "possesion_recordingequipment_1", where: "Social › Platforms", row: "ClipTok" },
+    { name: "icon_social_chirper", fallback: "menu_twitter", where: "Social › Platforms", row: "Chirper" },
+    { name: "icon_social_vidtube", fallback: "sidehustle_youtube", where: "Social › Platforms", row: "VidTube" },
+    { name: "icon_post_selfie", fallback: "waving_hand", where: "Social › Post", row: "Post a Selfie" },
+    { name: "icon_post_hottake", fallback: "menu_twitter", where: "Social › Post", row: "Share a Hot Take" },
+    { name: "icon_post_trend", fallback: "vacation_concert", where: "Social › Post", row: "Join a Trend" },
+    { name: "icon_post_hobby", fallback: "sidehustle_youtube", where: "Social › Post", row: "Show Off Your Hobby" },
+    { name: "icon_post_work", fallback: "tab_briefcase", where: "Social › Post", row: "Post About Work" },
+    { name: "icon_post_season", fallback: "vacation_park", where: "Social › Post", row: "Seasonal Post" },
+    { name: "icon_post_couple", fallback: "love_romantic_dinner", where: "Social › Post", row: "Couple Photo" },
+    { name: "icon_post_kid", fallback: "family", where: "Social › Post", row: "Proud Parent Post" },
+    { name: "icon_post_pet", fallback: "pet_dog", where: "Social › Post", row: "Pet Pic" },
+    { name: "icon_post_live", fallback: "possesion_recordingequipment_2", where: "Social › Post", row: "Go Live" },
+    { name: "icon_post_sponsored", fallback: "hud_cash", where: "Social › Post", row: "Sponsored Post" },
+    { name: "icon_social_detox", fallback: "health_meditation", where: "Social › Account", row: "Digital Detox" },
+    { name: "icon_social_verified", fallback: "menu_badge", where: "Social › Account", row: "Get Verified" },
+    { name: "icon_social_buy", fallback: "iap_money1", where: "Social › Account", row: "Buy Followers" },
+    { name: "icon_social_feed", fallback: "will", where: "Social", row: "Your Feed" },
+    // v0.26.0 Career Center: one picture per new career, degree and training
+    ...CAREERS.map((c) => ({ name: c.image, fallback: c.fallback, where: "Work › Career Center", row: c.name })),
+    ...DEGREES.map((d) => ({ name: d.image, fallback: d.fallback, where: d.kind === "training" ? "Education › Trade School & Training" : "Education", row: d.title })),
 ];
 export const ART_FALLBACK: Record<string, string> = Object.fromEntries(ART_SLOTS.map((s) => [s.name, s.fallback]));

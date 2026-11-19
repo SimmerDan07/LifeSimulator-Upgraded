@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Vampire } from "../Lifepaths/Vampire";
 import { ArrayList, Boolean, CollectionsKt, Intrinsics, R, TypeCastException, UnsupportedOperationException } from "../runtime";
 import { ProgressBarViewModel } from "../Models/ProgressBarViewModel";
 import { ActionProgressViewModel } from "../Models/ActionProgressViewModel";
@@ -89,7 +90,7 @@ export class CompletableActionState {
             return;
         }
         let timeRequiredInWeeks: number = type.getTimeRequiredInWeeks(GameStateManager.INSTANCE.getPersonState());
-        state.setProgress(Math.min(state.getProgress() + 1, timeRequiredInWeeks));
+        state.setProgress(Math.min(state.getProgress() + 1 + Vampire.studyBonus(GameStateManager.INSTANCE.getPersonState()), timeRequiredInWeeks));
         if (state.getProgress() >= timeRequiredInWeeks) {
             state.setCompleted(true);
             type.actionCompletedHandler(GameStateManager.INSTANCE.getPersonState());

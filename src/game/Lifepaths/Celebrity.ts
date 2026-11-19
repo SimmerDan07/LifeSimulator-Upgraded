@@ -255,7 +255,7 @@ const CelebrityBase = {
         if (t >= 3 && !s.cancelled && roll(s.agent ? 0.05 : 0.03)) return Celebrity.endorsement(p);
         if (t >= 3 && roll(0.06)) {
             // v0.25.0: a vampire in the flashbulbs — sometimes the photos come out… wrong
-            if (Vampire.isVampire(p) && roll(0.35)) return Celebrity.vampirePhotos(p);
+            if (!Vampire.photogenic(p) && roll(0.35)) return Celebrity.vampirePhotos(p);
             Celebrity.addFans(p, s.fans * 0.01); attr(p, 0, 0, -2);
             const pt = World.celebPartner(p);
             if (pt != null) World.news(p, `Spotted: ${p.getFullName()} and ${pt.getFirstName()} ${pick(["holding hands in Malibu", "at a quiet dinner", "shopping on Rodeo Drive", "on a yacht"])}`);

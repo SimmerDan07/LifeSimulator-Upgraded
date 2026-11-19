@@ -9,8 +9,10 @@ import { SoundManager } from "../game/Managers/SoundManager";
 import { SoundEffect } from "../game/Managers/SoundEffect";
 import { MainGameTab } from "../game/Enums/MainGameTab";
 import { LifepathsModelGenerator } from "../game/Controllers/LifepathsModelGenerator";
+import { SocialModelGenerator } from "../game/Controllers/SocialModelGenerator";
 import { Vampire } from "../game/Lifepaths/Vampire";
 import { Celebrity } from "../game/Lifepaths/Celebrity";
+import { Seasons } from "../game/Managers/Seasons";
 import { GenericListType } from "../game/Fragments/GenericListType";
 import { GenericListModelGenerator } from "../game/Controllers/GenericListModelGenerator";
 import { ProfileModelGenerator } from "../game/Controllers/ProfileModelGenerator";
@@ -55,6 +57,7 @@ const TABS: { tab: MainGameTab; icon: string; label: string; gen: any }[] = [
     { tab: MainGameTab.Work, icon: "tab_briefcase", label: "Work", gen: new WorkModelGenerator() },
     { tab: MainGameTab.Health, icon: "tab_health", label: "Health", gen: new HealthModelGenerator() },
     { tab: MainGameTab.Bank, icon: "tab_bank", label: "Bank", gen: new BankModelGenerator() },
+    { tab: MainGameTab.Social, icon: "tab_social", label: "Social", gen: new SocialModelGenerator() },
     { tab: MainGameTab.Lifepaths, icon: "tab_lifepaths", label: "Lifepaths", gen: new LifepathsModelGenerator() },
 ];
 
@@ -93,7 +96,7 @@ class MainScreen extends MainGameFragment {
         $("#hud-bank").textContent = ExtensionsKt.numberDisplayString(m.getBankAmount(), true);
         $("#hud-name").textContent = p.getFullName();
         $("#hud-age").textContent = `${m.getAgeInYears()} ${S("common_years")}`;
-        $("#hud-month").textContent = m.getMonthString();
+        $("#hud-month").textContent = `${m.getMonthString()} · ${Seasons.label(p)}`;   // v0.26.0 seasons
         const w = m.getWeekProgress();
         $("#hud-week").innerHTML = [0, 1, 2, 3].map((i) => `<span class="dot${i <= w ? " on" : ""}"></span>`).join("");
     }
@@ -350,7 +353,7 @@ function boot() {
             return;
         }
         if (e.key === "Escape" && nav.top()?.canGoBack) nav.pop();
-        if (/^[1-8]$/.test(e.key) && !(e.target instanceof HTMLInputElement)) goToTab(TABS[+e.key - 1].tab);
+        if (/^[1-9]$/.test(e.key) && !(e.target instanceof HTMLInputElement)) goToTab(TABS[+e.key - 1].tab);
     });
     window.addEventListener("beforeunload", () => { try { GameStateManager.INSTANCE.saveData(); } catch {} });
     const saveNow = () => { try { if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) GameStateManager.INSTANCE.saveData(); } catch {} };

@@ -14,6 +14,7 @@ import { Player } from "../Managers/Player";
 import { Trait } from "./Trait";
 import { Utils } from "../Utils/Utils";
 import { Schooling } from "../Managers/Schooling";
+import { DEGREES, DEGREE_BY_ID, DegreeDef } from "../Careers/CareerData";
 
 export class CompletableAction extends JEnum {
     static readonly middleSchool: CompletableAction = new CompletableAction("middleSchool", 0);
@@ -62,7 +63,11 @@ export class CompletableAction extends JEnum {
     // Added in Life Sim Upgraded (listed first in values() so they show first on the Education tab).
     static readonly preschool: CompletableAction = new CompletableAction("preschool", 43);
     static readonly elementarySchool: CompletableAction = new CompletableAction("elementarySchool", 44);
-    static values(): CompletableAction[] { return [CompletableAction.preschool, CompletableAction.elementarySchool, CompletableAction.middleSchool, CompletableAction.highSchool, CompletableAction.college_music, CompletableAction.college_business, CompletableAction.college_biology, CompletableAction.college_finance, CompletableAction.college_science, CompletableAction.college_computerScience, CompletableAction.college_theater, CompletableAction.college_literature, CompletableAction.college_philosophy, CompletableAction.college_art, CompletableAction.masters, CompletableAction.mba, CompletableAction.phd, CompletableAction.law_school, CompletableAction.medSchool, CompletableAction.police_academy, CompletableAction.militaryAcademy, CompletableAction.homeChef, CompletableAction.nutritionScience, CompletableAction.frugalShopper, CompletableAction.personalFinance, CompletableAction.investmentStrategies, CompletableAction.financialLiteracy, CompletableAction.homeMedic, CompletableAction.meditationExpert, CompletableAction.hygieneExpert, CompletableAction.stocisim, CompletableAction.timeMangement, CompletableAction.selfHelp, CompletableAction.selfImprovement, CompletableAction.french, CompletableAction.japanese, CompletableAction.spanish, CompletableAction.chinese, CompletableAction.diseaseEradicationPolio, CompletableAction.diseaseEradicationMalaria, CompletableAction.cancerResearch, CompletableAction.worldHunger, CompletableAction.sustainableEnergy, CompletableAction.lunarBase, CompletableAction.marsColonization]; }
+    static values(): CompletableAction[] { return [...CompletableAction.BASE(), ...NEW_DEGREES]; }
+    /** v0.26.0: the data for a new degree or training (null for the original ones). */
+    def(): DegreeDef | null { return DEGREE_BY_ID[this.name()] ?? null; }
+    isTraining(): boolean { return this.def()?.kind === "training"; }
+    static BASE(): CompletableAction[] { return [CompletableAction.preschool, CompletableAction.elementarySchool, CompletableAction.middleSchool, CompletableAction.highSchool, CompletableAction.college_music, CompletableAction.college_business, CompletableAction.college_biology, CompletableAction.college_finance, CompletableAction.college_science, CompletableAction.college_computerScience, CompletableAction.college_theater, CompletableAction.college_literature, CompletableAction.college_philosophy, CompletableAction.college_art, CompletableAction.masters, CompletableAction.mba, CompletableAction.phd, CompletableAction.law_school, CompletableAction.medSchool, CompletableAction.police_academy, CompletableAction.militaryAcademy, CompletableAction.homeChef, CompletableAction.nutritionScience, CompletableAction.frugalShopper, CompletableAction.personalFinance, CompletableAction.investmentStrategies, CompletableAction.financialLiteracy, CompletableAction.homeMedic, CompletableAction.meditationExpert, CompletableAction.hygieneExpert, CompletableAction.stocisim, CompletableAction.timeMangement, CompletableAction.selfHelp, CompletableAction.selfImprovement, CompletableAction.french, CompletableAction.japanese, CompletableAction.spanish, CompletableAction.chinese, CompletableAction.diseaseEradicationPolio, CompletableAction.diseaseEradicationMalaria, CompletableAction.cancerResearch, CompletableAction.worldHunger, CompletableAction.sustainableEnergy, CompletableAction.lunarBase, CompletableAction.marsColonization]; }
     static valueOf(n: string): CompletableAction { return (CompletableAction as any)[n]; }
     static INSTANCE: any;
     constructor(name: string, ordinal: number) { super(name, ordinal); }
@@ -117,6 +122,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return CompletableActionType.philanthrophy;
             default:
+                if (this.def()) return CompletableActionType.education;
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -213,6 +219,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.financialLiteracy:
                 return R.drawable.skill_financialliteracy;
             default:
+                if (this.def()) return (R.drawable as any)[this.def()!.image];
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -309,6 +316,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return Utils.INSTANCE.getString(R.string.Education_Skill_Lanaguage_marsColonization);
             default:
+                if (this.def()) return this.def()!.title;
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -380,6 +388,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return Utils.INSTANCE.getString(R.string.Education_Skill_Lanaguage_marsColonization_Description);
             default:
+                if (this.def()) return this.def()!.description;
                 return null;
         }
     }
@@ -490,6 +499,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return new BigInteger("1000000000000000000000000000");
             default:
+                if (this.def()) return BigInteger.valueOf(this.def()!.costPerWeek);
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -558,6 +568,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.marsColonization:
                 return CompletableAction.lunarBase;
             default:
+                if (this.def()) return (CompletableAction as any)[this.def()!.prereq] ?? null;
                 throw new NoWhenBranchMatchedException();
         }
     }
@@ -632,6 +643,7 @@ export class CompletableAction extends JEnum {
                 d = 2.5;
                 break;
             default:
+                if (this.def()) { d = this.def()!.years; break; }
                 throw new NoWhenBranchMatchedException();
         }
         let workYearLengthWeeks: number = Constants.Time.INSTANCE.getWorkYearLengthWeeks();
@@ -742,6 +754,7 @@ export class CompletableAction extends JEnum {
             case CompletableAction.college_art:
                 return Job.artist;
             default:
+                if (this.def()?.job) return (Job as any)[this.def()!.job!] ?? null;
                 return null;
         }
     }
@@ -777,7 +790,7 @@ export namespace CompletableAction {
         throw new TypeCastException("null cannot be cast to non-null type kotlin.Array<T>");
     }
         getCollegeDegrees(): CompletableAction[] {
-        return [CompletableAction.college_music, CompletableAction.college_business, CompletableAction.college_biology, CompletableAction.college_finance, CompletableAction.college_science, CompletableAction.college_computerScience, CompletableAction.college_theater, CompletableAction.college_literature, CompletableAction.college_philosophy, CompletableAction.college_art];
+        return [...NEW_DEGREES.filter((d) => d.def()!.kind !== "training"), CompletableAction.college_music, CompletableAction.college_business, CompletableAction.college_biology, CompletableAction.college_finance, CompletableAction.college_science, CompletableAction.college_computerScience, CompletableAction.college_theater, CompletableAction.college_literature, CompletableAction.college_philosophy, CompletableAction.college_art];
     }
         getGetSandboxCustomizableEducation(): CompletableAction[] {
         let mutableListOf: ArrayList = CollectionsKt.mutableListOf(CompletableAction.preschool, CompletableAction.elementarySchool, CompletableAction.middleSchool, CompletableAction.highSchool);
@@ -791,3 +804,7 @@ export namespace CompletableAction {
     }
 }
 CompletableAction.INSTANCE = new CompletableAction.Companion(null);
+
+/** v0.26.0 "The Career Update": new degrees, graduate schools and trainings become real CompletableAction values. */
+export const NEW_DEGREES: CompletableAction[] = [];
+DEGREES.forEach((d, i) => { const a = new CompletableAction(d.id, 100 + i); (CompletableAction as any)[d.id] = a; NEW_DEGREES.push(a); });

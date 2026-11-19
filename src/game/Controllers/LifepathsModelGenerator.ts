@@ -20,6 +20,7 @@ import { NavigationBarViewModel } from "../Models/NavigationBarViewModel";
 import { Utils } from "../Utils/Utils";
 import { GenericListType } from "../Fragments/GenericListType";
 import { WorkModelGenerator } from "./WorkModelGenerator";
+import { Careers } from "../Careers/Careers";
 
 const text = (s: string) => new TextLabelViewModel(s, null, false, false, null, null);
 const thirstTrend = (n: number) => (n > 0 ? `On your diet the bar fills in ${Vampire.fillText(n)}. When it's full you collapse, and 10 to 40 years can pass before someone finds you.` : `Falls ${-n} a week on your diet.`);
@@ -76,6 +77,15 @@ export class LifepathsModelGenerator {
         const p: any = GameStateManager.INSTANCE.getPersonState();
         const out = new ArrayList<BaseViewModel>();
         const header = new ArrayList<BaseViewModel>();
+        if (key != null && key.startsWith("careers:")) {
+            // v0.26.0 Career Center: one screen per career group (opened from the Work tab)
+            const cat = key.slice("careers:".length);
+            header.add(new NavigationBarViewModel(Careers.categoryTitle(cat), false, 2, null));
+            for (const c of Careers.categoryCells(cat, p)) out.add(c);
+            let footer: ArrayList<BaseViewModel> = null;
+            if (p.getJobState().getCurrentJob() != null) { footer = new ArrayList<BaseViewModel>(); footer.add(new WorkModelGenerator().getWorkButtonsViewModel()); }
+            return new GenericListFragmentViewModel(out, header, footer);
+        }
         if (key === "vampire") {
             header.add(new NavigationBarViewModel("Vampire", false, 2, null));
             this.vampireContent(p, out);

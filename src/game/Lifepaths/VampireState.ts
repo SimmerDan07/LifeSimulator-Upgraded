@@ -23,6 +23,8 @@ export class VampireState {
     collapses: number = 0;
     /** v0.22.0: weeks left of the Withered body after a collapse (health capped at 50, no healing, −1 happiness a week). */
     witheredWeeks: number = 0;
+    /** v0.26.0 Ancient Scholar: weeks of study counted toward the next bonus week. */
+    studyWeeks: number = 0;
     bloodPower: number = 0;
     yearsAwarded: number = 0;
     powers: string[] = [];

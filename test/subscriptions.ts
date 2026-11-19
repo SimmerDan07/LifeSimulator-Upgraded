@@ -78,6 +78,7 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), Mo
     check("active rows say Active and offer Cancel", rows.every((r) => /Cancel/.test(JSON.stringify(r)) && /Active/.test(JSON.stringify(r))));
     const gone = Subscriptions.cancel("gym", p);
     check("cancelling the gym also cancels the coach", gone.join(",") === "gym,coach" && !Subscriptions.has("coach", p) && Subscriptions.has("therapist", p));
+    p.setBirthMonth(3 - Math.floor((p.calendarWeeks() % 48) / 4));   // v0.26.0: spring (no heating or AC bill to muddy the numbers)
     p.getCrimeState().isInJail = true;
     const fj = flow(p);
     p.getCrimeState().isInJail = false;

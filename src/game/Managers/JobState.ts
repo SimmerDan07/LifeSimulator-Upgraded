@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { Careers } from "../Careers/Careers";
 import { ArrayList, ArraysKt, BigInteger, CollectionsKt, Intrinsics, JMath, MapsKt, R, SpannableStringBuilder, TuplesKt, TypeCastException } from "../runtime";
 import { AgeLimits } from "./Schooling";
 import { ActionProgressViewModel } from "../Models/ActionProgressViewModel";
@@ -111,18 +112,23 @@ export class JobState {
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
         let state: JobState.JobStateSingle = this.getState(job);
         AttributeState.setDeltaValue$default(personState.getAttributeState(), job.modifiers(state.getLevel()), null, 2, null);
-        let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * workAction.getPayModifier() * Vampire.onWork(personState);
+        let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * workAction.getPayModifier() * Vampire.onWork(personState, job) * Careers.payMultiplier(job, personState);
         // v0.23.0 Automatic Savings: part of the paycheck can go straight to savings
         Subscriptions.payCheck(JMath.toInt(randomValue), personState);
         // v0.19.0 Celebrity Life: celebrity careers earn fans and skill
         Celebrity.onWork(personState, job, state.getLevel(), workAction.getPayModifier());
+        // v0.26.0: the new careers (seasons, followers, on-the-job moments)
+        Careers.onWork(personState, job, state.getLevel());
         if (!state.isMaxLevel()) {
             if (state.getProgress() >= (job.weeksForPromotion(state.getLevel()) - 1)) {
                 let educationRequirement: CompletableAction = state.getType().educationRequirement(state.getLevel() + 1);
                 const fameBlock: string | null = Celebrity.promotionBlock(job, state.getLevel() + 1, personState);
+                const careerBlock: string | null = Careers.promotionBlock(job, state.getLevel() + 1, personState);
                 const hasDegree: boolean = (educationRequirement != null) ? personState.getCompletableActionState().isCompleted(educationRequirement) : true;
                 if (hasDegree && fameBlock != null) {
                     Celebrity.blocked(job, state.getLevel() + 1, personState);
+                } else if (hasDegree && careerBlock != null) {
+                    Careers.blocked(job, state.getLevel() + 1, personState);
                 } else if (hasDegree) {
                     state.setProgress(0);
                     state.setLevel(state.getLevel() + 1);
@@ -134,7 +140,7 @@ export class JobState {
                 }
             } else {
                 // v0.19.0: fame speeds up celebrity careers
-                state.setProgress(Math.min(job.weeksForPromotion(state.getLevel()) - 1, state.getProgress() + 1 + Celebrity.progressBonus(job, personState)));
+                state.setProgress(Math.min(job.weeksForPromotion(state.getLevel()) - 1, state.getProgress() + 1 + Celebrity.progressBonus(job, personState) + Careers.progressBonus(job, personState)));
             }
         }
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForJob(state.getType()), false, 2, null);
@@ -260,8 +266,12 @@ export namespace JobState {
         }
         // Too young to work (the game can start at age 0)
         const tooYoung: string | null = z2 ? null : AgeLimits.tooYoung(AgeLimits.work, personState);
-        let z3: boolean = z || tooYoung != null;
-        if (tooYoung != null) {
+        // v0.26.0: age range and fitness for the new careers
+        const careerBlock: string | null = (z2 || tooYoung != null) ? null : Careers.applyBlock(this.type, personState);
+        let z3: boolean = z || tooYoung != null || careerBlock != null;
+        if (careerBlock != null && !z) {
+            ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, careerBlock, null, null, null, 14, null));
+        } else if (tooYoung != null) {
             ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, tooYoung, null, null, null, 14, null));
         } else if (z3) {
             ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, Utils.Strings.INSTANCE.getRequiresString(str), null, null, null, 14, null));
@@ -284,6 +294,11 @@ export namespace JobState {
         if (!z3) {
             ExtensionsKt.appendAttributesString$default(ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, this.type.pay(this.level).displayString(true), R.color.flatGreen, null, null, 12, null)), this.type.modifiers(this.level), null, null, null, 14, null);
         }
+        // v0.26.0: what the new careers need and how the season treats them
+        for (const line of Careers.describe(this.type, this.level, personState)) {
+            if (spannableStringBuilder.length > 0 && !spannableStringBuilder.toString().endsWith("\n")) ExtensionsKt.appendNewline(spannableStringBuilder);
+            ExtensionsKt.appendNormal$default(spannableStringBuilder, line, null, null, null, 14, null);
+        }
         const careerText = Retirement.careerText(this);
         if (careerText != null) {
             if (spannableStringBuilder.length > 0 && !spannableStringBuilder.toString().endsWith("\n")) ExtensionsKt.appendNewline(spannableStringBuilder);
@@ -292,6 +307,7 @@ export namespace JobState {
         return new ActionProgressViewModel(imageId, jobTitle, new TextLabelViewModel("", null, false, false, null, spannableStringBuilder, 30, null), z2 ? Utils.INSTANCE.getString(R.string.Housing_Label_Current) : null, progressBarViewModel, null, new ButtonViewModel(Utils.INSTANCE.getString(R.string.Job_Action_Apply), null, !z2, false, z3, false, false, {
             invoke: () => {
             if (AgeLimits.tooYoung(AgeLimits.work) != null) return;
+            if (Careers.applyBlock(this.getType(), GameStateManager.INSTANCE.getPersonState()) != null) return;
             Retirement.beforeApplying(() => {
                 GameStateManager.INSTANCE.getPersonState().getJobState().switchJob(this.getType());
                 let mainGameFragment: MainGameFragment = GameStateManager.INSTANCE.getMainGameFragment();
