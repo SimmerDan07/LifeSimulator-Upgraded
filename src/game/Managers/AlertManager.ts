@@ -79,7 +79,19 @@ export class AlertManager {
         }
         alertManager.showAlert(alertViewModel, z);
     }
+    /** v0.22.0: while set (a vampire lying collapsed for years), alerts are collected here instead of shown. */
+    static muted: AlertViewModel[] | null = null;
     showAlert$0(alertViewModel: AlertViewModel, prioritize: boolean): void {
+        if (AlertManager.muted != null) {
+            // Nobody is there to answer: an "Okay" alert's action still happens (a breakup goes through); a question is declined.
+            AlertManager.muted.push(alertViewModel);
+            try {
+                const extra = alertViewModel.getAdditionalButtons();
+                const btn = alertViewModel.getNegativeButton() ?? (extra == null || extra.size() === 0 ? alertViewModel.getPositiveButton() : null);
+                btn?.getAction()?.invoke();
+            } catch { /* ignore */ }
+            return;
+        }
         Intrinsics.checkParameterIsNotNull(alertViewModel, "alertViewModel");
         if (!AlertManager.currentlyShowing) {
             this.show(alertViewModel);

@@ -12,7 +12,7 @@ import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
 import { MeterViewModel } from "../Models/PersonCardViewModel";
 import { MainGameTab } from "../Enums/MainGameTab";
 import { GameStateManager } from "../Managers/GameStateManager";
-import { Vampire, LifeActions, BECOMING, FEEDING, HIDING, ENDINGS, powerDefs, POWERS } from "../Lifepaths/Vampire";
+import { Vampire, LifeActions, BECOMING, FEEDING, HIDING, ENDINGS, powerDefs, POWERS, WITHERED_CAP } from "../Lifepaths/Vampire";
 import { LoveScreens } from "../Social/LoveScreens";
 import { Celebrity } from "../Lifepaths/Celebrity";
 import { CelebrityScreen } from "../Lifepaths/CelebrityScreen";
@@ -22,7 +22,7 @@ import { GenericListType } from "../Fragments/GenericListType";
 import { WorkModelGenerator } from "./WorkModelGenerator";
 
 const text = (s: string) => new TextLabelViewModel(s, null, false, false, null, null);
-const thirstTrend = (n: number) => (n > 0 ? `Rises ${n} a week on your diet.` : `Falls ${-n} a week on your diet.`);
+const thirstTrend = (n: number) => (n > 0 ? `On your diet the bar fills in ${Vampire.fillText(n)}. When it's full you collapse, and 10 to 40 years can pass before someone finds you.` : `Falls ${-n} a week on your diet.`);
 const info = (image: any, title: string, body: string) => new ActionCellSingleViewModel(image, title, text(body), ButtonViewModel.INSTANCE.getHidden(), null, null);
 const open = (key: string) => Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.lifepath, key, false, 4, null);
 const row = (image: any, title: string, body: string, go: () => void) =>
@@ -64,7 +64,7 @@ export class LifepathsModelGenerator {
         if (s?.isVampire) {
             if (s.cureWeeks > 0) return `The Vampiric Cure is working: ${s.cureWeeks} week${s.cureWeeks === 1 ? "" : "s"} to go.`;
             const years = Vampire.years(p);
-            return `${years > 0 ? `Vampire for ${years} year${years === 1 ? "" : "s"}` : "A newly risen vampire"} · Thirst ${s.thirst} · Suspicion ${s.suspicion}`;
+            return `${years > 0 ? `Vampire for ${years} year${years === 1 ? "" : "s"}` : "A newly risen vampire"} · Thirst ${Math.round(s.thirst)} · Suspicion ${s.suspicion}`;
         }
         if (s != null && s.turningWeeks > 0) return "The Turning: you'll rise a vampire at the end of this week.";
         if (s?.cured) return "Human again. You get one vampire life: this path is closed to you now.";
@@ -129,7 +129,9 @@ export class LifepathsModelGenerator {
             out.add(info(R.drawable.health_youthelixir, "The Vampiric Cure is working", `${s.cureWeeks} week${s.cureWeeks === 1 ? "" : "s"} until you're human again. Your thirst has stopped.`));
         } else {
             out.add(new MeterViewModel("Thirst", s.thirst, 100, "red",
-                s.thirst >= 100 ? "Starving: you'll frenzy every week until you feed." : s.thirst >= 80 ? "Desperate: −20 sanity a week." : s.thirst >= 60 ? "Hungry: −5 happiness a week." : thirstTrend(Vampire.thirstPerWeekFor(p))));
+                s.thirst >= 100 ? "Empty: you're about to collapse." : s.thirst >= 80 ? "Desperate: −2 happiness, −3 sanity a week. Feed soon or you'll collapse." : s.thirst >= 60 ? "Hungry: −2 happiness a week." : thirstTrend(Vampire.thirstPerWeekFor(p))));
+            if ((s.witheredWeeks ?? 0) > 0) out.add(info(Vampire.image, "Withered",
+                `Your body is still recovering from the collapse: health can't go above ${WITHERED_CAP} and doesn't heal, −1 happiness a week. ${s.witheredWeeks} week${s.witheredWeeks === 1 ? "" : "s"} left.`));
             out.add(new MeterViewModel("Suspicion", s.suspicion, 100, "purple",
                 s.suspicion >= 80 ? "Vampire hunters may come for you." : "At 80, vampire hunters start looking for you."));
             out.add(new HeaderTitleViewModel("Feeding"));

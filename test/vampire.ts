@@ -24,7 +24,12 @@ import { MoneyState } from "../src/game/Managers/MoneyState";
 import { MoneyUpdateType } from "../src/game/Enums/MoneyUpdateType";
 import { SaveCodec } from "../src/game/save/SaveCodec";
 import { BigInteger } from "../src/game/runtime";
-import { Vampire, LifeActions, BECOMING, FEEDING, HIDING, ENDINGS, powerDefs, LifeActionCell, BLOOD_DIETS, BloodDietCell } from "../src/game/Lifepaths/Vampire";
+import { Vampire, LifeActions, BECOMING, FEEDING, HIDING, ENDINGS, powerDefs, LifeActionCell, BLOOD_DIETS, BloodDietCell, THIRST_2_YEARS, WITHERED_CAP, WITHERED_WEEKS } from "../src/game/Lifepaths/Vampire";
+import { AlertViewModel } from "../src/game/Managers/AlertViewModel";
+import { AlertActionViewModel } from "../src/game/Managers/AlertActionViewModel";
+import { AlertType } from "../src/game/Managers/AlertType";
+const RATE = THIRST_2_YEARS;
+const near = (a: number, b: number) => Math.abs(a - b) < 1e-6;
 import { HealthModelGenerator } from "../src/game/Controllers/HealthModelGenerator";
 import { Babies } from "../src/game/Social/Babies";
 import { Relationships } from "../src/game/Social/Relationships";
@@ -126,27 +131,32 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const s = Vampire.state(p);
     s.thirst = 0;
     keep(p); p.applyWeekly(); clear();
-    check("thirst rises 5 a week (v0.21.1)", s.thirst === 5, String(s.thirst));
+    check("thirst: the bar takes 2 years (96 weeks) to fill on Feed by Hand (v0.22.0)", near(s.thirst, RATE) && near(RATE * 96, 100), String(s.thirst));
     s.thirst = 85;
     p.collectWeeklyValues();
     const san = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.sanity) as any).find((x: any) => x.getFirst() === "Thirst") as any;
+    const hapT = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).find((x: any) => x.getFirst() === "Thirst") as any;
     p.resetValuesThisWeek();
-    check("at 80+ thirst: −20 sanity a week", san != null && Number(san.getSecond()) === -20);
+    check("at 80+ thirst: −3 sanity, −2 happiness a week (v0.22.0)", san != null && Number(san.getSecond()) === -3 && hapT != null && Number(hapT.getSecond()) === -2);
     const flow = Array.from(p.collectWeeklyCashFlow?.() ?? []).map((x: any) => String(x.getFirst?.() ?? x));
     check("diet is no longer charged to a vampire", !flow.some((t) => /Diet/.test(t)), flow.join("; "));
     LifeActions.perform(def(FEEDING, "animal"), p); clear();
-    check("Animal Blood: −20 thirst (then +5 for the week)", s.thirst === 85 - 20 + 5, String(s.thirst));
+    check("Animal Blood: −20 thirst (then the weekly rise)", near(s.thirst, 85 - 20 + RATE), String(s.thirst));
+    const beforeHunt = s.thirst;
     s.suspicion = 0;
     withRandom(0.5, () => LifeActions.perform(def(FEEDING, "hunt"), p)); clear();
-    check("Hunt at Night: −60 thirst, +10 suspicion", s.thirst === Math.max(0, 70 - 60) + 5 && s.suspicion === 10, `${s.thirst} ${s.suspicion}`);
+    check("Hunt at Night: −60 thirst, +10 suspicion", near(s.thirst, Math.max(0, beforeHunt - 60) + RATE) && s.suspicion === 10, `${s.thirst} ${s.suspicion}`);
     check("Blood Bank needs the power or a medical job", /Blood Bank Contact/.test(new LifeActionCell(def(FEEDING, "bloodBank")).requirementNotMetString(p) ?? ""));
     s.bloodPower = 10;
     LifeActions.perform(def(powerDefs(), "power-bloodBank"), p);
     check("buying a power spends blood power", Vampire.has("bloodBank", p) && s.bloodPower === 8);
     check("…and opens the Blood Bank", new LifeActionCell(def(FEEDING, "bloodBank")).requirementNotMetString(p) == null);
     s.thirst = 100;
+    const realCollapse = Vampire.collapse; let collapsed = 0;
+    (Vampire as any).collapse = () => { collapsed++; return 0; };
     keep(p); p.applyWeekly();
-    check("at 100 thirst you frenzy", titlesOf().includes("Frenzy"), titlesOf().join(","));
+    (Vampire as any).collapse = realCollapse;
+    check("at 100 thirst you collapse when the week ends (no frenzy)", collapsed === 1 && !titlesOf().includes("Frenzy") && !Vampire.state(p).collapsePending, titlesOf().join(","));
     clear();
     s.thirst = 100; s.weeksAtMaxThirst = 4;
     p.collectWeeklyValues();
@@ -209,7 +219,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     {
         const s = Vampire.state(p); s.thirst = 80; s.suspicion = 10; const sus = s.suspicion;
         withRandom(0.99, () => { LoveActions.perform(loveAction("huntTogether"), ana, p); }); clear();
-        check("Hunt Together: −50 thirst, +6 suspicion (+2 more: your partner hunts alone on Feed by Hand)", s.thirst === 35 && s.suspicion === sus + 8, `${s.thirst} ${s.suspicion}`);
+        check("Hunt Together: −50 thirst, +6 suspicion (+2 more: your partner hunts alone on Feed by Hand)", near(s.thirst, 30 + RATE) && s.suspicion === sus + 8, `${s.thirst} ${s.suspicion}`);
         rich(p, 100000);
         LoveActions.perform(loveAction("eternalVows"), ana, p); clear();
         check("Eternal Vows: once every 10 years", new LoveActionCell(loveAction("eternalVows"), ana).requirementNotMetString(p) === "Once every 10 years");
@@ -277,7 +287,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     new BloodDietCell(BLOOD_DIETS[1]).action(p); clear();
     check("pick Rats & Strays", Vampire.chosenDiet(p).id === "rats" && Vampire.state(p).diet === "rats");
     week(p, 1, false);
-    check("Rats & Strays: thirst +2 a week", s.thirst === 2, String(s.thirst));
+    check("Rats & Strays: half the rise (the bar fills in 4 years)", near(s.thirst, RATE / 2) && Vampire.fillText(RATE / 2) === "4 years", String(s.thirst));
     p.collectWeeklyValues();
     const hap = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).some((x: any) => x.getFirst() === "Blood Diet - Rats & Strays");
     p.resetValuesThisWeek();
@@ -295,6 +305,71 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const real = p.vampire; p.vampire = old;
     check("older saves: no diet = Feed by Hand", Vampire.diet(p).id === "hand");
     p.vampire = real; s.diet = "hand"; s.thirst = 0; s.suspicion = 0;
+}
+
+// ---------------------------------------------------------------- v0.22.0: collapse — decades lost, and a Withered body
+{
+    const s = Vampire.state(p);
+    check("Feed by Hand fills the bar in 2 years", Vampire.fillText(Vampire.thirstPerWeekFor(p)) === "2 years");
+    check("the Thirst meter warns about collapsing for 10 to 40 years", /fills in 2 years.*10 to 40 years/.test(text(tab())));
+    // a job, a mortal partner, cash, blood power: all at stake
+    rich(p, 1_000_000);
+    const job = p.getJobState().getCurrentJob();
+    const ana = p.getFamilyState().getPartner();
+    s.bloodPower = 9; s.suspicion = 50; s.thirst = 100;
+    const cash0 = Number(p.getMoneyState().getCash().toString());
+    const cal0 = p.calendarWeeks(); const age0 = p.getAgeInWeeks(); const col0 = s.collapses ?? 0;
+    const W = 48;
+    const t0 = Date.now();
+    keep(p); p.applyWeekly();
+    const ms = Date.now() - t0;
+    const yrs = (p.calendarWeeks() - cal0) / W;
+    const t: string[] = []; let c: any = null;
+    for (let i = 0; i < 20 && alerts.length; i++) { const a = alerts.shift(); const ti = a.getTitle?.() ?? a.title; t.push(ti); if (ti === "You Collapsed") c = a; AlertManager.INSTANCE.alertDismissed(a); }
+    check("at 100 thirst you collapse: 10–40 years pass", yrs >= 10 && yrs < 41.5, `${yrs.toFixed(1)} years`);
+    check("…in reasonable time", ms < 60000, `${ms} ms`);
+    check("…you're still alive and your body didn't age", GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted() && GameStateManager.INSTANCE.getPersonState() === p && p.getAgeInWeeks() === age0);
+    check("…one alert: You Collapsed (everything else is summed up in it)", c != null && t.filter((x) => x === "You Collapsed").length === 1 && t.length <= 3, t.join(","));
+    check("…someone found you and gave you blood: thirst 40, a new friend at 650", s.thirst === 40 && /found you/.test(text(c)) && /is your friend now/.test(text(c)));
+    check("…consequence: half your cash is gone (you were declared missing)", Math.abs(Number(p.getMoneyState().getCash().toString()) / (cash0 / 2) - 1) < 0.001, `${cash0} → ${p.getMoneyState().getCash()}`);
+    check("…your vampire partner waited for you", p.getFamilyState().getPartner() === ana && /never stopped looking/.test(text(c)));
+    check("…consequence: your job is gone", job == null || (p.getJobState().getCurrentJob() == null && /your job/.test(text(c))));
+    check("…consequence: half your blood power withered", s.bloodPower === 4 || s.bloodPower >= 4 && s.bloodPower <= 4 + Math.ceil(yrs) * 2, String(s.bloodPower));
+    check("…consequence: Withered body — 20 health, 2 years", p.getAttributeState().getHealth() === 20 && s.witheredWeeks === WITHERED_WEEKS && /Withered/.test(text(c)));
+    check("…suspicion faded (the world forgot you), collapse counted", s.suspicion < 30 && s.collapses === col0 + 1, `${s.suspicion}`);
+    check("…everything is switched back on afterwards", AlertManager.muted == null && MoneyState.frozen === false && !s.inTorpor);
+    check("Withered shows on the Vampire screen", tab().some((r) => r.title === "Withered"));
+    clear();
+    // Withered: no healing, health capped at 50, −1 happiness a week
+    p.collectWeeklyValues();
+    const heal = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.health) as any).some((x: any) => x.getFirst() === "Vampire healing");
+    const wh = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).some((x: any) => x.getFirst() === "Withered body");
+    p.resetValuesThisWeek();
+    check("Withered: no vampire healing, −1 happiness a week", !heal && wh);
+    week(p, 2);
+    check("Withered: health can't go above " + WITHERED_CAP, p.getAttributeState().getHealth() <= WITHERED_CAP, String(p.getAttributeState().getHealth()));
+    s.witheredWeeks = 1; week(p, 1);
+    check("…and after two years it wears off", s.witheredWeeks === 0 && !tab().some((r) => r.title === "Withered"));
+    // while collapsed nobody answers alerts: "Okay" ones still happen, questions are declined
+    {
+        let ok = 0, no = 0, yesB = 0;
+        const mk = (neg: boolean) => new AlertViewModel("T", "m", 0, null, null, new AlertActionViewModel("Okay", { invoke: () => { if (neg) yesB++; else ok++; return null; } }),
+            neg ? new AlertActionViewModel("No", { invoke: () => { no++; return null; } }) : null, null, AlertType.Alert, 0, null);
+        AlertManager.muted = [];
+        AlertManager.showAlert$default(AlertManager.INSTANCE, mk(false), false, 2, null);
+        AlertManager.showAlert$default(AlertManager.INSTANCE, mk(true), false, 2, null);
+        const n = AlertManager.muted.length; AlertManager.muted = null;
+        check("muted alerts: Okay-only actions run, questions get No", ok === 1 && no === 1 && yesB === 0 && n === 2 && alerts.length === 0, `${ok} ${no} ${yesB} ${n}`);
+    }
+    // a mortal partner doesn't wait
+    p.getFamilyState().breakUp(); clear();
+    lover(p, Sex.male, "Tom", 900);
+    Vampire.collapse(p, 0);
+    const c2 = alerts.find((a) => (a.getTitle?.() ?? a.title) === "You Collapsed") ?? (clear(), null);
+    check("consequence: a mortal partner has you declared dead and moves on", p.getFamilyState().getPartner() == null && (c2 == null || /Tom waited for years/.test(text(c2))));
+    clear();
+    p.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100));
+    s.thirst = 0; s.suspicion = 0;
 }
 
 // ---------------------------------------------------------------- save, the Cure, Final Rest

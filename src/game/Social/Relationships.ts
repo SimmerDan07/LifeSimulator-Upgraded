@@ -388,7 +388,7 @@ export const Relationships = {
         if (partner != null && partner.getIsAlive()) {
             const years = Relationships.anniversaryYears(partner, now);
             const m = Relationships.meta(partner, p);
-            if (years != null && m.annivYear !== years && m.annivMissed !== years) {
+            if (years != null && m.annivYear !== years && m.annivMissed !== years && !Relationships.together?.has(partner)) {
                 m.annivMissed = years;
                 partner.setRelationshipProgress(partner.getRelationshipProgress() - Relationships.missedAnniversary);
                 Relationships.setMood(partner, "upset");

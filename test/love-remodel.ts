@@ -422,7 +422,7 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     mom2.setRelationshipProgress(401);
     for (let i = 0; i < 20; i++) { kid.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100)); kid.applyWeekly(); clear(); }
     check("…but never below Good (400) from time alone", mom2.getRelationshipProgress() === 400, String(mom2.getRelationshipProgress()));
-    const fr = Relationships.makeFriend("work", kid)!;
+    const fr = Relationships.makeFriend("work", kid) ?? Relationships.friends(kid)[0];
     fr.setRelationshipProgress(300);
     kid.applyWeekly(); clear();
     check("friends drift 1 a week (2 if Apathetic)", fr.getRelationshipProgress() === 300 + RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate(), String(fr.getRelationshipProgress()));

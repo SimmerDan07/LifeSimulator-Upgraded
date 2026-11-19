@@ -2,8 +2,9 @@
 //
 // Becoming: 18+, out of jail. A pale stranger (2% a week at Nightclubs and Local Events) or Seek the Ancient
 // ($5,000 a try, 25%) reveals the path; Accept the Bite turns you over one week (health drops to 50%).
-// Living: your body stops ageing (true age and the calendar keep going). Thirst +5 a week (v0.21.1; was +15); feed to lower it.
-// High thirst hurts; at 100 you frenzy, and 4+ weeks at 100 starves you. Sunlight drains your mood (v0.21.1: not your health).
+// Living: your body stops ageing (true age and the calendar keep going).
+// High thirst hurts. v0.22.0: the bar takes 2 years to fill on Feed by Hand; at 100 you collapse for 10–40 years, lose half your
+// cash, blood power and your job (a mortal partner moves on), and wake Withered. Sunlight drains your mood (v0.21.1: not your health).
 // v0.21.1: nothing mortal can lower a vampire's health (AttributeState.healthGuard); only starving and hunters' stakes
 // can. Well-fed vampires heal +3 health a week.
 // Suspicion grows from hunting, frenzies and never ageing; at 80+ vampire hunters may come.
@@ -36,6 +37,7 @@ import { GenericListType } from "../Fragments/GenericListType";
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
 const WPY = () => Constants.Time.INSTANCE.getWeeksPerYear();
+const pick = <T>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
 const money = (n: number) => ExtensionsKt.numberDisplayString(BigInteger.valueOf(n), true);
 const roll = (p: number) => Math.random() < p;
 const refreshUI = () => { const f = GameStateManager.INSTANCE.getMainGameFragment(); if (f != null) f.updateUI(null); };
@@ -68,10 +70,15 @@ export interface BloodDiet {
     lock?: (p: any) => string | null;
 }
 /** What a vampire lives on every week (the Health tab's Choose Menu and the Lifepaths Feeding section). */
+/** v0.22.0: thirst per week that fills the bar (0 → 100) in two years (48-week years). */
+export const THIRST_2_YEARS = 100 / 96;
+/** v0.22.0: after a collapse, health can't go above this while your body is Withered. */
+export const WITHERED_CAP = 50;
+export const WITHERED_WEEKS = 96;
 export const BLOOD_DIETS: BloodDiet[] = [
-    { id: "hand", title: "Feed by Hand", image: R.drawable.icon_vamp_feedbyhand, cost: 0, thirst: 5, mods: [0, 0, 0],
+    { id: "hand", title: "Feed by Hand", image: R.drawable.icon_vamp_feedbyhand, cost: 0, thirst: THIRST_2_YEARS, mods: [0, 0, 0],
         blurb: "No plan: you feed yourself with the Feeding actions." },
-    { id: "rats", title: "Rats & Strays", image: R.drawable.vdiet_rats, cost: 0, thirst: 2, mods: [0, -3, 0],
+    { id: "rats", title: "Rats & Strays", image: R.drawable.vdiet_rats, cost: 0, thirst: THIRST_2_YEARS / 2, mods: [0, -3, 0],
         blurb: "Free, but grim and never enough." },
     { id: "butcher", title: "Butcher's Blood", image: R.drawable.vdiet_butcher, cost: 300, thirst: -3, mods: [0, -1, 0],
         blurb: "Pig and cow blood from the butcher. Keeps you going." },
@@ -88,7 +95,7 @@ export const BLOOD_DIETS: BloodDiet[] = [
 
 export const Vampire = {
     minAge: 18,
-    thirstPerWeek: 5,
+    thirstPerWeek: THIRST_2_YEARS,
     /** Health a well-fed vampire (thirst under 60) heals every week. */
     healPerWeek: 3,
     /** Set while a vampire danger (a hunter's stake) is hurting you, so the health guard lets it through. */
@@ -208,9 +215,10 @@ export const Vampire = {
     /** Weekly attribute effects (also used for the weekly previews; no side effects). */
     collectWeeklyValues(p: any) {
         const s = Vampire.peek(p);
-        if (!s?.isVampire || s.cureWeeks > 0) return;
-        if (s.thirst >= 80) p.getAttributeState().setDeltaValue(new Modifiers(0, 0, -20), "Thirst");
-        else if (s.thirst >= 60) p.getAttributeState().setDeltaValue(new Modifiers(0, -5, 0), "Thirst");
+        if (!s?.isVampire || s.cureWeeks > 0 || s.inTorpor) return;
+        // v0.22.0: gentler (it now takes two years to fill the bar; at 100 you collapse instead of dying)
+        if (s.thirst >= 80) p.getAttributeState().setDeltaValue(new Modifiers(0, -2, -3), "Thirst");
+        else if (s.thirst >= 60) p.getAttributeState().setDeltaValue(new Modifiers(0, -2, 0), "Thirst");
         if (s.weeksAtMaxThirst >= 4) p.getAttributeState().setDeltaValue(new Modifiers(-25, 0, 0), STARVING);
         // the blood diet: weekly cost and how it makes you feel
         const d = Vampire.diet(p);
@@ -219,7 +227,9 @@ export const Vampire = {
         if (d.cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.cost * (two ? 2 : 1)), MoneyUpdateType.expense, label, null, 8, null);
         p.getAttributeState().setDeltaValue(new Modifiers(d.mods[0], d.mods[1], d.mods[2]), label);
         // v0.21.1: undead bodies mend themselves while fed
-        if (s.thirst < 60 && s.weeksAtMaxThirst === 0 && p.getAttributeState().getHealth() < 100)
+        // v0.22.0: after a collapse your body is Withered for two years: no healing, health capped at 50
+        if ((s.witheredWeeks ?? 0) > 0) p.getAttributeState().setDeltaValue(new Modifiers(0, -1, 0), "Withered body");
+        else if (s.thirst < 60 && s.weeksAtMaxThirst === 0 && p.getAttributeState().getHealth() < 100)
             p.getAttributeState().setDeltaValue(new Modifiers(Vampire.healPerWeek, 0, 0), "Vampire healing");
     },
     /** A vampire's health never decays: only vampire dangers (starving, hunters) can lower it. */
@@ -275,6 +285,7 @@ export const Vampire = {
             }
             return;
         }
+        if (s.inTorpor) return;   // lying collapsed somewhere: nothing happens to you
         const d = Vampire.diet(p);
         s.thirst = Math.max(0, Math.min(100, s.thirst + d.thirst));
         s.weeksAtMaxThirst = s.thirst >= 100 ? s.weeksAtMaxThirst + 1 : 0;
@@ -294,8 +305,105 @@ export const Vampire = {
             s.bloodPower += 1 + (s.yearsAwarded % 10 === 0 ? 1 : 0);
             s.suspicion = Math.min(100, s.suspicion + 1 + 2 * Vampire.turnedLovedOnes(p).length);
         }
-        if (s.thirst >= 100) Vampire.frenzy(p);
+        if ((s.witheredWeeks ?? 0) > 0) {
+            s.witheredWeeks--;
+            const a = p.getAttributeState();
+            if (a.getHealth() > WITHERED_CAP) a.setHealth(WITHERED_CAP);
+        }
+        if (s.thirst >= 100) s.collapsePending = true;   // v0.22.0: collapse (runs after this week ends)
         else if (s.suspicion >= 80 && roll(0.2)) Vampire.hunters(p);
+    },
+    // ------------------------------------------------------------------ collapse (v0.22.0)
+    /** "2 years" — how long a diet takes to fill the thirst bar from empty. */
+    fillText(perWeek: number): string {
+        const y = 100 / perWeek / WPY();
+        return Math.abs(y - Math.round(y)) < 0.05 ? `${Math.round(y)} year${Math.round(y) === 1 ? "" : "s"}` : `${Math.round(100 / perWeek)} weeks`;
+    },
+    isInTorpor(p: any = player()): boolean { return !!Vampire.peek(p)?.inTorpor; },
+    /** Called at the very end of Player.applyWeekly: if your thirst bar filled up, you collapse and years go by. */
+    afterWeekEnd(p: any) {
+        const s = Vampire.peek(p);
+        if (s == null || !s.collapsePending || s.inTorpor) return;
+        s.collapsePending = false;
+        Vampire.collapse(p);
+    },
+    /** Weak with thirst, you collapse somewhere hidden and lie there for 10–40 years (your body doesn't age, the world
+     *  does) until a passer-by finds you and gives you some blood. Depriving your body has a price:
+     *  - your job is gone, and half your cash (you were declared missing; your accounts were picked over)
+     *  - a mortal partner gave you up for dead and moved on; everyone else drifts as the years go by
+     *  - half your blood power withers away
+     *  - you wake Withered: 20 health, and for two years health can't go above 50 and doesn't heal (−1 happiness a week) */
+    collapse(p: any, years: number = 10 + Math.floor(Math.random() * 31)) {
+        const s = Vampire.state(p);
+        const weeks = years * WPY() + Math.floor(Math.random() * (WPY() / 2));
+        const where = pick(["in a storm drain", "behind a dumpster in an alley", "in the basement of an abandoned building", "under a bridge", "in a forgotten crypt", "in the woods outside town"]);
+        const jobBefore = p.getJobState().getCurrentJob();
+        if (jobBefore != null) p.getJobState().setCurrentJob(null);
+        const partnerBefore = p.getFamilyState().getPartner();
+        const missed: any[] = [];
+        s.inTorpor = true;
+        AlertManager.muted = missed;
+        MoneyState.frozen = true;
+        // the ones you turned are vampires too: they wait for you (no drift, no missed anniversaries). Mortals move on.
+        const together0 = Relationships.together;
+        Relationships.together = new Set<any>(Vampire.coven(p));
+        let passed = 0;
+        try {
+            const playing = () => GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted() && GameStateManager.INSTANCE.getPersonState() === p;
+            for (let i = 0; i < weeks && playing(); i++) { p.applyWeekly(); passed++; }
+        } finally {
+            s.inTorpor = false;
+            AlertManager.muted = null;
+            MoneyState.frozen = false;
+            Relationships.together = together0;
+        }
+        const lost: string[] = [];
+        if (jobBefore != null) lost.push("your job");
+        // declared missing: half your cash is gone by the time you sort it out
+        const c = Number(cash(p).toString());
+        const gone = c > 0 ? Math.floor(c / 2) : 0;
+        if (gone > 0) { pay(p, gone); lost.push(`${money(gone)} (half your cash: you were declared missing)`); }
+        // a mortal partner gave up waiting
+        const partner = p.getFamilyState().getPartner();
+        let partnerLeft: string | null = null, partnerWaited: string | null = null;
+        if (partner != null && Vampire.isTurned(partner)) partnerWaited = partner.getFirstName();
+        else if (partner != null) try { p.getFamilyState().breakUp(); } catch { /* ignore */ }
+        if (partnerBefore != null && partnerWaited == null) partnerLeft = partnerBefore.getFirstName();
+        // the body pays for it
+        const bp = s.bloodPower;
+        s.bloodPower = Math.floor(bp / 2);
+        if (bp - s.bloodPower > 0) lost.push(`${bp - s.bloodPower} blood power`);
+        s.thirst = 40; s.weeksAtMaxThirst = 0;
+        s.suspicion = Math.max(0, s.suspicion - 30);   // the world forgot about you
+        s.collapses = (s.collapses ?? 0) + 1;
+        s.witheredWeeks = WITHERED_WEEKS;
+        const a = p.getAttributeState();
+        a.setHealth(20); a.setHappiness(Math.max(Math.min(a.getHappiness(), 25), 15)); a.setSanity(Math.max(Math.min(a.getSanity(), 25), 15));
+        a.setLowAttributeCountdown_health(0); a.setLowAttributeCountdown_happiness(0); a.setLowAttributeCountdown_sanity(0);
+        const saviour = Relationships.makeFriend("out", p);
+        if (saviour != null) saviour.setRelationshipProgress(650);
+        const who = saviour ? `${saviour.getFullName()}, a passer-by,` : pick(["a jogger", "a homeless man", "a nurse walking home", "a kid exploring"]);
+        const span = (() => { const y = Math.floor(passed / WPY()), m = Math.floor((passed % WPY()) / 4); return [y ? `${y} year${y === 1 ? "" : "s"}` : null, m ? `${m} month${m === 1 ? "" : "s"}` : null].filter(Boolean).join(" and ") || `${passed} weeks`; })();
+        const events = Vampire.missedSummary(missed);
+        Vampire.alert("You Collapsed",
+            `You starved your body too long. Weak and shaking, you collapsed ${where} and lay there like a corpse for ${span}.\n\n` +
+            `Then ${who} found you, thought you'd been hurt, and let you drink a little of their blood. You came back to yourself.` +
+            (saviour ? ` ${saviour.getFirstName()} is your friend now.` : "") +
+            (partnerLeft ? `\n\n${partnerLeft} waited for years, then had you declared dead and moved on. You're single.` : "") +
+            (partnerWaited ? `\n\n${partnerWaited}, your eternal partner, never stopped looking for you.` : "") +
+            (lost.length ? `\n\nYou lost ${lost.join(", ")}.` : "") +
+            `\n\nYour body is Withered: you woke at 20 health, and for the next 2 years it can't go above ${WITHERED_CAP} or heal (−1 happiness a week).` +
+            (events ? `\n\nWhile you were gone: ${events}` : ""), Vampire.image);
+        return passed;
+    },
+    /** "2 births, 1 death in the family, 3 other things" from the alerts that happened while you were collapsed. */
+    missedSummary(missed: any[]): string {
+        const titles = missed.map((m) => { try { return m.getTitle?.() ?? m.title ?? ""; } catch { return ""; } }).filter(Boolean);
+        if (!titles.length) return "";
+        const counts = new Map<string, number>();
+        for (const t of titles) counts.set(t, (counts.get(t) ?? 0) + 1);
+        const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t, n]) => (n > 1 ? `${t} ×${n}` : t));
+        return top.join(", ") + (counts.size > 6 ? `, and ${counts.size - 6} other kinds of news.` : ".");
     },
     frenzy(p: any) {
         const s = Vampire.state(p);
@@ -522,7 +630,7 @@ export class BloodDietCell {
     getActionTitle(): string { return "Drink"; }
     getAdditionalDescription(): string {
         const t = this.d.thirst;
-        const thirst = t > 0 ? `Thirst +${t} a week` : `Thirst −${-t} a week`;
+        const thirst = t > 0 ? `Thirst bar fills in ${Vampire.fillText(t)}` : `Thirst −${-t} a week`;
         const sus = this.d.suspicion ? `, suspicion +${this.d.suspicion} a week` : "";
         return `${money(this.d.cost)} a week · ${thirst}${sus}\n${this.d.blurb}\n`;
     }

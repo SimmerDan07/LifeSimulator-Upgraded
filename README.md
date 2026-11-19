@@ -227,8 +227,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 
     | Diet | Cost a week | Thirst a week | Also |
     |---|---|---|---|
-    | Feed by Hand | $0 | +5 (v0.21.1; was +15) | use the Feeding actions |
-    | Rats & Strays | $0 | +2 (was +8) | −3 happiness |
+    | Feed by Hand | $0 | +1.04 (fills in 2 years; v0.22.0, was +5) | use the Feeding actions |
+    | Rats & Strays | $0 | +0.52 (fills in 4 years) | −3 happiness |
     | Butcher's Blood | $300 | −3 (was +3) | −1 happiness |
     | Blood Bank Bags | $2,000 | −10 | +1 health; needs Blood Bank Contact or a medical job |
     | Nightly Hunting | $0 | −20 | +2 happiness, +4 suspicion, 5% police trouble (not with Mist Step) |
@@ -243,8 +243,13 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     ($5,000, 1 in 4). *Accept the Bite* (with a warning) drops health to 50; you rise a week later with 1 blood power.
   - **Never aging**: your age freezes and true age keeps counting (`calendarOffset` keeps months and new years moving;
     `Player.calendarWeeks()`). People you turn freeze too.
-  - **Thirst** (HUD bar, red) rises 5 a week (v0.21.1; was 15): at 60+ happiness −5, 80+ sanity −20, 4 weeks at 100 costs health and
-    100 can cause a frenzy. Feed: Blood Bank Contact, Animal Blood, Hunt (police risk), Your Partner (willing ones).
+  - **Thirst** (HUD bar, red; v0.22.0) takes 2 years (96 weeks) to fill on Feed by Hand: 60+ happiness −2 a week, 80+ also
+    sanity −3. **At 100 you collapse** (`Vampire.collapse`, after the week ends): 10–40 years go by while you lie somewhere
+    (alerts are muted and summed up: "Okay" ones still happen, questions are declined; money frozen, you can't die; mortals
+    drift, age and miss anniversaries, vampires you turned wait for you). A passer-by gives you blood
+    (thirst 40, they become a friend at 650). The price: your job, half your cash (declared missing), half your blood
+    power, a mortal partner has you declared dead and leaves (a turned one waits), and you wake **Withered**: 20 health,
+    then for 2 years health is capped at 50, doesn't heal, −1 happiness a week. Suspicion −30. Feed: Blood Bank Contact, Animal Blood, Hunt (police risk), Your Partner (willing ones).
   - **Suspicion** (red meter; rises yearly, from hunting, frenzies and telling people) — at 80+ hunters may come: Fight (50% win, 25%
     hurt, 25% death), Flee (lose job, −50 suspicion) or Hide ($10k). Lay Low, Fake Your Death ($20k), Move City ($5k).
   - **Sunlight** (v0.21.1): daytime leisure costs −10 happiness (−5 with Sun Ward) and a week at a day job −2, unless you

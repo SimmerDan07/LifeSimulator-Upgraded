@@ -849,10 +849,16 @@ export class Player {
         miscState2.setAdRewardDoubleIncomeWeeksLeft(miscState2.getAdRewardDoubleIncomeWeeksLeft() - 1);
         this.tempState.setPrevActionState(PlayerActionType.none);
         let mainGameFragment: MainGameFragment = GameStateManager.INSTANCE.getMainGameFragment();
-        if (mainGameFragment != null) {
+        const collapsed = Vampire.isInTorpor(this);
+        if (mainGameFragment != null && !collapsed) {
             MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
         }
         this.executePostWeekEndLogic();
+        // v0.22.0: a vampire whose thirst bar filled up collapses now (years can pass)
+        if (!collapsed) {
+            Vampire.afterWeekEnd(this);
+            if (Vampire.isInTorpor(this) === false && mainGameFragment != null) MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
+        }
     }
     executePostWeekEndLogic(): void {
         if ((this.calendarWeeks() % Constants.Time.INSTANCE.getWeeksPerYear()) === 0) {
@@ -895,6 +901,7 @@ export class Player {
         }
     }
     showDeathAlertsIfRequired(): boolean {
+        if (Vampire.isInTorpor(this)) return false;   // v0.22.0: a collapsed vampire can't die of it
         return this.showAttributeDeathAlertIfRequired() || this.showBankruptcyAlertIfRequired();
     }
     showWarningAlerts(): void {

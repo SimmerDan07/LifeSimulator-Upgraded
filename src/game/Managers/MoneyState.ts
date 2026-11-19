@@ -119,7 +119,10 @@ export class MoneyState {
         }
         moneyState.updateMoney(bigInteger, moneyUpdateType, str, moneyDestination);
     }
+    /** v0.22.0: while a vampire lies collapsed for years, their money is untouched (no pay, no bills). */
+    static frozen: boolean = false;
     updateMoney(amount: BigInteger, type: MoneyUpdateType, key: string, destination: MoneyDestination): void {
+        if (MoneyState.frozen) return;
         Intrinsics.checkParameterIsNotNull(amount, "amount");
         Intrinsics.checkParameterIsNotNull(type, "type");
         Intrinsics.checkParameterIsNotNull(destination, "destination");

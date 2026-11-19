@@ -15,6 +15,14 @@ export class VampireState {
     thirst: number = 0;
     suspicion: number = 0;
     weeksAtMaxThirst: number = 0;
+    /** v0.22.0: the thirst bar filled up; you collapse when the week ends. */
+    collapsePending: boolean = false;
+    /** v0.22.0: lying collapsed somewhere (years pass). */
+    inTorpor: boolean = false;
+    /** v0.22.0: how many times you've collapsed. */
+    collapses: number = 0;
+    /** v0.22.0: weeks left of the Withered body after a collapse (health capped at 50, no healing, −1 happiness a week). */
+    witheredWeeks: number = 0;
     bloodPower: number = 0;
     yearsAwarded: number = 0;
     powers: string[] = [];
