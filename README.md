@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, Celebrity Life & the Fame Update, old-save loading (681 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, Celebrity Life & the Fame Update, old-save loading (692 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -220,15 +220,16 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   - **One vampire life per lifetime**: once cured you can never become a vampire again (no pale stranger, no Seek, no
     bite; the Lifepaths tab says "Human Again"). Heirs start a new life and can.
   - **A vampire's health never decays**: the Health tab shows Good / 0 a week at any frozen age, and weekly health
-    losses (age, food, housing, jobs, traits) are ignored (`Vampire.protectHealth`). Vampire dangers still hurt:
-    starving, sunlight, hunters and frenzies.
+    losses (age, food, housing, jobs, traits) are ignored (`Vampire.protectHealth`). **v0.21.1:** nothing mortal can
+    lower a vampire's health at all — every health loss is blocked (`AttributeState.healthGuard`) except starving for
+    blood and a hunter's stake; well-fed vampires (thirst under 60) heal +3 health a week.
   - **Blood diets** (`BLOOD_DIETS`; Health tab → Blood Diet → Choose, or Lifepaths → Feeding → Change):
 
     | Diet | Cost a week | Thirst a week | Also |
     |---|---|---|---|
-    | Feed by Hand | $0 | +15 | use the Feeding actions |
-    | Rats & Strays | $0 | +8 | −3 happiness |
-    | Butcher's Blood | $300 | +3 | −1 happiness |
+    | Feed by Hand | $0 | +5 (v0.21.1; was +15) | use the Feeding actions |
+    | Rats & Strays | $0 | +2 (was +8) | −3 happiness |
+    | Butcher's Blood | $300 | −3 (was +3) | −1 happiness |
     | Blood Bank Bags | $2,000 | −10 | +1 health; needs Blood Bank Contact or a medical job |
     | Nightly Hunting | $0 | −20 | +2 happiness, +4 suspicion, 5% police trouble (not with Mist Step) |
     | Willing Donors | $8,000 | −15 | +3 happiness, +2 sanity, +1 suspicion |
@@ -242,11 +243,12 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     ($5,000, 1 in 4). *Accept the Bite* (with a warning) drops health to 50; you rise a week later with 1 blood power.
   - **Never aging**: your age freezes and true age keeps counting (`calendarOffset` keeps months and new years moving;
     `Player.calendarWeeks()`). People you turn freeze too.
-  - **Thirst** (HUD bar, red) rises 15 a week: at 60+ happiness −5, 80+ sanity −20, 4 weeks at 100 costs health and
+  - **Thirst** (HUD bar, red) rises 5 a week (v0.21.1; was 15): at 60+ happiness −5, 80+ sanity −20, 4 weeks at 100 costs health and
     100 can cause a frenzy. Feed: Blood Bank Contact, Animal Blood, Hunt (police risk), Your Partner (willing ones).
   - **Suspicion** (red meter; rises yearly, from hunting, frenzies and telling people) — at 80+ hunters may come: Fight (50% win, 25%
     hurt, 25% death), Flee (lose job, −50 suspicion) or Hide ($10k). Lay Low, Fake Your Death ($20k), Move City ($5k).
-  - **Sunlight**: daytime leisure costs −10 health (−5 with Sun Ward) and work half that, unless you have Night Owl.
+  - **Sunlight** (v0.21.1): daytime leisure costs −10 happiness (−5 with Sun Ward) and a week at a day job −2, unless you
+    have Night Owl. (Before v0.21.1 it cost health.)
   - **Blood powers** (1 a year, +1 every 10 years): Charm (relationship gains ×1.25), Night Owl (work pays ×1.2, no sun
     at work), Blood Bank Contact, Mist Step (no police when hunting), Sun Ward (half sun damage), Mind Fog (suspicion −5 a week).
   - **Loved ones**: Tell Your Secret (they may accept, or recoil and talk), Turn a partner/parent/child/sibling/friend
@@ -280,7 +282,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
 - **Love tab remodel (v0.12.0)** (`src/game/Social/`): the Love tab is now a people screen.
   - **Layout** (`LoveScreens.ts`): status and counters on top with group actions (Spend Time with Everyone, Family
     Gathering, Family Vacation), then **Partner** (or *Find Love* with the dating options when single), **Parents**
-    (allowance, Road Trip), **Children**, **Siblings**, **Friends** (+ Meet New People), **Pets** (+ Adopt Pet),
+    (allowance, Road Trip), **Children**, **Siblings**, **Friends** (+ Meet New People, and a *Make Friends Automatically* On/Off toggle — v0.21.1 — that stops new friends
+    turning up at school or work on their own), **Pets** (+ Adopt Pet),
     **Past Relationships** (one row that opens the list) and **More** (Come Out). Empty groups are hidden.
   - **Cards** (`Models/PersonCardViewModel.ts`, drawn in `src/ui/cells.ts`): avatar head by age and sex (pets show their
     picture), "Daughter - Marcene Larson", "Age: 46 (true age 56)", and a bar printed "906/1000" coloured red Distant,

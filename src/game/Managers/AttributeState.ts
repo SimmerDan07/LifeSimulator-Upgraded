@@ -7,6 +7,8 @@ import { Modifiers } from "./Modifiers";
 import { PersonAttribute } from "../Enums/PersonAttribute";
 
 export class AttributeState {
+    /** v0.21.1: lets a lifepath adjust health losses (vampires can't be hurt by mortal things). Gets (state, delta, key). */
+    static healthGuard: ((state: AttributeState, delta: number, key: string | null) => number) | null = null;
     static INSTANCE: any;
     happiness: number = 0;
     happinessDeltaThisWeek: ArrayList<Pair<string, number>> = null;
@@ -105,6 +107,7 @@ export class AttributeState {
         }
         let i: PersonAttribute = attribute;
         if (i === PersonAttribute.health) {
+            if (AttributeState.healthGuard) value = AttributeState.healthGuard(this, value, key);
             this.healthDeltaThisWeek.add(new Pair(key, Double.valueOf(value)));
         } else if (i === PersonAttribute.happiness) {
             this.happinessDeltaThisWeek.add(new Pair(key, Double.valueOf(value)));
@@ -128,7 +131,8 @@ export class AttributeState {
     }
     setDeltaValueImmediate(modifiers: Modifiers): void {
         Intrinsics.checkParameterIsNotNull(modifiers, "modifiers");
-        this.setHealth(this.health + modifiers.getHealth());
+        const h = AttributeState.healthGuard ? AttributeState.healthGuard(this, modifiers.getHealth(), null) : modifiers.getHealth();
+        this.setHealth(this.health + h);
         this.setHappiness(this.happiness + modifiers.getHappiness());
         this.setSanity(this.sanity + modifiers.getSanity());
     }

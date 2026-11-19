@@ -298,6 +298,9 @@ export const Relationships = {
         if (Relationships.friends(p).length >= Relationships.maxFriends) return `You already have ${Relationships.maxFriends} friends`;
         return null;
     },
+    /** v0.21.1: whether you make friends at school or work on your own (Love tab toggle; on by default). */
+    autoFriends(p: any = player()): boolean { return Relationships.circle(p).autoFriends !== false; },
+    setAutoFriends(on: boolean, p: any = player()) { Relationships.circle(p).autoFriends = on; },
     makeFriend(metAt: string, p: any = player()): SocialPerson | null {
         if (Relationships.friends(p).length >= Relationships.maxFriends) return null;
         const age = Math.max(3 * WPY(), p.getAgeInWeeks() + rnd(-2 * WPY(), 2 * WPY()));
@@ -398,12 +401,15 @@ export const Relationships = {
             const everyone: any[] = [...Array.from(fam.getFamilyMembers() as any).filter((x: any) => x.getIsAlive() && !x.getNotYetBorn() && x.getPetType() == null), ...c.list().filter((s) => s.getIsAlive())];
             for (const x of everyone) Relationships.setMood(x, Relationships.rollMood(x));
         }
-        // making friends at school or work
+        Relationships.maybeMakeFriend(p);
+    },
+    /** Making friends at school or work on your own (once a week; can be turned off on the Love tab). */
+    maybeMakeFriend(p: any = player()): SocialPerson | null {
         const place = Relationships.meetingPlace(p);
-        if (place != null && Relationships.friends(p).length < Relationships.maxFriends && Math.random() < Relationships.friendChancePerWeek) {
-            const f = Relationships.makeFriend(place, p);
-            if (f) Relationships.banner("New Friend", `You made a new friend at ${place}: ${f.getFullName()}.`);
-        }
+        if (place == null || !Relationships.autoFriends(p) || Relationships.friends(p).length >= Relationships.maxFriends || Math.random() >= Relationships.friendChancePerWeek) return null;
+        const f = Relationships.makeFriend(place, p);
+        if (f) Relationships.banner("New Friend", `You made a new friend at ${place}: ${f.getFullName()}.`);
+        return f;
     },
 
     // ------------------------------------------------------------------ messages

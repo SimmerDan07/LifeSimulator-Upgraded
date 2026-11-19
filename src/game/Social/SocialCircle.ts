@@ -32,6 +32,8 @@ export class SocialCircle {
     moodWeek: number = -1;
     /** v0.12.1 one-time repair of family scores that drifted away while you were a kid. */
     driftFixed: boolean = false;
+    /** v0.21.1: false = no new friends from school or work on their own (Love tab › Friends toggle). Undefined = on. */
+    autoFriends: boolean = true;
     /** v0.17.0: the extended family (grandparents, aunts, uncles, cousins, nieces, nephews, grandchildren) was rolled. */
     extendedRolled: boolean = false;
 

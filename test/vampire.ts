@@ -126,7 +126,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const s = Vampire.state(p);
     s.thirst = 0;
     keep(p); p.applyWeekly(); clear();
-    check("thirst rises 15 a week", s.thirst === 15, String(s.thirst));
+    check("thirst rises 5 a week (v0.21.1)", s.thirst === 5, String(s.thirst));
     s.thirst = 85;
     p.collectWeeklyValues();
     const san = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.sanity) as any).find((x: any) => x.getFirst() === "Thirst") as any;
@@ -135,10 +135,10 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const flow = Array.from(p.collectWeeklyCashFlow?.() ?? []).map((x: any) => String(x.getFirst?.() ?? x));
     check("diet is no longer charged to a vampire", !flow.some((t) => /Diet/.test(t)), flow.join("; "));
     LifeActions.perform(def(FEEDING, "animal"), p); clear();
-    check("Animal Blood: −20 thirst (then +15 for the week)", s.thirst === 85 - 20 + 15, String(s.thirst));
+    check("Animal Blood: −20 thirst (then +5 for the week)", s.thirst === 85 - 20 + 5, String(s.thirst));
     s.suspicion = 0;
     withRandom(0.5, () => LifeActions.perform(def(FEEDING, "hunt"), p)); clear();
-    check("Hunt at Night: −60 thirst, +10 suspicion", s.thirst === Math.max(0, 80 - 60) + 15 && s.suspicion === 10, `${s.thirst} ${s.suspicion}`);
+    check("Hunt at Night: −60 thirst, +10 suspicion", s.thirst === Math.max(0, 70 - 60) + 5 && s.suspicion === 10, `${s.thirst} ${s.suspicion}`);
     check("Blood Bank needs the power or a medical job", /Blood Bank Contact/.test(new LifeActionCell(def(FEEDING, "bloodBank")).requirementNotMetString(p) ?? ""));
     s.bloodPower = 10;
     LifeActions.perform(def(powerDefs(), "power-bloodBank"), p);
@@ -159,13 +159,12 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
 // ---------------------------------------------------------------- sunlight, work
 {
     const s = Vampire.state(p);
-    check("daytime leisure rows warn vampires", /Daytime: −10 health/.test(Leisure.goToPark.getAdditionalDescription() ?? ""));
+    check("daytime leisure rows warn vampires (sunlight drains happiness)", /Daytime: −10 happiness/.test(Leisure.goToPark.getAdditionalDescription() ?? ""));
     check("night leisure doesn't", !/Daytime/.test(Leisure.pub.getAdditionalDescription() ?? ""));
-    const h0 = p.getAttributeState().getHealth();
-    p.getAttributeState().setDeltaValueImmediate(new Modifiers(-40, 0, 0));
-    const h1 = p.getAttributeState().getHealth();
+    p.getAttributeState().setDeltaValueImmediate(new Modifiers(0, -40, 0));
+    const h1 = p.getAttributeState().getHealth(), hap1 = p.getAttributeState().getHappiness();
     Vampire.onLeisure(p, Leisure.goToPark);
-    check("the park burns: −10 health", Math.abs(p.getAttributeState().getHealth() - (h1 - 10)) < 0.01, `${h0} ${h1} → ${p.getAttributeState().getHealth()}`);
+    check("the park: −10 happiness, no health lost (v0.21.1)", Math.abs(p.getAttributeState().getHappiness() - (hap1 - 10)) < 0.01 && p.getAttributeState().getHealth() === h1, `${hap1} → ${p.getAttributeState().getHappiness()}, health ${h1} → ${p.getAttributeState().getHealth()}`);
     check("day jobs burn a little; Night Owl pays 20% more", Vampire.onWork(p) === 1 && (s.powers = [...s.powers, "nightOwl"], Vampire.onWork(p) === 1.2));
     s.powers = s.powers.filter((x) => x !== "nightOwl");
 }
@@ -210,7 +209,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     {
         const s = Vampire.state(p); s.thirst = 80; s.suspicion = 10; const sus = s.suspicion;
         withRandom(0.99, () => { LoveActions.perform(loveAction("huntTogether"), ana, p); }); clear();
-        check("Hunt Together: −50 thirst, +6 suspicion (+2 more: your partner hunts alone on Feed by Hand)", s.thirst === 45 && s.suspicion === sus + 8, `${s.thirst} ${s.suspicion}`);
+        check("Hunt Together: −50 thirst, +6 suspicion (+2 more: your partner hunts alone on Feed by Hand)", s.thirst === 35 && s.suspicion === sus + 8, `${s.thirst} ${s.suspicion}`);
         rich(p, 100000);
         LoveActions.perform(loveAction("eternalVows"), ana, p); clear();
         check("Eternal Vows: once every 10 years", new LoveActionCell(loveAction("eternalVows"), ana).requirementNotMetString(p) === "Once every 10 years");
@@ -242,6 +241,31 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     p.resetValuesThisWeek();
     check("…but starving for blood still hurts", starving && h1 === hp());
     s.thirst = 0; s.weeksAtMaxThirst = 0;
+    // v0.21.1: nothing mortal can hurt a vampire; well-fed vampires heal
+    {
+        const h = hp();
+        p.getAttributeState().setDeltaValueImmediate(new Modifiers(-30, 0, 0));
+        check("mortal harm (an accident, a bad night out) doesn't lower a vampire's health", hp() === h, `${h} → ${hp()}`);
+        Vampire.harming = true; p.getAttributeState().setDeltaValueImmediate(new Modifiers(-40, 0, 0)); Vampire.harming = false;
+        check("…but a hunter's stake still does", hp() === Math.max(0, h - 40), `${h} → ${hp()}`);
+        p.getAttributeState().setHealth(50);
+        s.thirst = 10;
+        withRandom(0.99, () => p.applyWeekly()); clear();
+        check("a well-fed vampire heals +3 health a week", hp() >= 53, String(hp()));
+        p.getAttributeState().setHealth(60);
+        let low = 100;
+        for (let w = 0; w < 52; w++) {
+            s.thirst = 20;
+            p.getAttributeState().setDeltaValue(PersonAttribute.health, "Junk food", -5);
+            p.getAttributeState().setDeltaValueImmediate(new Modifiers(-10, 0, 0));
+            Vampire.onWork(p);
+            withRandom(0.99, () => p.applyWeekly()); clear();
+            low = Math.min(low, hp());
+        }
+        check("a whole year of mortal damage and day jobs: health never drops", low >= 60 && hp() >= 60, `lowest ${low}, now ${hp()}`);
+        check("Butcher's Blood keeps thirst going down (−3 a week)", BLOOD_DIETS.find((d) => d.id === "butcher")!.thirst === -3);
+    }
+    s.thirst = 0; s.weeksAtMaxThirst = 0;
     // blood diets
     check("seven blood diets", BLOOD_DIETS.length === 7 && BLOOD_DIETS.map((d) => d.title).join("|") === "Feed by Hand|Rats & Strays|Butcher's Blood|Blood Bank Bags|Nightly Hunting|Willing Donors|Rare Vintage");
     const hrows = Array.from(new HealthModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
@@ -253,7 +277,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     new BloodDietCell(BLOOD_DIETS[1]).action(p); clear();
     check("pick Rats & Strays", Vampire.chosenDiet(p).id === "rats" && Vampire.state(p).diet === "rats");
     week(p, 1, false);
-    check("Rats & Strays: thirst +8 a week", s.thirst === 8, String(s.thirst));
+    check("Rats & Strays: thirst +2 a week", s.thirst === 2, String(s.thirst));
     p.collectWeeklyValues();
     const hap = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).some((x: any) => x.getFirst() === "Blood Diet - Rats & Strays");
     p.resetValuesThisWeek();

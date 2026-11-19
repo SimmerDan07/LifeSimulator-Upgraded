@@ -78,6 +78,16 @@ export const LoveScreens = {
             !!opts.large, !person.getIsAlive(), note);
     },
     /** Cards for a group: living people oldest first, then "In memory". */
+    /** v0.21.1: turn automatic friend-making (at school or work) on or off. */
+    autoFriendsCell(p: any = player()): ActionCellSingleViewModel {
+        const on = Relationships.autoFriends(p);
+        return new ActionCellSingleViewModel(R.drawable.waving_hand, `Make Friends Automatically: ${on ? "On" : "Off"}`,
+            text(on ? "You sometimes make a new friend at school or work on your own. Turn this off to only make friends when you choose (Meet New People)."
+                : "You won't make friends at school or work on your own. You can still use Meet New People."),
+            new ButtonViewModel(on ? "Turn Off" : "Turn On", null, true, false, false, false, false,
+                { invoke: () => { Relationships.setAutoFriends(!on, p); const f = GameStateManager.INSTANCE.getMainGameFragment(); if (f != null) f.updateUI(null); return null; } }),
+            null, null);
+    },
     group(list: any[], out: ArrayList<BaseViewModel>, extra?: (alive: any[]) => void) {
         const living = Relationships.byAge(list.filter((x) => x.getIsAlive()));
         const dead = Relationships.byAge(list.filter((x) => !x.getIsAlive()));
@@ -174,6 +184,7 @@ export const LoveScreens = {
             out.add(new HeaderTitleViewModel(`Friends${friends.length ? ` (${friends.length}/${Relationships.maxFriends})` : ""}`));
             LoveScreens.group(friends, out);
             out.add(new LoveActionCell(loveAction("meetPeople"), null).cell());
+            out.add(LoveScreens.autoFriendsCell(p));
         }
 
         // Pets (living)

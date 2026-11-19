@@ -295,6 +295,32 @@ check("unknown person id: friendly message, no crash", text(screen("nobody")).in
     check("an heir's siblings are the deceased's other children", hs2.length === 1 && hs2[0].firstName === "Leo" && hs2[0].getAgeInWeeks() === kidYoung.getAgeInWeeks());
 }
 
+// ---------------------------------------------------------------- v0.21.1: turn off making friends automatically
+{
+    for (const f of Relationships.friends(p)) p.getSocial().remove(f.id);
+    const place = Relationships.meetingPlace(p) ?? (p.getJobState().switchJob(p.getJobState().statesForPlayer(p)[0].getType()), Relationships.meetingPlace(p));
+    const row = () => tab().find((r) => /^Make Friends Automatically/.test(r.title ?? ""));
+    check("Love tab › Friends: 'Make Friends Automatically: On' with Turn Off", row()?.title === "Make Friends Automatically: On" && /Turn Off/.test(text(row())), String(place));
+    row().getActionButton().getAction().invoke();
+    check("…Turn Off flips it", !Relationships.autoFriends(p) && row()?.title === "Make Friends Automatically: Off" && /Turn On/.test(text(row())));
+    const r = Math.random; Math.random = () => 0;
+    try { for (let i = 0; i < 30; i++) Relationships.maybeMakeFriend(p); } finally { Math.random = r; }
+    clear();
+    check("off: no friends made at school or work", Relationships.friends(p).length === 0, String(Relationships.friends(p).length));
+    check("off: Meet New People is still there to use", new LoveActionCell(loveAction("meetPeople"), null).requirementNotMetString(p) == null);
+    for (const f of Relationships.friends(p)) p.getSocial().remove(f.id);
+    row().getActionButton().getAction().invoke();
+    Math.random = () => 0;
+    try { Relationships.maybeMakeFriend(p); } finally { Math.random = r; }
+    clear();
+    check("on again: friends come on their own", Relationships.autoFriends(p) && Relationships.friends(p).length === 1);
+    const back: any = (SaveCodec as any).decode((SaveCodec as any).encode(p));
+    Relationships.setAutoFriends(false, p);
+    const back2: any = (SaveCodec as any).decode((SaveCodec as any).encode(p));
+    check("the setting is saved", back.getSocial().autoFriends === true && back2.getSocial().autoFriends === false);
+    Relationships.setAutoFriends(true, p);
+}
+
 // ---------------------------------------------------------------- friends
 {
     for (const f of Relationships.friends(p)) p.getSocial().remove(f.id);

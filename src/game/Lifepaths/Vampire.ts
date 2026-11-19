@@ -2,8 +2,10 @@
 //
 // Becoming: 18+, out of jail. A pale stranger (2% a week at Nightclubs and Local Events) or Seek the Ancient
 // ($5,000 a try, 25%) reveals the path; Accept the Bite turns you over one week (health drops to 50%).
-// Living: your body stops ageing (true age and the calendar keep going). Thirst +15 a week; feed to lower it.
-// High thirst hurts; at 100 you frenzy, and 4+ weeks at 100 starves you. Daytime leisure and day jobs burn you.
+// Living: your body stops ageing (true age and the calendar keep going). Thirst +5 a week (v0.21.1; was +15); feed to lower it.
+// High thirst hurts; at 100 you frenzy, and 4+ weeks at 100 starves you. Sunlight drains your mood (v0.21.1: not your health).
+// v0.21.1: nothing mortal can lower a vampire's health (AttributeState.healthGuard); only starving and hunters' stakes
+// can. Well-fed vampires heal +3 health a week.
 // Suspicion grows from hunting, frenzies and never ageing; at 80+ vampire hunters may come.
 // Blood power (1 a year, +1 every 10 years) buys six powers. Tell loved ones your secret; turn them (3 blood power).
 // Vampires can't have biological children. Endings: the Vampiric Cure (the reworked Elixir of Youth) or Final Rest.
@@ -15,6 +17,7 @@ import { AlertManager } from "../Managers/AlertManager";
 import { AlertViewModel } from "../Managers/AlertViewModel";
 import { AlertActionViewModel } from "../Managers/AlertActionViewModel";
 import { AlertType } from "../Managers/AlertType";
+import { AttributeState } from "../Managers/AttributeState";
 import { Modifiers } from "../Managers/Modifiers";
 import { MoneyState } from "../Managers/MoneyState";
 import { NameGenerator } from "../Managers/NameGenerator";
@@ -43,10 +46,10 @@ const attr = (p: any, h: number, hap: number, san: number) => p.getAttributeStat
 export interface PowerDef { id: string; title: string; cost: number; image: any; blurb: string }
 export const POWERS: PowerDef[] = [
     { id: "charm", title: "Charm", cost: 1, image: R.drawable.icon_power_charm, blurb: "Dating works more often; relationship gains +25%." },
-    { id: "nightOwl", title: "Night Owl", cost: 1, image: R.drawable.icon_power_nightowl, blurb: "You work night shifts: no sunlight damage at work and 20% more pay." },
+    { id: "nightOwl", title: "Night Owl", cost: 1, image: R.drawable.icon_power_nightowl, blurb: "You work night shifts: no sunlight at work and 20% more pay." },
     { id: "bloodBank", title: "Blood Bank Contact", cost: 2, image: R.drawable.icon_power_bloodbank, blurb: "Unlocks Buy from a Blood Bank." },
     { id: "mistStep", title: "Mist Step", cost: 2, image: R.drawable.icon_power_miststep, blurb: "Hunting no longer risks police trouble." },
-    { id: "sunWard", title: "Sun Ward", cost: 3, image: R.drawable.icon_power_sunward, blurb: "Sunlight does half as much damage." },
+    { id: "sunWard", title: "Sun Ward", cost: 3, image: R.drawable.icon_power_sunward, blurb: "Sunlight drains you half as much." },
     { id: "mindFog", title: "Mind Fog", cost: 3, image: R.drawable.icon_power_mindfog, blurb: "Suspicion drops by 5 by itself every week." },
 ];
 
@@ -66,11 +69,11 @@ export interface BloodDiet {
 }
 /** What a vampire lives on every week (the Health tab's Choose Menu and the Lifepaths Feeding section). */
 export const BLOOD_DIETS: BloodDiet[] = [
-    { id: "hand", title: "Feed by Hand", image: R.drawable.icon_vamp_feedbyhand, cost: 0, thirst: 15, mods: [0, 0, 0],
+    { id: "hand", title: "Feed by Hand", image: R.drawable.icon_vamp_feedbyhand, cost: 0, thirst: 5, mods: [0, 0, 0],
         blurb: "No plan: you feed yourself with the Feeding actions." },
-    { id: "rats", title: "Rats & Strays", image: R.drawable.vdiet_rats, cost: 0, thirst: 8, mods: [0, -3, 0],
+    { id: "rats", title: "Rats & Strays", image: R.drawable.vdiet_rats, cost: 0, thirst: 2, mods: [0, -3, 0],
         blurb: "Free, but grim and never enough." },
-    { id: "butcher", title: "Butcher's Blood", image: R.drawable.vdiet_butcher, cost: 300, thirst: 3, mods: [0, -1, 0],
+    { id: "butcher", title: "Butcher's Blood", image: R.drawable.vdiet_butcher, cost: 300, thirst: -3, mods: [0, -1, 0],
         blurb: "Pig and cow blood from the butcher. Keeps you going." },
     { id: "bags", title: "Blood Bank Bags", image: R.drawable.vdiet_bloodbag, cost: 2000, thirst: -10, mods: [1, 0, 0],
         blurb: "Human blood, delivered cold and discreet.",
@@ -85,7 +88,11 @@ export const BLOOD_DIETS: BloodDiet[] = [
 
 export const Vampire = {
     minAge: 18,
-    thirstPerWeek: 15,
+    thirstPerWeek: 5,
+    /** Health a well-fed vampire (thirst under 60) heals every week. */
+    healPerWeek: 3,
+    /** Set while a vampire danger (a hunter's stake) is hurting you, so the health guard lets it through. */
+    harming: false,
     turnCost: 3,            // blood power to turn someone
     curePrice: 300_000_000_000,
     cureName: "Vampiric Cure",
@@ -211,8 +218,11 @@ export const Vampire = {
         const label = "Blood Diet - " + d.title + (two && d.cost > 0 ? " (for two)" : "");
         if (d.cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.cost * (two ? 2 : 1)), MoneyUpdateType.expense, label, null, 8, null);
         p.getAttributeState().setDeltaValue(new Modifiers(d.mods[0], d.mods[1], d.mods[2]), label);
+        // v0.21.1: undead bodies mend themselves while fed
+        if (s.thirst < 60 && s.weeksAtMaxThirst === 0 && p.getAttributeState().getHealth() < 100)
+            p.getAttributeState().setDeltaValue(new Modifiers(Vampire.healPerWeek, 0, 0), "Vampire healing");
     },
-    /** A vampire's health never decays: only vampire dangers (starving, sunlight, hunters, frenzy) can lower it. */
+    /** A vampire's health never decays: only vampire dangers (starving, hunters) can lower it. */
     protectHealth(p: any) {
         if (!Vampire.isVampire(p)) return;
         const list: any = p.getAttributeState().getDeltaThisWeek(PersonAttribute.health);
@@ -329,7 +339,8 @@ export const Vampire = {
             Vampire.alert("You Won", partner != null ? `You and ${partner.getFirstName()} fought side by side. The hunters fled into the night.` : "The hunters fled into the night. They won't be back for a while.");
         } else if (r < win + (1 - win) / 2) {
             s.suspicion = Math.max(0, s.suspicion - 20);
-            attr(p, -40, 0, -10);
+            Vampire.harming = true;
+            try { attr(p, -40, 0, -10); } finally { Vampire.harming = false; }
             Vampire.alert("Barely Escaped", "You got away, but a stake grazed your heart (−40 health).");
         } else {
             Vampire.die(p, `${p.getFirstName()} was slain by vampire hunters after ${Vampire.years(p)} years of eternal life.`, "Vampire hunters");
@@ -350,20 +361,21 @@ export const Vampire = {
     // ------------------------------------------------------------------ sunlight
     sunDamage(p: any): number { return Vampire.has("sunWard", p) ? 5 : 10; },
     isDaytime(action: any): boolean { return action != null && DAYTIME.has(action.name()); },
+    /** v0.21.1: sunlight drains a vampire's happiness (it no longer touches health). */
     onLeisure(p: any, action: any) {
         if (!Vampire.isVampire(p) || !Vampire.isDaytime(action)) return;
-        attr(p, -Vampire.sunDamage(p), 0, 0);
+        attr(p, 0, -Vampire.sunDamage(p), 0);
     },
     leisureNote(action: any): string | null {
         const p = player();
         if (!p || !Vampire.isVampire(p) || !Vampire.isDaytime(action)) return null;
-        return `Daytime: −${Vampire.sunDamage(p)} health for a vampire\n`;
+        return `Daytime: −${Vampire.sunDamage(p)} happiness for a vampire (sunlight)\n`;
     },
     /** Working a week: day shifts burn (Night Owl works nights and earns 20% more). Returns the pay multiplier. */
     onWork(p: any): number {
         if (!Vampire.isVampire(p)) return 1;
         if (Vampire.has("nightOwl", p)) return 1.2;
-        attr(p, -Math.ceil(Vampire.sunDamage(p) / 2), 0, 0);
+        attr(p, 0, -Math.ceil(Vampire.sunDamage(p) / 5), 0);   // v0.21.1: day shifts are tiring (−2 happiness), not deadly
         return 1;
     },
     /** Charm: +25% relationship gains. */
@@ -639,3 +651,14 @@ export function powerDefs(): LifeActionDef[] {
 }
 
 void vs;
+
+// v0.21.1: a vampire can't be hurt by mortal things. Every health loss for the current player while they're a vampire is
+// blocked, except starving (weekly, labelled STARVING) and vampire dangers that set Vampire.harming.
+AttributeState.healthGuard = (st: any, delta: number, key: string | null): number => {
+    if (delta >= 0 || Vampire.harming || key === STARVING) return delta;
+    try {
+        const p = player();
+        if (p != null && p.getAttributeState() === st && Vampire.isVampire(p)) return 0;
+    } catch { /* no player yet */ }
+    return delta;
+};
