@@ -141,7 +141,7 @@ const n = FamilyExtras.spendTimeWithEveryone();
 const summary = alerts.find((a) => a.getTitle() === "Time Well Spent");
 clear();
 check("one week with each person: N relationships = N weeks", n === everyone.length && n >= 6 && p.getAgeInWeeks() === w0 + n, `${n} people, ${p.getAgeInWeeks() - w0} weeks`);
-check("everyone grew closer", everyone.every((x, i) => x.getRelationshipProgress() > rel0[i] || x.getRelationshipProgress() >= 1000),
+check("everyone +400 closer (up to the 1000 max), even in a bad mood", everyone.every((x, i) => x.getRelationshipProgress() === Math.min(1000, rel0[i] + 400)),
     everyone.map((x, i) => `${x.getFirstName()} ${rel0[i]}→${x.getRelationshipProgress()}`).join(", "));
 check("a 'Time Well Spent' summary", summary != null && summary.getMessage().includes(`${n} weeks`));
 check("exes don't get a week", social.list("ex")[0].getRelationshipProgress() === exes.getRelationshipProgress());

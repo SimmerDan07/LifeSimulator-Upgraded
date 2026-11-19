@@ -324,7 +324,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   - "Spend Time with Everyone" (Love tab, free): **v0.21.0** — a week with *each* relationship you have (partner,
     children, parents, siblings, grandparents, grandchildren, great-grandchildren, nieces/nephews, aunts/uncles, cousins,
     friends and pets; not exes), one after another: 12 relationships = 12 weeks. The button shows the number of weeks
-    and asks first; each person gets +25 relationship on their week, nobody on the list drifts while they wait, and a
+    and asks first; each person gets **+400** relationship on their week (v0.21.1; never halved by a bad mood, up to
+    the 1000 maximum), nobody on the list drifts while they wait, and a
     "Time Well Spent" summary closes it. It stops early if you die or land in jail.
 - **No more being kicked out at 18 (v0.11.0)**: you can keep living with your parents as an adult, move out whenever
   you like (buy/rent or a basic place), and move back in while a parent is alive. The allowance still stops at 18.

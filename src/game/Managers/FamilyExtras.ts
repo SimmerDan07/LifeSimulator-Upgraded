@@ -29,8 +29,9 @@ const refresh = () => { const f = GameStateManager.INSTANCE.getMainGameFragment(
 export const FamilyExtras = {
     elixirYears: 10,
     elixirMinAge: 18,
-    /** Relationship gained with each person from "Spend Time with Everyone" (a whole week just with them). */
-    togetherBond: 25,
+    /** Relationship gained with each person from "Spend Time with Everyone" (a whole week just with them; v0.21.1: +400,
+     *  never halved by a bad mood, up to the 1000 maximum). */
+    togetherBond: 400,
     get togetherModifiers(): Modifiers { return new Modifiers(0, 4, 3); },
 
     // ---------------------------------------------------------------- true age
@@ -141,8 +142,8 @@ export const FamilyExtras = {
         const people = FamilyExtras.everyone();
         const n = people.length;
         const sub = n === 0 ? "You don't have anyone to spend time with yet."
-            : n === 1 ? `A week with ${people[0].getFirstName()}.`
-            : `A week with each of your ${n} relationships (family, partner, friends and pets): ${FamilyExtras.weeksText(n)} go by. Everyone grows closer.`;
+            : n === 1 ? `A week with ${people[0].getFirstName()}: +${FamilyExtras.togetherBond} relationship.`
+            : `A week with each of your ${n} relationships (family, partner, friends and pets): ${FamilyExtras.weeksText(n)} go by, +${FamilyExtras.togetherBond} relationship with each.`;
         const text = new TextLabelViewModel(sub, null, false, false, null, null);
         return new ActionCellSingleViewModel(R.drawable.family, "Spend Time with Everyone", text,
             new ButtonViewModel(n ? FamilyExtras.weeksText(n) : "Free", null, n > 0, false, false, false, false,
@@ -154,7 +155,7 @@ export const FamilyExtras = {
         const n = FamilyExtras.everyone().length;
         if (n <= 1) { FamilyExtras.spendTimeWithEveryone(); return; }
         AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Spend Time with Everyone",
-            `You'll spend a week with each of your ${n} relationships, one after another. ${FamilyExtras.weeksText(n)} will go by.`, R.drawable.family, null, null,
+            `You'll spend a week with each of your ${n} relationships, one after another. ${FamilyExtras.weeksText(n)} will go by, and each of them gets +${FamilyExtras.togetherBond} relationship.`, R.drawable.family, null, null,
             new AlertActionViewModel(`Spend ${FamilyExtras.weeksText(n)}`, { invoke: () => { FamilyExtras.spendTimeWithEveryone(); return null; } }),
             new AlertActionViewModel("Cancel", { invoke: () => null }), null, AlertType.Alert, 0, null), false, 2, null);
     },
@@ -173,7 +174,10 @@ export const FamilyExtras = {
                 if (!playing()) break;
                 try { if (p.getCrimeState().getIsInJail()) break; } catch { /* ignore */ }
                 if (!x.getIsAlive()) continue; // they died during the weeks before theirs
+                const before = x.getRelationshipProgress();
                 Relationships.applyGain(x, "rel:everyone", FamilyExtras.togetherBond);
+                // the full +400 even if they're Stressed or Upset (applyGain would halve it)
+                if (x.getRelationshipProgress() < before + FamilyExtras.togetherBond) x.setRelationshipProgress(before + FamilyExtras.togetherBond);
                 p.getAttributeState().setDeltaValueImmediate(FamilyExtras.togetherModifiers);
                 p.applyWeekly();
                 weeks++;
@@ -185,7 +189,7 @@ export const FamilyExtras = {
         if (weeks > 1 && playing()) {
             const list = names.length > 6 ? `${names.slice(0, 5).join(", ")} and ${names.length - 5} more` : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
             AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Time Well Spent",
-                `You spent ${FamilyExtras.weeksText(weeks)} with ${list}${weeks < people.length ? ` (${people.length - weeks} had to wait for another time)` : ""}. Everyone feels closer to you.`,
+                `You spent ${FamilyExtras.weeksText(weeks)} with ${list}${weeks < people.length ? ` (${people.length - weeks} had to wait for another time)` : ""}. Everyone is +${FamilyExtras.togetherBond} closer to you.`,
                 R.drawable.family, null, null, null, null, null, null, 504, null), false, 2, null);
         }
         refresh();
