@@ -11,7 +11,7 @@
 // v0.23.0 Automatic Savings (free): 25%, 50%, 75% or 80% of every paycheck goes straight to your savings
 // (Player.autoSavePercent; undefined in older saves = off). Player.autoSaved counts the total put away.
 // v0.24.0 Pay Bills from Savings (free, On/Off): weekly bills come out of savings while savings can cover them
-// (Player.billsFromSavings; the hook is MoneyState.billsFromSavings). Both rows also show on the Bank tab.
+// (Player.billsFromSavings; the hook is MoneyState.billsFromSavings). v0.24.1: both rows are on the Bank tab only.
 import { ArrayList, BigInteger, R } from "../runtime";
 import { AlertActionViewModel } from "./AlertActionViewModel";
 import { AlertType } from "./AlertType";
@@ -149,8 +149,8 @@ export const Subscriptions = {
             ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new BillsCell() as any, null)];
     },
     cells(): ActionCellSingleViewModel[] {
-        return [...Subscriptions.moneyCells(),
-            ...SUBSCRIPTIONS.map((d) => ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new SubscriptionCell(d) as any, null))];
+        // v0.24.1: Automatic Savings and Pay Bills from Savings live on the Bank tab only
+        return [...SUBSCRIPTIONS.map((d) => ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new SubscriptionCell(d) as any, null))];
     },
 };
 

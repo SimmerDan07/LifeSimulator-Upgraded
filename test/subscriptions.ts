@@ -26,9 +26,10 @@ let failures = 0;
 const check = (n: string, ok: boolean, x = "") => { if (!ok) failures++; console.log((ok ? "PASS " : "FAIL ") + n + (x ? "  (" + x + ")" : "")); };
 const clear = () => { while (alerts.length) AlertManager.INSTANCE.alertDismissed(alerts.shift()); };
 const profile = () => Array.from(new ProfileModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
-const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return i < 0 ? [] : r.slice(i + 3, i + 6); };
-const billsRow = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return r[i + 2]; };
-const autoRow = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return r[i + 1]; };
+const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return i < 0 ? [] : r.slice(i + 1, i + 4); };
+const billsRow = () => bankRows().find((r) => /^Pay Bills from Savings/.test(r.title ?? ""));
+const bankRows = () => Array.from(new BankModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
+const autoRow = () => bankRows().find((r) => /^Automatic Savings/.test(r.title ?? ""));
 const delta = (p: any, attr: any, key: string) => { p.collectWeeklyValues(); const list = Array.from(p.getAttributeState().getDeltaThisWeek(attr) as any) as any[]; p.resetValuesThisWeek(); const hit = list.find((x) => x.getFirst() === key); return hit ? Number(hit.getSecond()) : 0; };
 const flow = (p: any) => p.getTotalCashFlowPerWeek().intValue();
 const start = (sc: any, tweak?: (np: any) => void) => {
@@ -46,7 +47,8 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     check("old save: no subscriptions", Subscriptions.active(p).length === 0);
     const rows = subRows();
     check("Profile tab: a Subscriptions section with Gym Membership, Gym Coach, Therapist", rows.map((r) => r.title).join(",") === "Gym Membership,Gym Coach,Therapist", rows.map((r) => r.title).join(","));
-    check("old save: Automatic Savings is first in Subscriptions, off, button Set Up", /^Automatic Savings$/.test(autoRow()?.title) && autoRow().actionButton.title === "Set Up" && Subscriptions.autoSave(p) === 0, autoRow()?.title);
+    check("v0.24.1: the Profile tab no longer shows Automatic Savings / Pay Bills", !profile().some((r) => /^(Automatic Savings|Pay Bills from Savings)/.test(r.title ?? "")));
+    check("old save: Automatic Savings on the Bank tab, off, button Set Up", /^Automatic Savings$/.test(autoRow()?.title) && autoRow().actionButton.title === "Set Up" && Subscriptions.autoSave(p) === 0, autoRow()?.title);
     check("rows have their pictures and weekly prices", rows.every((r) => r.imageId != null) && /\$50\/wk/.test(JSON.stringify(rows[0])));
 }
 
@@ -141,7 +143,7 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), Mo
     const num = (b: any) => Number(b.toString());
     check("Pay Bills from Savings row: Off, Turn On", billsRow()?.title === "Pay Bills from Savings: Off" && billsRow().actionButton.title === "Turn On", billsRow()?.title);
     const bank = Array.from(new BankModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
-    check("the Bank tab has both rows too", bank.some((r) => /^Automatic Savings/.test(r.title)) && bank.some((r) => /^Pay Bills from Savings/.test(r.title)));
+    check("the Bank tab has both rows", bank.some((r) => /^Automatic Savings/.test(r.title)) && bank.some((r) => /^Pay Bills from Savings/.test(r.title)));
     billsRow().actionButton.action.invoke();
     check("Turn On", Subscriptions.billsFromSavings(p) && billsRow().title === "Pay Bills from Savings: On" && billsRow().actionButton.title === "Turn Off");
     // put money in savings, then a week of bills

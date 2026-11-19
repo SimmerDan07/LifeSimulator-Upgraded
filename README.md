@@ -277,12 +277,12 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   | Gym Coach | $150 | +3 health | 14+, a Gym Membership |
   | Therapist | $200 | +4 sanity | 12+ |
 
-  **Automatic Savings (v0.23.0)** is the first row: free, Set Up / Change opens a chooser (25%, 50%, 75%, 80%,
+  **Automatic Savings (v0.23.0)**: free (v0.24.1: on the Bank tab only, at the end of the Bank section), Set Up / Change opens a chooser (25%, 50%, 75%, 80%,
   Turn Off). That share of every paycheck (`JobState.work` → `Subscriptions.payCheck`) goes straight to savings, the rest
   to cash. `Player.autoSavePercent` / `Player.autoSaved` (total, shown on the row); off in older saves.
-  **Pay Bills from Savings (v0.24.0)**, second row, On/Off: weekly bills (`MoneyUpdateType.expense`) go to the savings
+  **Pay Bills from Savings (v0.24.0)**, the row after it, On/Off: weekly bills (`MoneyUpdateType.expense`) go to the savings
   delta (labelled "(from savings)" in Weekly Cash Flow) while savings can cover them, else cash (`MoneyState.billsFromSavings`
-  hook, `Player.billsFromSavings`). Both rows also show at the end of the Bank tab's Bank section.
+  hook, `Player.billsFromSavings`). Both rows are on the Bank tab only (`Subscriptions.moneyCells`).
 - **True ages (v0.24.0)**: every person card shows "Age: N (true age M)" (`FamilyExtras.ageText`); the Family Tree adds
   "(true N)" when it differs.
 
