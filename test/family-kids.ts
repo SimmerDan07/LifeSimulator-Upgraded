@@ -14,6 +14,7 @@ import { GenericListType } from "../src/game/Fragments/GenericListType";
 import { KidsLeisure } from "../src/game/Managers/KidsLeisure";
 import { FamilyExtras } from "../src/game/Managers/FamilyExtras";
 import { Person } from "../src/game/Managers/Person";
+import { SocialPerson } from "../src/game/Social/SocialPerson";
 import { Relationship } from "../src/game/Enums/Relationship";
 import { Sex } from "../src/game/Enums/Sex";
 import { LoverPersonality } from "../src/game/Enums/LoverPersonality";
@@ -115,11 +116,35 @@ const love = rows(new LoveModelGenerator());
 check("Love tab shows the counters", love.some((r) => /Together 3 years · Married 1 year/.test(text(r))));
 const partnerScreen = Array.from(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.personDetails, p.getFamilyState().getPartner().getId(), true).getContentViewModels() as any) as any[];
 check("partner screen: no Elixir; Love tab: Spend Time with Everyone", !partnerScreen.some((r) => /Elixir/.test(r.title ?? "")) && love.some((r) => r.title === "Spend Time with Everyone"));
+// v0.21.0: a week with EACH relationship — partner, family, extended family, friends, pets
+const social = p.getSocial();
+for (const [kind, first] of [["friend", "Maya"], ["friend", "Leo"], ["cousin", "Ava"], ["sibling", "Sam"]] as [any, string][]) {
+    const sp = SocialPerson.make(kind, Sex.female, kind === "friend" ? "Stone" : p.getLastName(), 25 * W);
+    sp.firstName = first; sp.relationshipProgress = 300; social.add(sp);
+}
+const exes = SocialPerson.make("ex", Sex.male, "Gray", 30 * W); exes.firstName = "Rex"; social.add(exes);
 const everyone = FamilyExtras.everyone();
+check("everyone = partner, parents, siblings, extended family, friends and pets (not exes)",
+    ["Maya", "Leo", "Ava", "Sam"].every((n) => everyone.some((x) => x.getFirstName() === n)) && !everyone.some((x) => x.getFirstName() === "Rex") && everyone.includes(p.getFamilyState().getPartner()),
+    everyone.map((x) => x.getFirstName()).join(", "));
+const cell = FamilyExtras.spendTimeCell();
+check("the Love tab button says how many weeks", text(cell).includes(`${everyone.length} weeks`), text(cell).slice(0, 300));
 const rel0 = everyone.map((x) => x.getRelationshipProgress());
 const w0 = p.getAgeInWeeks();
-const n = FamilyExtras.spendTimeWithEveryone(); clear();
-check("Spend Time with Everyone: everyone closer, one week", n === everyone.length && n >= 2 && p.getAgeInWeeks() === w0 + 1 && everyone.every((x, i) => x.getRelationshipProgress() >= Math.min(rel0[i] + 1, 100) || x.getRelationshipProgress() === rel0[i]), everyone.map((x, i) => `${x.getFirstName()} ${rel0[i]}→${x.getRelationshipProgress()}`).join(", "));
+FamilyExtras.askSpendTime();
+const ask = alerts.find((a) => a.getTitle() === "Spend Time with Everyone");
+check("asks first: 'Spend N weeks' / Cancel", ask != null && ask.getPositiveButton().getTitle() === `Spend ${everyone.length} weeks` && ask.getNegativeButton().getTitle() === "Cancel");
+alerts.splice(alerts.indexOf(ask), 1); ask.getNegativeButton().getAction().invoke(); AlertManager.INSTANCE.alertDismissed(ask); clear();
+check("Cancel: no time passes", p.getAgeInWeeks() === w0);
+keepAlive(p);
+const n = FamilyExtras.spendTimeWithEveryone();
+const summary = alerts.find((a) => a.getTitle() === "Time Well Spent");
+clear();
+check("one week with each person: N relationships = N weeks", n === everyone.length && n >= 6 && p.getAgeInWeeks() === w0 + n, `${n} people, ${p.getAgeInWeeks() - w0} weeks`);
+check("everyone grew closer", everyone.every((x, i) => x.getRelationshipProgress() > rel0[i] || x.getRelationshipProgress() >= 1000),
+    everyone.map((x, i) => `${x.getFirstName()} ${rel0[i]}→${x.getRelationshipProgress()}`).join(", "));
+check("a 'Time Well Spent' summary", summary != null && summary.getMessage().includes(`${n} weeks`));
+check("exes don't get a week", social.list("ex")[0].getRelationshipProgress() === exes.getRelationshipProgress());
 const back: any = (SaveCodec as any).decode((SaveCodec as any).encode(p));
 check("save keeps the counters", back.getFamilyState().getPartner().togetherSinceWeek === p.getFamilyState().getPartner().togetherSinceWeek && back.getFamilyState().getPartner().marriedSinceWeek != null);
 // a partner with an older true age (from an older save) still shows it on the Love tab

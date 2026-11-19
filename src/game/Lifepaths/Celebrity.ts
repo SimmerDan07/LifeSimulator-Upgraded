@@ -232,7 +232,7 @@ const CelebrityBase = {
     afterWeek(p: any) {
         const s = Celebrity.peek(p);
         if (s == null || (s.fans <= 0 && Celebrity.career(p) == null)) return;
-        try { if (!p.getIsAlive()) return; } catch { /* ignore */ }
+        try { if (!GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) return; } catch { /* ignore */ }
         // fans fade when you go quiet (less with a publicist, a fan club or a country sound; never for a Legend)
         if (now(p) - (s.lastActive ?? 0) > 2 && !s.legend) s.fans = Math.max(0, Math.round(s.fans * (1 - Celebrity.fadeRate(p))));
         World.weekly(p);

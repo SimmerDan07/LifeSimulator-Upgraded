@@ -2,7 +2,8 @@
 // - True age of parents, children and your partner (they age normally; the Elixir of Youth makes them younger).
 // - Give a family member or your partner the Elixir of Youth (same price as yours; 10 years younger, never below 18).
 // - How long you've been together with your partner, and how long you've been married.
-// - "Spend Time with Everyone": one week with your partner, parents, children and pets.
+// - "Spend Time with Everyone": a week with each person you have a relationship with (v0.21.0: partner, parents, children,
+//   siblings, extended family, friends and pets — 12 relationships = 12 weeks).
 import { BigInteger, R } from "../runtime";
 import { GenericListType } from "../Fragments/GenericListType";
 import { GameStateManager } from "./GameStateManager";
@@ -28,8 +29,8 @@ const refresh = () => { const f = GameStateManager.INSTANCE.getMainGameFragment(
 export const FamilyExtras = {
     elixirYears: 10,
     elixirMinAge: 18,
-    /** Relationship gained with each person from "Spend Time with Everyone". */
-    togetherBond: 10,
+    /** Relationship gained with each person from "Spend Time with Everyone" (a whole week just with them). */
+    togetherBond: 25,
     get togetherModifiers(): Modifiers { return new Modifiers(0, 4, 3); },
 
     // ---------------------------------------------------------------- true age
@@ -118,37 +119,76 @@ export const FamilyExtras = {
     onMarried(partner: any) { if (partner != null) { FamilyExtras.ensureTogetherSince(partner); partner.marriedSinceWeek = FamilyExtras.now(); } },
 
     // ---------------------------------------------------------------- spend time with everyone
+    /** Every relationship you have (v0.21.0): partner, children, parents, siblings, extended family, friends, pets. Exes don't come. */
     everyone(): any[] {
-        const fam = GameStateManager.INSTANCE.getPersonState().getFamilyState();
+        const p = GameStateManager.INSTANCE.getPersonState();
+        const fam = p.getFamilyState();
         const out: any[] = [];
+        const alive = (x: any) => x != null && x.getIsAlive() && !(x.getNotYetBorn?.() ?? false);
         const partner = fam.getPartner();
-        if (partner != null && partner.getIsAlive()) out.push(partner);
-        for (const list of [fam.getParents(), fam.getChildren(), fam.getPets()]) {
-            for (const x of Array.from(list as any) as any[]) if (x.getIsAlive() && !x.getNotYetBorn()) out.push(x);
+        if (alive(partner)) out.push(partner);
+        for (const list of [fam.getChildren(), fam.getParents()]) for (const x of Array.from(list as any) as any[]) if (alive(x)) out.push(x);
+        const social = (p as any).getSocial?.();
+        if (social != null) {
+            for (const kind of ["sibling", "grandchild", "greatGrandchild", "grandparent", "nibling", "auntUncle", "cousin", "friend"])
+                for (const s of social.list(kind)) if (s.getIsAlive()) out.push(s);
         }
-        // v0.12.0: brothers and sisters come too
-        const social = GameStateManager.INSTANCE.getPersonState().getSocial?.();
-        if (social != null) for (const s of social.list("sibling")) if (s.getIsAlive()) out.push(s);
+        for (const x of Array.from(fam.getPets() as any) as any[]) if (alive(x)) out.push(x);
         return out;
     },
+    weeksText(n: number): string { return `${n} week${n === 1 ? "" : "s"}`; },
     spendTimeCell(): ActionCellSingleViewModel {
         const people = FamilyExtras.everyone();
-        const sub = people.length ? `A week with ${people.length === 1 ? people[0].getFirstName() : `all ${people.length} of your family, partner and pets`}. Everyone grows closer.`
-            : "You don't have any family, partner or pets to spend time with.";
+        const n = people.length;
+        const sub = n === 0 ? "You don't have anyone to spend time with yet."
+            : n === 1 ? `A week with ${people[0].getFirstName()}.`
+            : `A week with each of your ${n} relationships (family, partner, friends and pets): ${FamilyExtras.weeksText(n)} go by. Everyone grows closer.`;
         const text = new TextLabelViewModel(sub, null, false, false, null, null);
         return new ActionCellSingleViewModel(R.drawable.family, "Spend Time with Everyone", text,
-            new ButtonViewModel("Free", null, people.length > 0, false, false, false, false,
-                { invoke: () => { FamilyExtras.spendTimeWithEveryone(); return null; } }),
+            new ButtonViewModel(n ? FamilyExtras.weeksText(n) : "Free", null, n > 0, false, false, false, false,
+                { invoke: () => { FamilyExtras.askSpendTime(); return null; } }),
             null, null);
     },
+    /** More than one person: confirm first, because it takes that many weeks. */
+    askSpendTime() {
+        const n = FamilyExtras.everyone().length;
+        if (n <= 1) { FamilyExtras.spendTimeWithEveryone(); return; }
+        AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Spend Time with Everyone",
+            `You'll spend a week with each of your ${n} relationships, one after another. ${FamilyExtras.weeksText(n)} will go by.`, R.drawable.family, null, null,
+            new AlertActionViewModel(`Spend ${FamilyExtras.weeksText(n)}`, { invoke: () => { FamilyExtras.spendTimeWithEveryone(); return null; } }),
+            new AlertActionViewModel("Cancel", { invoke: () => null }), null, AlertType.Alert, 0, null), false, 2, null);
+    },
+    /** One week with each person, in order. Stops early if you die or end up in jail. Returns the weeks spent. */
     spendTimeWithEveryone(): number {
-        const p = GameStateManager.INSTANCE.getPersonState();
+        const p: any = GameStateManager.INSTANCE.getPersonState();
         const people = FamilyExtras.everyone();
         if (!people.length) return 0;
-        for (const x of people) Relationships.applyGain(x, "rel:everyone", FamilyExtras.togetherBond);
-        p.getAttributeState().setDeltaValueImmediate(FamilyExtras.togetherModifiers);
-        p.applyWeekly();
+        let weeks = 0;
+        const names: string[] = [];
+        const playing = () => GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted() && GameStateManager.INSTANCE.getPersonState() === p;
+        // nobody you're spending these weeks with drifts away while they wait for their week
+        Relationships.together = new Set(people);
+        try {
+            for (const x of people) {
+                if (!playing()) break;
+                try { if (p.getCrimeState().getIsInJail()) break; } catch { /* ignore */ }
+                if (!x.getIsAlive()) continue; // they died during the weeks before theirs
+                Relationships.applyGain(x, "rel:everyone", FamilyExtras.togetherBond);
+                p.getAttributeState().setDeltaValueImmediate(FamilyExtras.togetherModifiers);
+                p.applyWeekly();
+                weeks++;
+                names.push(x.getFirstName());
+            }
+        } finally {
+            Relationships.together = null;
+        }
+        if (weeks > 1 && playing()) {
+            const list = names.length > 6 ? `${names.slice(0, 5).join(", ")} and ${names.length - 5} more` : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Time Well Spent",
+                `You spent ${FamilyExtras.weeksText(weeks)} with ${list}${weeks < people.length ? ` (${people.length - weeks} had to wait for another time)` : ""}. Everyone feels closer to you.`,
+                R.drawable.family, null, null, null, null, null, null, 504, null), false, 2, null);
+        }
         refresh();
-        return people.length;
+        return weeks;
     },
 };

@@ -134,7 +134,10 @@ export const Relationships = {
      * - As an adult they drift 1 a week but never below 400 (Good) from time alone.
      * - Everyone else drifts 1 a week (2 if you're Apathetic, 0 with Emotional Intelligence).
      */
+    /** People you're spending these weeks with ("Spend Time with Everyone", v0.21.0): they don't drift meanwhile. */
+    together: null as Set<any> | null,
     drift(person: any, p: any = player()): number {
+        if (Relationships.together?.has(person)) return 0;
         const rate = RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate();
         if (rate >= 0) return 0;
         const kind = Relationships.kindOf(person);

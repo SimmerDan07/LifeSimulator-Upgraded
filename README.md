@@ -12,7 +12,7 @@ npm start              # build + launch the game window
 npm run dist:win       # build Windows packages into release/ (portable .exe + zip)
 npm run typecheck      # TypeScript check of all game + UI code
 npm test               # headless "monkey" test: 3000 random actions, reports any crash
-npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, Celebrity Life & the Fame Update, old-save loading (674 checks)
+npm run test:features  # checks unlocks, generational play, the property system, schools, family & the Love tab remodel, subscriptions, vampires & babies, the family tree & obituary, long saves & looks & the save folder, Celebrity Life & the Fame Update, old-save loading (681 checks)
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
@@ -321,7 +321,11 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     members' true age never went up as they aged.
   - "Together N years · Married N years" under your partner on the Love tab (partners from older saves start counting
     from when you load the save).
-  - "Spend Time with Everyone" (Love tab, free, one week): partner, parents, children and pets all grow closer.
+  - "Spend Time with Everyone" (Love tab, free): **v0.21.0** — a week with *each* relationship you have (partner,
+    children, parents, siblings, grandparents, grandchildren, great-grandchildren, nieces/nephews, aunts/uncles, cousins,
+    friends and pets; not exes), one after another: 12 relationships = 12 weeks. The button shows the number of weeks
+    and asks first; each person gets +25 relationship on their week, nobody on the list drifts while they wait, and a
+    "Time Well Spent" summary closes it. It stops early if you die or land in jail.
 - **No more being kicked out at 18 (v0.11.0)**: you can keep living with your parents as an adult, move out whenever
   you like (buy/rent or a basic place), and move back in while a parent is alive. The allowance still stops at 18.
 - **School rework (v0.10.0)** (`src/game/Managers/Schooling.ts`): new **Preschool** and **Elementary School**, and every
