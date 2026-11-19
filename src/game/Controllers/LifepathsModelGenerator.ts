@@ -133,7 +133,8 @@ export class LifepathsModelGenerator {
             if ((s.witheredWeeks ?? 0) > 0) out.add(info(Vampire.image, "Withered",
                 `Your body is still recovering from the collapse: health can't go above ${WITHERED_CAP} and doesn't heal, −1 happiness a week. ${s.witheredWeeks} week${s.witheredWeeks === 1 ? "" : "s"} left.`));
             out.add(new MeterViewModel("Suspicion", s.suspicion, 100, "purple",
-                s.suspicion >= 80 ? "Vampire hunters may come for you." : "At 80, vampire hunters start looking for you."));
+                (s.suspicion >= 80 ? "Vampire hunters may come for you." : "At 80, vampire hunters start looking for you.") +
+                (Celebrity.tier(p) >= 3 ? " You're famous: cameras everywhere make people wonder why you never age." : "")));
             out.add(new HeaderTitleViewModel("Feeding"));
             for (const c of LifeActions.cells(FEEDING, p)) out.add(c);
             out.add(new HeaderTitleViewModel("Hiding"));

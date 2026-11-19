@@ -40,6 +40,11 @@ export class CelebrityState {
     blockShown: string = null;
     /** Fans that came with a famous family name (heirs). */
     inherited: number = 0;
+    /** v0.25.0 (vampires): the famous name you had before you faked your death, its fans, and whether you've
+     *  "returned from the dead" as that star. Undefined in older saves. */
+    formerName: string = null;
+    formerFans: number = 0;
+    returned: boolean = false;
 
     // ---- v0.20.0 "The Fame Update" (all undefined in v0.19 saves: Celebrity.state() fills them in)
     /** Tabloid headlines about you, newest last. */

@@ -17,6 +17,7 @@ import { AlertType } from "../Managers/AlertType";
 import { MoneyState } from "../Managers/MoneyState";
 import { Modifiers } from "../Managers/Modifiers";
 import { MoneyUpdateType } from "../Enums/MoneyUpdateType";
+
 import { Relationship } from "../Enums/Relationship";
 import { RelationshipProgressStatus } from "../Enums/RelationshipProgressStatus";
 import { RomanticRelationshipStatus } from "../Enums/RomanticRelationshipStatus";
@@ -301,6 +302,11 @@ export const Relationships = {
     /** v0.21.1: whether you make friends at school or work on your own (Love tab toggle; on by default). */
     autoFriends(p: any = player()): boolean { return Relationships.circle(p).autoFriends !== false; },
     setAutoFriends(on: boolean, p: any = player()) { Relationships.circle(p).autoFriends = on; },
+    /** v0.25.0: celebrate anniversaries automatically (Love tab › Partner toggle; off by default). */
+    autoAnniversary(p: any = player()): boolean { return Relationships.circle(p).autoAnniversary === true; },
+    setAutoAnniversary(on: boolean, p: any = player()) { Relationships.circle(p).autoAnniversary = on; },
+    anniversaryCost: 500,
+    anniversaryBond: 80,
     makeFriend(metAt: string, p: any = player()): SocialPerson | null {
         if (Relationships.friends(p).length >= Relationships.maxFriends) return null;
         const age = Math.max(3 * WPY(), p.getAgeInWeeks() + rnd(-2 * WPY(), 2 * WPY()));
@@ -388,7 +394,18 @@ export const Relationships = {
         if (partner != null && partner.getIsAlive()) {
             const years = Relationships.anniversaryYears(partner, now);
             const m = Relationships.meta(partner, p);
-            if (years != null && m.annivYear !== years && m.annivMissed !== years && !Relationships.together?.has(partner)) {
+            if (years != null && m.annivYear !== years && Relationships.autoAnniversary(p)) {
+                // v0.25.0: celebrated automatically — a nice dinner if you can afford it, a cosy night in if you can't
+                m.annivYear = years;
+                const can = p.getMoneyState().getCash().compareTo(BigInteger.valueOf(Relationships.anniversaryCost)) >= 0;
+                if (can) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(Relationships.anniversaryCost), MoneyUpdateType.directSpend, null, null, 12, null);
+                const n = can ? Relationships.anniversaryBond : Math.round(Relationships.anniversaryBond / 2);
+                partner.setRelationshipProgress(Math.min(1000, partner.getRelationshipProgress() + n));
+                p.getAttributeState().setDeltaValueImmediate(new Modifiers(0, can ? 8 : 5, 3));
+                Relationships.banner("Happy Anniversary", can
+                    ? `You and ${partner.getFirstName()} celebrated your ${Relationships.ordinal(years)} anniversary with a special dinner (${Relationships.money(Relationships.anniversaryCost)}, +${n} relationship).`
+                    : `Money's tight, so you and ${partner.getFirstName()} celebrated your ${Relationships.ordinal(years)} anniversary with a cosy night in (+${n} relationship).`, R.drawable.love_marry);
+            } else if (years != null && m.annivYear !== years && m.annivMissed !== years && !Relationships.together?.has(partner)) {
                 m.annivMissed = years;
                 partner.setRelationshipProgress(partner.getRelationshipProgress() - Relationships.missedAnniversary);
                 Relationships.setMood(partner, "upset");

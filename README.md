@@ -56,6 +56,30 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   achievements, life goals or daily rewards start unlocked.
 
 ## Upgrades (new in Life Sim Upgraded)
+- **The Polish Update (v0.25.0)**:
+  - **Hobbies** (`src/game/Managers/Hobbies.ts`, Leisure tab, ages 6+): Painting, Guitar, Cooking, Gardening, Running,
+    Chess & Board Games, Writing, Gaming. *Practice* (one week, $0–$30) raises skill 0–100 (gains slow near the top:
+    `max(2, 9 − skill/14)`); levels Beginner, Amateur 20, Skilled 45, Expert 70, Master 90 with a message each. From
+    Amateur, each hobby has a show-off action once every 4 weeks (sell a painting, gigs, cook-offs, farmers' market,
+    races up to ultramarathons, chess tournaments, stories/novels, streaming/esports), paying more with skill. Skills
+    never decay. Guitar practice trains the Celebrity Life music skill; novels sell better when you're famous.
+    `Player.hobbies`.
+  - **Life Moments** (`src/game/Managers/LifeMoments.ts`): 45 short stories with 2–3 choices for childhood, teens,
+    adults and later life (and some for jobs, partners, kids, parents, friends, money, fame and vampires). 12% chance
+    after a week (not within 3 weeks of the last one; each moment once per 2 years; never in jail, while collapsed or
+    during Spend Time with Everyone). Lending a friend money pays back (or not) 8 weeks later. `Player.moments`;
+    `LifeMoments.enabled` is the off switch tests use.
+  - **Celebrate Anniversaries Automatically** (Love tab › Partner, On/Off; `SocialCircle.autoAnniversary`): a $500
+    dinner (+80 relationship, +8 happiness), or a free night in (+40) if you can't afford it. Never forgotten.
+  - **Celebrity × Vampire** (`src/game/Lifepaths/Crossover.ts`, installed by `GameStateManager.init`): Fake Your Death
+    while famous drops your fans to a handful (≤2,000) and the brand, fan club, TV series and Legend status stay with
+    the dead star; with 100K+ fans before, *Return from the Dead* ($250K, once) wins back ~40% (+30 suspicion).
+    Collapsing while famous makes "missing"/"found alive" headlines. Every 5 vampire years famous: "still looks the
+    same" headlines (+2% fans). Turning a celebrity partner: a "forever young" headline. *Feed on a Superfan*
+    (Rising Star+), *Midnight Show* (vampire with a celebrity career). Charm gives +20% fan gains; paparazzi can catch
+    a vampire on camera (`Celebrity.vampirePhotos`: +8 suspicion, +3% fans). Hooks: `Vampire.hooks`.
+  - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
+    therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you
   play on as any living child aged 8+. The heir inherits money (after debts), homes, possessions, businesses,
   investments and pets, keeps their job, gets schooling that fits their age/job, and has the deceased parent

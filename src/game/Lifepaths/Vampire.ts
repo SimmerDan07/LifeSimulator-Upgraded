@@ -304,6 +304,7 @@ export const Vampire = {
             s.yearsAwarded++;
             s.bloodPower += 1 + (s.yearsAwarded % 10 === 0 ? 1 : 0);
             s.suspicion = Math.min(100, s.suspicion + 1 + 2 * Vampire.turnedLovedOnes(p).length);
+            Vampire.hooks.yearly?.(p, s.yearsAwarded);
         }
         if ((s.witheredWeeks ?? 0) > 0) {
             s.witheredWeeks--;
@@ -340,6 +341,7 @@ export const Vampire = {
         const jobBefore = p.getJobState().getCurrentJob();
         if (jobBefore != null) p.getJobState().setCurrentJob(null);
         const partnerBefore = p.getFamilyState().getPartner();
+        Vampire.hooks.collapseStart?.(p);
         const missed: any[] = [];
         s.inTorpor = true;
         AlertManager.muted = missed;
@@ -385,6 +387,7 @@ export const Vampire = {
         const who = saviour ? `${saviour.getFullName()}, a passer-by,` : pick(["a jogger", "a homeless man", "a nurse walking home", "a kid exploring"]);
         const span = (() => { const y = Math.floor(passed / WPY()), m = Math.floor((passed % WPY()) / 4); return [y ? `${y} year${y === 1 ? "" : "s"}` : null, m ? `${m} month${m === 1 ? "" : "s"}` : null].filter(Boolean).join(" and ") || `${passed} weeks`; })();
         const events = Vampire.missedSummary(missed);
+        const famous = Vampire.hooks.collapseEnd ? Vampire.hooks.collapseEnd(p, Math.floor(passed / WPY())) : "";
         Vampire.alert("You Collapsed",
             `You starved your body too long. Weak and shaking, you collapsed ${where} and lay there like a corpse for ${span}.\n\n` +
             `Then ${who} found you, thought you'd been hurt, and let you drink a little of their blood. You came back to yourself.` +
@@ -392,6 +395,7 @@ export const Vampire = {
             (partnerLeft ? `\n\n${partnerLeft} waited for years, then had you declared dead and moved on. You're single.` : "") +
             (partnerWaited ? `\n\n${partnerWaited}, your eternal partner, never stopped looking for you.` : "") +
             (lost.length ? `\n\nYou lost ${lost.join(", ")}.` : "") +
+            famous +
             `\n\nYour body is Withered: you woke at 20 health, and for the next 2 years it can't go above ${WITHERED_CAP} or heal (−1 happiness a week).` +
             (events ? `\n\nWhile you were gone: ${events}` : ""), Vampire.image);
         return passed;
@@ -504,8 +508,16 @@ export const Vampire = {
         const partner = p.getFamilyState().getPartner();
         return partner != null && partner.getIsAlive() && Vampire.knows(partner) ? partner : null;
     },
+    /** v0.25.0 cross content (set by Crossover.ts, which knows about Celebrity Life). Each returns extra alert text. */
+    hooks: {
+        fakeDeath: null as ((p: any, oldName: string) => string) | null,
+        collapseStart: null as ((p: any) => void) | null,
+        collapseEnd: null as ((p: any, years: number) => string) | null,
+        yearly: null as ((p: any, years: number) => void) | null,
+    },
     fakeDeath(p: any) {
         const s = Vampire.state(p);
+        const oldName = p.getFullName();
         const first = NameGenerator.INSTANCE.generateFirstName(p.getSex());
         const last = NameGenerator.INSTANCE.generateLastName();
         p.setFirstName(first);
@@ -515,7 +527,8 @@ export const Vampire = {
         s.suspicion = 0;
         const gone: string[] = [];
         for (const f of Relationships.friends(p)) if (!Vampire.knows(f) && !Vampire.isTurned(f)) { Relationships.circle(p).remove(f.id); gone.push(f.getFirstName()); }
-        Vampire.alert("A New Life", `You staged your own death and became ${first} ${last}. You left your job behind, and your career starts over from the bottom with no years behind you${gone.length ? `, and friends who didn't know your secret mourned you (${gone.join(", ")})` : ""}.`, R.drawable.grave);
+        const extra = Vampire.hooks.fakeDeath ? Vampire.hooks.fakeDeath(p, oldName) : "";
+        Vampire.alert("A New Life", `You staged your own death and became ${first} ${last}. You left your job behind, and your career starts over from the bottom with no years behind you${gone.length ? `, and friends who didn't know your secret mourned you (${gone.join(", ")})` : ""}.${extra}`, R.drawable.grave);
     },
     moveCity(p: any) {
         const s = Vampire.state(p);

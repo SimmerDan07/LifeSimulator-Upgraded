@@ -127,7 +127,9 @@ const CelebrityBase = {
         // gains slow down as you approach the whole world (a soft ceiling of 800 million fans)
         // and each tier above Rising Star is harder to climb than the last
         const climb = 1 / (1 + 0.25 * Math.max(0, Celebrity.tierOf(s.fans) - 2));
-        const gain = n > 0 ? Math.round(n * Celebrity.repFactor(p) * climb * Math.max(0, 1 - s.fans / FAN_CEILING)) : Math.round(n);
+        // v0.25.0: a vampire with Charm is hard to look away from (+20% fan gains)
+        const charm = n > 0 && Vampire.isVampire(p) && Vampire.has("charm", p) ? 1.2 : 1;
+        const gain = n > 0 ? Math.round(n * Celebrity.repFactor(p) * climb * charm * Math.max(0, 1 - s.fans / FAN_CEILING)) : Math.round(n);
         s.fans = Math.max(0, Math.min(FAN_CEILING, s.fans + gain));
         s.peakFans = Math.max(s.peakFans, s.fans);
         const t = Celebrity.tierOf(s.fans);
@@ -249,6 +251,8 @@ const CelebrityBase = {
         if (t >= 3 && roll(s.publicist ? 0.012 : 0.025)) return Celebrity.scandal(p);
         if (t >= 3 && !s.cancelled && roll(s.agent ? 0.05 : 0.03)) return Celebrity.endorsement(p);
         if (t >= 3 && roll(0.06)) {
+            // v0.25.0: a vampire in the flashbulbs — sometimes the photos come out… wrong
+            if (Vampire.isVampire(p) && roll(0.35)) return Celebrity.vampirePhotos(p);
             Celebrity.addFans(p, s.fans * 0.01); attr(p, 0, 0, -2);
             const pt = World.celebPartner(p);
             if (pt != null) World.news(p, `Spotted: ${p.getFullName()} and ${pt.getFirstName()} ${pick(["holding hands in Malibu", "at a quiet dinner", "shopping on Rodeo Drive", "on a yacht"])}`);
@@ -259,6 +263,17 @@ const CelebrityBase = {
     },
 
     // ------------------------------------------------------------------ events
+    /** v0.25.0: the paparazzi catch something odd about a vampire star (+suspicion, +3% fans, a headline). */
+    vampirePhotos(p: any) {
+        const s = Celebrity.state(p);
+        const v = Vampire.state(p);
+        const add = Vampire.has("mindFog", p) ? 4 : 8;
+        v.suspicion = Math.min(100, v.suspicion + add);
+        Celebrity.addFans(p, s.fans * 0.03);
+        World.news(p, pick([`Fans spot something strange in new photos of ${p.getFullName()}: no reflection in the mirror behind them`,
+            `Viral: why do ${p.getFullName()}'s eyes glow in every flash photo?`, `${p.getFullName()} photographed at 3am, "looking younger than ever"`]));
+        return Celebrity.banner("Strange Photos", `The paparazzi caught something odd about you on camera. The internet is obsessed (+3% fans), and so is someone else (+${add} suspicion).`);
+    },
     scandal(p: any) {
         const s = Celebrity.state(p);
         const i = Math.floor(Math.random() * SCANDALS.length);

@@ -107,7 +107,7 @@ for (const t of GenericListType.values()) {
     catch (e: any) { console.log("LIST FAIL", t.name(), e?.stack?.split("\n").slice(0, 4).join(" | ")); bump("listFail"); }
 }
 startLife();
-let rnd = 12345;
+let rnd = parseInt(process.env.SEED ?? "12345", 10);
 const rng = () => ((rnd = (rnd * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
 const errors = new Map<string, number>();
 let lives = 1;

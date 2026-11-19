@@ -11,12 +11,14 @@ import { Leisure } from "../Enums/Leisure";
 import { Player } from "../Managers/Player";
 import { Utils } from "../Utils/Utils";
 import { KidsLeisure } from "../Managers/KidsLeisure";
+import { Hobbies } from "../Managers/Hobbies";
 
 export class VacationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
         arrayList.addAll(this.getPlaytimeViewModels());
         arrayList.addAll(this.getLeisureViewModels());
+        arrayList.addAll(this.getHobbyViewModels());
         arrayList.addAll(this.getTravelViewModels());
         return new GenericListFragmentViewModel(arrayList);
     }
@@ -29,6 +31,15 @@ export class VacationModelGenerator implements IViewModelGenerator {
         for (const a of KidsLeisure.activities) {
             arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, a as any, null, 2, null));
         }
+        return arrayList;
+    }
+    /** v0.25.0 Hobbies (ages 6+): practice, level up, show it off (see Hobbies.ts). */
+    getHobbyViewModels(): ArrayList<BaseViewModel> {
+        let arrayList: ArrayList = new ArrayList();
+        const player = GameStateManager.INSTANCE.getPersonState();
+        if (!Hobbies.shown(player)) return arrayList;
+        arrayList.add(new HeaderTitleViewModel("Hobbies"));
+        for (const c of Hobbies.cells(player)) arrayList.add(c);
         return arrayList;
     }
     getLeisureViewModels(): ArrayList<BaseViewModel> {

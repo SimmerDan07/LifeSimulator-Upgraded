@@ -34,6 +34,8 @@ export class SocialCircle {
     driftFixed: boolean = false;
     /** v0.21.1: false = no new friends from school or work on their own (Love tab › Friends toggle). Undefined = on. */
     autoFriends: boolean = true;
+    /** v0.25.0: true = your anniversaries are celebrated automatically (Love tab › Partner toggle). Undefined = off. */
+    autoAnniversary: boolean = false;
     /** v0.17.0: the extended family (grandparents, aunts, uncles, cousins, nieces, nephews, grandchildren) was rolled. */
     extendedRolled: boolean = false;
 

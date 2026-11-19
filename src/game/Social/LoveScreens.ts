@@ -88,6 +88,16 @@ export const LoveScreens = {
                 { invoke: () => { Relationships.setAutoFriends(!on, p); const f = GameStateManager.INSTANCE.getMainGameFragment(); if (f != null) f.updateUI(null); return null; } }),
             null, null);
     },
+    /** v0.25.0: celebrate anniversaries automatically (On/Off). */
+    autoAnniversaryCell(p: any = player()): ActionCellSingleViewModel {
+        const on = Relationships.autoAnniversary(p);
+        return new ActionCellSingleViewModel(R.drawable.love_marry, `Celebrate Anniversaries Automatically: ${on ? "On" : "Off"}`,
+            text(on ? `Every anniversary is celebrated for you: a special dinner ($${Relationships.anniversaryCost}, +${Relationships.anniversaryBond} relationship), or a cosy night in if money's tight. You'll never forget one.`
+                : "Turn this on and every anniversary is celebrated for you, so you never forget one."),
+            new ButtonViewModel(on ? "Turn Off" : "Turn On", null, true, false, false, false, false,
+                { invoke: () => { Relationships.setAutoAnniversary(!on, p); const f = GameStateManager.INSTANCE.getMainGameFragment(); if (f != null) f.updateUI(null); return null; } }),
+            null, null);
+    },
     group(list: any[], out: ArrayList<BaseViewModel>, extra?: (alive: any[]) => void) {
         const living = Relationships.byAge(list.filter((x) => x.getIsAlive()));
         const dead = Relationships.byAge(list.filter((x) => !x.getIsAlive()));
@@ -125,6 +135,7 @@ export const LoveScreens = {
         const partner = fam.getPartner();
         if (partner != null) {
             out.add(LoveScreens.card(partner));
+            out.add(LoveScreens.autoAnniversaryCell(p));
         } else {
             out.add(new SubHeaderViewModel("Find Love"));
             const events = Array.from(LoveEvent.INSTANCE.eventsForPlayer(p) as any) as any[];

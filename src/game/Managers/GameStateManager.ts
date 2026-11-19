@@ -1,4 +1,5 @@
 // Hand-ported from Managers/GameStateManager.java. Loads/saves the whole game via SaveCodec.
+import { Crossover } from "../Lifepaths/Crossover";
 import { Appearance } from "../Social/Appearance";
 import { BigInteger } from "../runtime";
 import { Schooling } from "./Schooling";
@@ -27,6 +28,7 @@ export class GameStateManager {
 
     /** Called once at startup (the Kotlin object's static init). */
     init(): void {
+        Crossover.install();   // v0.25.0: Celebrity Life × Vampire cross content (hooks and extra actions)
         this.globalStateManager = this.loadData();
         const slot = this.globalStateManager.getSaveState().currentSlot();
         if (slot.getPersonState() == null) {

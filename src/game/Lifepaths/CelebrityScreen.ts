@@ -12,7 +12,7 @@ import { Paging } from "../Models/Paging";
 import { Relationships } from "../Social/Relationships";
 import { Utils } from "../Utils/Utils";
 import { GenericListType } from "../Fragments/GenericListType";
-import { LifeActions, LifeActionDef } from "./Vampire";
+import { LifeActions, LifeActionDef, Vampire } from "./Vampire";
 import { Celebrity, CAREERS, TIERS, ACTING, MUSIC, DANCE, FAME, TEAM, WALK_OF_FAME } from "./Celebrity";
 import { World, MILESTONES, KIND_LABEL, ACTING_PLUS, MUSIC_PLUS, DANCE_PLUS, CIRCLE, BUSINESS, LEGACY, YOUNG } from "./CelebrityWorld";
 
@@ -53,6 +53,8 @@ export const CelebrityScreen = {
             s.legend ? "A Legend: your fans never fade." : null,
             s.cancelled ? "You're cancelled: fans barely grow until your reputation is back to 35." : null,
             s.inherited > 0 ? `Born famous: ${Celebrity.fansText(s.inherited)} fans came with your family name.` : null,
+            Vampire.isVampire(p) ? "A vampire star: you never age, and the cameras notice (fame raises suspicion). Charm gives +20% fan gains." : null,
+            s.formerName ? (s.returned ? `Once mourned as ${s.formerName}, now back from the dead.` : `Secretly ${s.formerName} (${Celebrity.fansText(s.formerFans)} fans when you "died").`) : null,
         ].filter(Boolean);
         out.add(info(Celebrity.image, TIERS[t].name, `${Celebrity.fansText(s.fans)} fans (peak ${Celebrity.fansText(s.peakFans)}).\n${job}${extras.length ? "\n" + extras.join("\n") : ""}`));
         const next = TIERS[t + 1];
@@ -66,8 +68,8 @@ export const CelebrityScreen = {
         const costs = Celebrity.weeklyCosts(p).reduce((a, x) => a + x.amount, 0) + (s.foundation ? 5000 : 0);
         const roy = Celebrity.royalties(p), brand = Celebrity.brandIncome(p), club = s.fanClub ? Math.round(s.fans * 0.0002) + 50 : 0;
         const tv = s.series ? Math.max(1, Celebrity.level(p)) * 1500 : 0;
-        if (costs || roy || brand || club || tv) {
-            const parts = [roy ? `royalties +${money(roy)}` : null, brand ? `${s.brand} +${money(brand)}` : null, club ? `fan club +${money(club)}` : null,
+        if (costs || roy >= 10 || brand || club || tv) {
+            const parts = [roy >= 10 ? `royalties +${money(roy)}` : null, brand ? `${s.brand} +${money(brand)}` : null, club ? `fan club +${money(club)}` : null,
                 tv ? `TV series +${money(tv)}` : null, costs ? `team & foundation −${money(costs)}` : null].filter(Boolean);
             out.add(note("CelebWeekly", `Every week: ${parts.join(", ")}.`));
         }
