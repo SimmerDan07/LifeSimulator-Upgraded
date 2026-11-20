@@ -210,6 +210,11 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
       (40%) after retirement age, a promotion now and then; shown on the Love tab and in cash flow. Ends with divorce.
     - **Slayer rule** fix: already convicted of the murder → forfeit the inheritance at once.
     - Tests: `test/popups.ts` (in `npm run test:features`, which otherwise runs with `LIFESIM_ALL_POPUPS=1`).
+  - **v0.28.2 Holiday pop-up fix**: the Game Settings switch is now **"Turn off holiday pop-ups"** (on = no holiday
+    pop-ups; the old "Holiday pop-ups" switch read backwards). It wins over "Pop-ups for every event" and applies
+    wherever a holiday comes from (`AlertManager.holidaysOn`, checked before the weekly gate). With holidays on, each
+    holiday is one pop-up: how it went is a small notice and goes to News (`LifeMoments.notice`; holiday-only
+    messages are notices too). News keeps attribute icons (`NewsItem.spans`).
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

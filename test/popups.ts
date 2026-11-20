@@ -160,7 +160,7 @@ check("pop-ups for every event are off by default", !AlertManager.allPopups());
     const gs: any = GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings();
     check("holiday pop-ups are on by default", gs.holidayPopups !== false);
     const settings = JSON.stringify(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.gameSettings, "", false));
-    check("Game Settings has a holiday pop-up switch", /Holiday pop-ups/.test(settings));
+    check("Game Settings has a holiday pop-up switch", /Turn off holiday pop-ups/.test(settings));
     gs.holidayPopups = false;
     const p = start(30);
     const x: any = new Person(Relationship.lover, Sex.female, "Lane", 48 * 30); x.setFirstName("Ava"); x.setRelationshipProgress(500);
@@ -173,7 +173,31 @@ check("pop-ups for every event are off by default", !AlertManager.allPopups());
     check("…they go to News instead, with a choice made", hol.length >= 8 && hol.every((i: any) => !!i.chose), `${hol.length} ${hol.slice(0, 3).map((i: any) => i.title + "→" + i.chose).join(" | ")}`);
     check("…and the choice is never the harmful one", hol.every((i: any) => !/Skip|Forget|scam/.test(i.chose ?? "")), hol.map((i: any) => i.chose).join(", "));
     check("…a quiet Valentine's still helps the marriage", x.getRelationshipProgress() >= rel0 - 200, `${rel0} -> ${x.getRelationshipProgress()}`);
+    // and it wins over "Pop-ups for every event"
+    gs.allPopups = true;
+    const before = popped.length;
+    for (let w = 0; w < 48; w++) { keep(p); p.applyWeekly(); for (const a of shown) if (a.getType?.() !== AlertType.Banner && HOLIDAYS.test(a.getTitle())) popped.push(a.getTitle()); dismissAll(); }
+    check("…even with pop-ups for every event on", popped.length === before, popped.slice(before).join(" | "));
+    gs.allPopups = false;
+    // the switch reads as a "turn off" switch: on = no holiday pop-ups
+    const sw = (GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.gameSettings, "", false) as any);
+    const rows: any[] = Array.from(sw.getContentViewModels?.() ?? sw);
+    const row: any = rows.find((r: any) => /Turn off holiday/.test(JSON.stringify(r)));
+    const swvm: any = row && Object.values(row).find((v: any) => v && typeof v.getOnValueChangedHandler === "function");
+    check("the switch shows ON while holidays are off", !!swvm && swvm.getInitialValue() === true);
+    swvm?.getOnValueChangedHandler().invoke(false);
+    check("…and turning it off brings holidays back", gs.holidayPopups === true);
     gs.holidayPopups = true;
+    // with holidays on: one pop-up per holiday; how it went is a small notice
+    shown.length = 0;
+    let q: any = null;
+    for (let w = 0; w < 30 && !q; w++) { keep(p); p.applyWeekly(); q = shown.find((a) => a.getType?.() !== AlertType.Banner && HOLIDAYS.test(a.getTitle())); if (!q) dismissAll(); }
+    shown.length = 0;
+    q?.getPositiveButton()?.getAction()?.invoke(); if (q) AlertManager.INSTANCE.alertDismissed(q);
+    check("answering a holiday shows a small notice, not a second pop-up", !!q && shown.length >= 1 && shown.every((a) => a.getType?.() === AlertType.Banner), shown.map((a) => a.getTitle() + ":" + a.getType?.()).join(" | "));
+    const last = News.state(p).items[News.state(p).items.length - 1];
+    check("…and it's kept in News with your choice", !!last && last.title === q?.getTitle() && !!last.chose && !!last.outcome, JSON.stringify(last).slice(0, 160));
+    dismissAll();
 }
 
 // ---------------------------------------------------------------- a husband or wife earns too

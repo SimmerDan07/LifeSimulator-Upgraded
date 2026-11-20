@@ -93,12 +93,13 @@ export class AlertManager {
         try { if ((globalThis as any).process?.env?.LIFESIM_ALL_POPUPS) return true; } catch { /* no env */ }
         try { return !!(GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups; } catch { return false; }
     }
+    /** v0.28.1: Game Settings › "Turn off holiday pop-ups" (stored as holidayPopups = false). */
+    static holidaysOn(): boolean {
+        try { return (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups !== false; } catch { return true; }
+    }
     static mustShow(vm: AlertViewModel): boolean {
         const v: any = vm;
-        if (v.holiday) {
-            // v0.28.1: holiday pop-ups can be turned off too (Game Settings); then a sensible choice is made for you
-            try { return (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups !== false; } catch { return true; }
-        }
+        if (v.holiday) return AlertManager.holidaysOn();
         if (vm.getEditableTextFieldViewModel?.() != null) return true;   // naming a baby
         const t = vm.getTitle?.();
         return t === Utils.INSTANCE.getString(R.string.Alert_DeathTitle);
@@ -122,6 +123,8 @@ export class AlertManager {
         try { btn?.getAction()?.invoke(); } catch (e) { console.error(e); }
     }
     showAlert$0(alertViewModel: AlertViewModel, prioritize: boolean): void {
+        // v0.28.1b: holidays turned off never pop up, whatever else is on and wherever they come from
+        if (AlertManager.muted == null && (alertViewModel as any).holiday && !AlertManager.holidaysOn()) { AlertManager.quietly(alertViewModel); return; }
         if (AlertManager.muted == null && AlertManager.inWeek > 0 && !AlertManager.allPopups() && !AlertManager.mustShow(alertViewModel)) {
             // a warning that you're about to die still shows, as a small notice that doesn't block anything
             if ((alertViewModel as any).critical) {

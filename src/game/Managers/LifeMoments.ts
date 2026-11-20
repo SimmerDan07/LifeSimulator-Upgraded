@@ -8,6 +8,7 @@
 import { seasonForMonth, hasSnow } from "../World/WorldData";
 import { BigInteger, R } from "../runtime";
 import { GameStateManager } from "./GameStateManager";
+import { News } from "./News";
 import { AlertManager } from "./AlertManager";
 import { AlertViewModel } from "./AlertViewModel";
 import { AlertActionViewModel } from "./AlertActionViewModel";
@@ -453,7 +454,12 @@ export const LifeMoments = {
     /** `how.holiday` keeps it popping up; `how.quiet` is the choice made for you when it doesn't (AlertManager.quietly). */
     ask(title: string, text: string, image: any, options: Opt[], how: { holiday?: boolean; quiet?: "positive" | "negative" | number } = {}) {
         // first option = green, last = red, any in between are extra buttons (like Celebrity.choice)
-        const wrap = (o: Opt) => new AlertActionViewModel(o[0], { invoke: () => { const r = safe(o[1]); if (r) LifeMoments.result(title, r, image); refresh(); return null; } });
+        // v0.28.1b: after you answer a holiday, how it went is a small notice (and in News), not a second pop-up
+        const wrap = (o: Opt) => new AlertActionViewModel(o[0], { invoke: () => {
+            const r = safe(o[1]);
+            if (r) { if (how.holiday && AlertManager.inWeek === 0) LifeMoments.notice(title, text, r, image, o[0]); else LifeMoments.result(title, r, image, { holiday: how.holiday }); }
+            refresh(); return null;
+        } });
         const extra = new ArrayList<AlertActionViewModel>();
         for (const o of options.slice(1, -1)) extra.add(wrap(o));
         try {
@@ -466,9 +472,20 @@ export const LifeMoments = {
     },
     result(title: string, text: string, image: any, how: { holiday?: boolean } = {}) {
         try {
-            const vm: any = new AlertViewModel(title, text, image, null, null, null, null, null, null, 504, null);
-            if (how.holiday) vm.holiday = true;
+            // a holiday that only tells you something is a small notice (and in News), not a pop-up
+            const vm: any = how.holiday ? new AlertViewModel(title, text, image, null, null, null, null, null, AlertType.Banner, 0, null)
+                : new AlertViewModel(title, text, image, null, null, null, null, null, null, 504, null);
+            if (how.holiday) { vm.holiday = true; if (AlertManager.holidaysOn()) News.add(vm); }
             AlertManager.showAlert$default(AlertManager.INSTANCE, vm, true, 2, null);
+        } catch { /* no UI */ }
+    },
+    notice(title: string, question: string, outcome: string, image: any, chose: string) {
+        try {
+            News.add({ getTitle: () => title, getMessage: () => question, getImageId: () => image }, chose);
+            const s = News.state(), it = s.items[s.items.length - 1];
+            if (it && it.title === title && it.chose === chose) it.outcome = outcome;
+            News.markRead();   // you just saw it
+            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(title, outcome, image, null, null, null, null, null, AlertType.Banner, 0, null), false, 2, null);
         } catch { /* no UI */ }
     },
     banner(title: string, msg: string) {
