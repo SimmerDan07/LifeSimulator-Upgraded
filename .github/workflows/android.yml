@@ -1,0 +1,67 @@
+# Builds the Android APK on GitHub's servers (they come with Java and the Android SDK), on every push to main
+# or by hand (Actions → Build APK → Run workflow). The APK is attached to a GitHub Release and kept as an artifact.
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the game into the Android app
+        run: npm run android
+
+      - name: Build and sign the APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Name it
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "V=$V" >> "$GITHUB_ENV"
+          cp android/app/build/outputs/apk/release/app-release.apk "LifeSimulator-v$V.apk"
+          ls -la LifeSimulator-v*.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LifeSimulator-v${{ env.V }}-apk
+          path: LifeSimulator-v*.apk
+
+      - name: Publish as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${V}-android-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" "LifeSimulator-v${V}.apk" \
+            --title "Life Simulator v${V} for Android (build ${GITHUB_RUN_NUMBER})" \
+            --notes "Copy the .apk to your phone or tablet and open it to install (allow \"Install unknown apps\" when asked). Every build is signed with the same key, so it installs over the last one and keeps your saves."
