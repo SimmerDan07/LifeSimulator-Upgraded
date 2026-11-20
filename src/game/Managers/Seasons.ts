@@ -151,7 +151,11 @@ const partner = (p: any) => { try { const x = p.getFamilyState().getPartner(); r
 type Opt = [string, () => string];
 const ask = (title: string, text: string, image: any, options: Opt[]) => {
     const ok = options.filter((o) => { const mm = /\$([\d,]+)/.exec(o[0]); return mm == null || cash(player()) >= Number(mm[1].replace(/,/g, "")); });
-    LifeMoments.ask(title, text, image, ok.length ? ok : options.slice(-1));
+    const list = ok.length ? ok : options.slice(-1);
+    // with holiday pop-ups off: the middle option of three, otherwise the first one that costs nothing
+    const free = (o: Opt) => !/\(\$/.test(o[0]);
+    const quiet = list.length >= 3 && free(list[1]) ? 1 : Math.max(0, list.findIndex(free));
+    LifeMoments.ask(title, text, image, list, { holiday: true, quiet });   // holidays still pop up (unless turned off)
 };
 
 const HOLIDAYS: Holiday[] = [
@@ -199,7 +203,7 @@ const HOLIDAYS: Holiday[] = [
         if (p.getAgeInYears() < 16) {
             attr(p, 0, 10, 2);
             fam.forEach((x) => bond(x, 15));
-            return LifeMoments.result(holidayName(p), "Presents, snacks and staying up late. Best week of the year!", R.drawable.achievement_happy);
+            return LifeMoments.result(holidayName(p), "Presents, snacks and staying up late. Best week of the year!", R.drawable.achievement_happy, { holiday: true });
         }
         ask(holidayName(p), fam.length ? `The holidays are here. Gifts for the family (${fam.length})?` : "The holidays are here.", R.drawable.achievement_happy, [
             [`Generous gifts (${money(big)})`, () => { pay(p, big); fam.forEach((x) => bond(x, 40)); attr(p, 0, 8, 0); return "Everyone loved their presents. (+40 family)"; }],

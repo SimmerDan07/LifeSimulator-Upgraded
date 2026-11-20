@@ -450,18 +450,26 @@ export const LifeMoments = {
         LifeMoments.ask(m.title, built.text, m.image, built.options);
         return m;
     },
-    ask(title: string, text: string, image: any, options: Opt[]) {
+    /** `how.holiday` keeps it popping up; `how.quiet` is the choice made for you when it doesn't (AlertManager.quietly). */
+    ask(title: string, text: string, image: any, options: Opt[], how: { holiday?: boolean; quiet?: "positive" | "negative" | number } = {}) {
         // first option = green, last = red, any in between are extra buttons (like Celebrity.choice)
         const wrap = (o: Opt) => new AlertActionViewModel(o[0], { invoke: () => { const r = safe(o[1]); if (r) LifeMoments.result(title, r, image); refresh(); return null; } });
         const extra = new ArrayList<AlertActionViewModel>();
         for (const o of options.slice(1, -1)) extra.add(wrap(o));
         try {
-            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(title, text, image, null, null,
-                wrap(options[0]), options.length > 1 ? wrap(options[options.length - 1]) : null, extra, AlertType.Alert, 0, null), false, 2, null);
+            const vm: any = new AlertViewModel(title, text, image, null, null,
+                wrap(options[0]), options.length > 1 ? wrap(options[options.length - 1]) : null, extra, AlertType.Alert, 0, null);
+            if (how.holiday) vm.holiday = true;
+            if (how.quiet != null) vm.quietChoice = how.quiet;
+            AlertManager.showAlert$default(AlertManager.INSTANCE, vm, false, 2, null);
         } catch { /* no UI */ }
     },
-    result(title: string, text: string, image: any) {
-        try { AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(title, text, image, null, null, null, null, null, null, 504, null), true, 2, null); } catch { /* no UI */ }
+    result(title: string, text: string, image: any, how: { holiday?: boolean } = {}) {
+        try {
+            const vm: any = new AlertViewModel(title, text, image, null, null, null, null, null, null, 504, null);
+            if (how.holiday) vm.holiday = true;
+            AlertManager.showAlert$default(AlertManager.INSTANCE, vm, true, 2, null);
+        } catch { /* no UI */ }
     },
     banner(title: string, msg: string) {
         try { AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(title, msg, R.drawable.waving_hand, null, null, null, null, null, AlertType.Banner, 0, null), false, 2, null); } catch { /* no UI */ }

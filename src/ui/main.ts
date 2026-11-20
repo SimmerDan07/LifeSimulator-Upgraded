@@ -1,5 +1,6 @@
 // Desktop shell for the ported Life Simulator: HUD, tabs, list screens, dialogs, saving.
 import "./style.css";
+import { News } from "../game/Managers/News";
 import { UIBridge, MainGameFragment, GenericListFragment } from "../game/ui/bridge";
 import { GameStateManager } from "../game/Managers/GameStateManager";
 import { AlertManager } from "../game/Managers/AlertManager";
@@ -92,6 +93,8 @@ class MainScreen extends MainGameFragment {
             fame.hidden = !show;
             if (show) fame.innerHTML = `<img src="${imageUrl(Celebrity.image) ?? ""}" alt=""><span>${Celebrity.fansText(Celebrity.fans(p))}</span><span class="tier">${Celebrity.tierName(p)}</span>`;
         }
+        const nc = $("#hud-news-count") as HTMLElement | null;
+        if (nc) { const n = News.unread(p); nc.hidden = n === 0; nc.textContent = n > 99 ? "99+" : String(n); }
         $("#hud-cash").textContent = ExtensionsKt.numberDisplayString(m.getCashAmount(), true);
         $("#hud-bank").textContent = ExtensionsKt.numberDisplayString(m.getBankAmount(), true);
         $("#hud-name").textContent = p.getFullName();
@@ -342,6 +345,8 @@ function boot() {
         tabs.appendChild(b);
     }
     $("#hud-settings").addEventListener("click", () => Utils.INSTANCE.navigateTo(GenericListType.settingsMenu, "", true));
+    // v0.28.1: News (what happened during the weeks, instead of pop-ups)
+    $("#hud-news")?.addEventListener("click", () => { if (nav.stack.length && !nav.stack.every((x) => x.canGoBack)) return; Utils.INSTANCE.navigateTo(GenericListType.lifepath, "news", true); });
     $("#hud-fame")?.addEventListener("click", () => { if (nav.stack.length && !nav.stack.every((x) => x.canGoBack)) return; Utils.INSTANCE.navigateTo(GenericListType.lifepath, "celebrity", true); });
     $("#hud-settings").querySelector("img")!.setAttribute("src", imageUrl("hud_settings")!);
     $("#hud-cash-icon").setAttribute("src", imageUrl("hud_cash")!);

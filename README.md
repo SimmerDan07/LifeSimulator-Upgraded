@@ -194,6 +194,22 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     - **Murder cases close** after 20 years unsolved (`MURDER_COLD_YEARS`); the Crime screen shows when.
     - Tests: `test/legacy.ts`, `test/illness.ts`; `test:deep` adds patriarch and sickly scenarios, ILLNESS/LEGACY
       invariants and the Legacy / Medical History screens.
+  - **v0.28.1 Fewer Pop-ups**:
+    - **Only holidays pop up** while the weeks go by. Everything else that happens on its own (random events, life
+      moments, illnesses, crime, careers, family news, promotions…) goes to **News** (`src/game/Managers/News.ts`):
+      the bell in the top bar shows how many are unread and opens the list, grouped by age, with the choice that was
+      made and how it turned out. `AlertManager.inWeek` marks automatic events; `AlertManager.quietly` makes the choice
+      (a question is declined, a will accepted, an emergency gets the first treatment you can afford, a court case the
+      public defender, a holiday a harmless option — `LifeMoments.ask(..., { quiet })`). A low-attribute warning shows
+      as a small banner. Things that need you (dying, naming a baby) still pop up; so does anything you start.
+    - **Game Settings**: "Pop-ups for every event" (off by default) and "Holiday pop-ups" (on by default; off sends
+      holidays to News too).
+    - **Spend Time with Everyone** still goes to work every week: pay, raises and promotions, in the summary.
+    - **Your husband or wife earns** (`src/game/Social/SpouseIncome.ts`): a job and level of their own (not
+      entertainment or another country's local jobs), 85% of its mid pay a week into the family's money, a pension
+      (40%) after retirement age, a promotion now and then; shown on the Love tab and in cash flow. Ends with divorce.
+    - **Slayer rule** fix: already convicted of the murder → forfeit the inheritance at once.
+    - Tests: `test/popups.ts` (in `npm run test:features`, which otherwise runs with `LIFESIM_ALL_POPUPS=1`).
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

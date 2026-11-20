@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { Crime } from "../Crime/Crime";
+import { SpouseIncome } from "../Social/SpouseIncome";
 import { Illness } from "../Health/Illness";
 import { World } from "../World/World";
 import { Activities } from "../World/Activities";
@@ -859,7 +860,12 @@ export class Player {
         let lifeTracker2: MiscState.LifeTracker = this.miscState.getLifeTracker();
         lifeTracker2.setRelationshipAction(lifeTracker2.getRelationshipAction() + 1);
     }
+    /** v0.28.1: what pops up on its own while a week goes by goes to News (AlertManager.inWeek). */
     applyWeekly(): void {
+        AlertManager.inWeek++;
+        try { this.applyWeeklyInner(); } finally { AlertManager.inWeek--; }
+    }
+    applyWeeklyInner(): void {
         this.collectWeeklyValues();
         this.applyWeeklyValues();
         // a vampire's body doesn't age: only the true age and the calendar move on
@@ -1046,6 +1052,7 @@ export class Player {
         Seasons.collectWeeklyValues(this);       // v0.26.0
         Crime.collectWeeklyValues(this);
         Illness.collectWeeklyValues(this);      // v0.28.0
+        SpouseIncome.collectWeeklyValues(this);   // v0.28.1: your husband or wife works too
         SocialMedia.collectWeeklyValues(this);   // v0.26.0
         Vampire.collectWeeklyValues(this);
         Celebrity.collectWeeklyValues(this);

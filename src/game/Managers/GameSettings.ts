@@ -6,6 +6,10 @@ export class GameSettings {
     hapticsEnabled: boolean = false;
     musicEnabled: boolean = false;
     soundEffectEnabled: boolean = false;
+    /** v0.28.1: show every event as a pop-up (off: only holidays pop up; the rest goes to News). */
+    allPopups: boolean = false;
+    /** v0.28.1: holidays pop up (off: they go to News too, with a sensible choice made for you). */
+    holidayPopups: boolean = true;
     constructor() {
         this.hapticsEnabled = true;
         this.musicEnabled = true;

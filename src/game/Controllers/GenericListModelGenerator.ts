@@ -583,6 +583,13 @@ export class GenericListModelGenerator {
                 arrayList.add(customizeSwitchViewModel);
                 arrayList.add(customizeSwitchViewModel2);
                 arrayList.add(customizeSwitchViewModel3);
+                // v0.28.1: only holidays pop up unless you want everything back
+                arrayList.add(new CustomizeSwitchViewModel("Pop-ups for every event (off: only holidays pop up, the rest goes to News)", new SwitchViewModel(!!(GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups, false, {
+                    invoke: (z3: boolean) => { (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups = z3; },
+                })));
+                arrayList.add(new CustomizeSwitchViewModel("Holiday pop-ups (off: holidays go to News too)", new SwitchViewModel((GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups !== false, false, {
+                    invoke: (z3: boolean) => { (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups = z3; },
+                })));
                 break;
             case GenericListType.gameSummary:
                 if (!Intrinsics.areEqual(key, Constants.ViewModel.INSTANCE.getTombstoneModeDeath())) {

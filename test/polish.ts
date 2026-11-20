@@ -1,4 +1,5 @@
 // v0.25.0 "The Polish Update": typo fixes, Hobbies, Life Moments, auto anniversaries, Celebrity × Vampire cross content.
+import { SpouseIncome } from "../src/game/Social/SpouseIncome";
 import { UIBridge, MainGameFragment } from "../src/game/ui/bridge";
 import { GameStateManager } from "../src/game/Managers/GameStateManager";
 import { AlertManager } from "../src/game/Managers/AlertManager";
@@ -208,9 +209,10 @@ LifeMoments.enabled = false;   // turned on where tested
     check("Turn On", Relationships.autoAnniversary(p) && row().title === "Celebrate Anniversaries Automatically: On");
     const c0 = cash(p), r0 = x.getRelationshipProgress();
     check("(it's the anniversary week)", Relationships.anniversaryYears(x) === 1, `${p.getFamilyState().getPartner() === x} ${Relationships.now()} ${x.togetherSinceWeek} ${x.marriedSinceWeek} ${x.getIsAlive?.()}`);
+    const spousePay = SpouseIncome.weekly(x);   // v0.28.1: the spouse's paycheck lands the same week
     keep(p); p.applyWeekly();
     const t = T(drain());
-    check("the anniversary is celebrated for you: $500, +80, never forgotten", t.includes("Happy Anniversary") && !t.includes("Forgotten Anniversary") && c0 - cash(p) >= 500 && x.getRelationshipProgress() >= r0 + 80 - 5, `${t.join(",")} ${r0}→${x.getRelationshipProgress()}`);
+    check("the anniversary is celebrated for you: $500, +80, never forgotten", t.includes("Happy Anniversary") && !t.includes("Forgotten Anniversary") && c0 + spousePay - cash(p) >= 500 && x.getRelationshipProgress() >= r0 + 80 - 5, `${t.join(",")} ${r0}→${x.getRelationshipProgress()}`);
     // turned off: forgotten again
     row().actionButton.action.invoke();
     x.togetherSinceWeek = Relationships.now() - W; x.marriedSinceWeek = Relationships.now() - W;

@@ -4,6 +4,7 @@
 // Past Relationships and More. Empty groups are hidden. Inside a group: oldest first, the deceased last under "In memory".
 // Every card opens the same person screen: a large card, an About card, then Spend time / Big moments / Hard choices.
 import { Appearance } from "./Appearance";
+import { SpouseIncome } from "./SpouseIncome";
 import { Legacy } from "../Legacy/Legacy";
 import { ArrayList, BigInteger, R, SpannableStringBuilder } from "../runtime";
 import { BaseViewModel } from "../Models/BaseViewModel";
@@ -136,6 +137,9 @@ export const LoveScreens = {
         const partner = fam.getPartner();
         if (partner != null) {
             out.add(LoveScreens.card(partner));
+            // v0.28.1: a husband or wife brings home a paycheck too
+            const pay = SpouseIncome.line(partner);
+            if (pay) out.add(new SingleLabelCellViewModel("SpouseIncome", text(pay)));
             out.add(LoveScreens.autoAnniversaryCell(p));
         } else {
             out.add(new SubHeaderViewModel("Find Love"));

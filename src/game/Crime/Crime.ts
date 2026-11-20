@@ -39,7 +39,7 @@ import { World } from "../World/World";
 import { COUNTRY_BY_ID } from "../World/WorldData";
 import { CRIMES, CRIME_BY_ID, CrimeDef, FAMILY_NAMES, FRONTS, GANG_NAMES, GANG_RANKS, GANG_RESPECT, MAFIA_RANKS, MAFIA_RESPECT, MURDER, MURDER_COLD_YEARS } from "./CrimeData";
 
-export interface RecordEntry { crime: string; title: string; week: number; age: number; weeks: number; violent: boolean; juvenile: boolean }
+export interface RecordEntry { crime: string; title: string; week: number; age: number; weeks: number; violent: boolean; juvenile: boolean; victims?: string[] }
 export interface OpenCase { crime: string; title: string; week: number; violent: boolean; murder?: boolean; victim?: string; sentence: [number, number] }
 export interface Org { kind: "gang" | "mafia"; name: string; rank: number; points: number; own: boolean; members: number; turf: number; fronts: string[]; since: number; waitWeeks?: number }
 export interface JailInfo { weeks: number; total: number; served: number; crime: string; violent: boolean; juvenile: boolean; prevHousing: string | null; prevResidence: string | null; prevDiet: string | null; behavior: number; appealed?: boolean }
@@ -224,7 +224,8 @@ export const Crime = {
         const s = Crime.state(p);
         weeks = Math.max(1, Math.round(weeks));
         const main = cases[0];
-        s.record.push({ crime: main.crime, title: main.title, week: now(p), age: p.getAgeInYears(), weeks, violent, juvenile });
+        const victims = cases.filter((c) => c.murder && c.victim).map((c) => c.victim!);
+        s.record.push({ crime: main.crime, title: main.title, week: now(p), age: p.getAgeInYears(), weeks, violent, juvenile, ...(victims.length ? { victims } : {}) });
         s.heat = Math.min(s.heat, 10);
         Crime.sendToJail(p, weeks, main.title, violent, juvenile);
         const slayer = Crime.hooks.forfeit?.(p, cases) ?? null;   // v0.28.0: no inheriting from your victim

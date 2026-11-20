@@ -5,6 +5,7 @@
 // - "Spend Time with Everyone": a week with each person you have a relationship with (v0.21.0: partner, parents, children,
 //   siblings, extended family, friends and pets — 12 relationships = 12 weeks).
 import { BigInteger, R } from "../runtime";
+import { WorkAction } from "../Enums/WorkAction";
 import { GenericListType } from "../Fragments/GenericListType";
 import { GameStateManager } from "./GameStateManager";
 import { AlertManager } from "./AlertManager";
@@ -144,7 +145,9 @@ export const FamilyExtras = {
         const sub = n === 0 ? "You don't have anyone to spend time with yet."
             : n === 1 ? `A week with ${people[0].getFirstName()}: +${FamilyExtras.togetherBond} relationship.`
             : `A week with each of your ${n} relationships (family, partner, friends and pets): ${FamilyExtras.weeksText(n)} go by, +${FamilyExtras.togetherBond} relationship with each.`;
-        const text = new TextLabelViewModel(sub, null, false, false, null, null);
+        const job = (() => { try { return GameStateManager.INSTANCE.getPersonState().getJobState().getCurrentJob(); } catch { return null; } })();
+        const sub2 = n && job != null ? `${sub} You still go to work every week (pay and promotions).` : sub;
+        const text = new TextLabelViewModel(sub2, null, false, false, null, null);
         return new ActionCellSingleViewModel(R.drawable.family, "Spend Time with Everyone", text,
             new ButtonViewModel(n ? FamilyExtras.weeksText(n) : "Free", null, n > 0, false, false, false, false,
                 { invoke: () => { FamilyExtras.askSpendTime(); return null; } }),
@@ -155,9 +158,18 @@ export const FamilyExtras = {
         const n = FamilyExtras.everyone().length;
         if (n <= 1) { FamilyExtras.spendTimeWithEveryone(); return; }
         AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Spend Time with Everyone",
-            `You'll spend a week with each of your ${n} relationships, one after another. ${FamilyExtras.weeksText(n)} will go by, and each of them gets +${FamilyExtras.togetherBond} relationship.`, R.drawable.family, null, null,
+            `You'll spend a week with each of your ${n} relationships, one after another. ${FamilyExtras.weeksText(n)} will go by, and each of them gets +${FamilyExtras.togetherBond} relationship.${GameStateManager.INSTANCE.getPersonState().getJobState().getCurrentJob() != null ? " You'll still go to work and get paid (and promoted)." : ""}`, R.drawable.family, null, null,
             new AlertActionViewModel(`Spend ${FamilyExtras.weeksText(n)}`, { invoke: () => { FamilyExtras.spendTimeWithEveryone(); return null; } }),
             new AlertActionViewModel("Cancel", { invoke: () => null }), null, AlertType.Alert, 0, null), false, 2, null);
+    },
+    /** The work part of the "Time Well Spent" summary: weeks worked, money in, promotions. */
+    workLine(p: any, job0: any, level0: number, cash0: number, worked: number): string {
+        if (!worked || job0 == null) return "";
+        const job = p.getJobState().getCurrentJob();
+        const earned = Number(p.getMoneyState().getCash().add(p.getMoneyState().getSavings()).toString()) - cash0;
+        const st = job != null ? p.getJobState().getState(job) : null;
+        const promo = job === job0 && st != null && st.getLevel() > level0 ? ` You were promoted to ${st.getJobTitle()}!` : "";
+        return `\nYou still went to work: ${FamilyExtras.weeksText(worked)} of shifts${earned > 0 ? `, ${ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(earned)), true)} better off` : ""}.${promo}`;
     },
     /** One week with each person, in order. Stops early if you die or end up in jail. Returns the weeks spent. */
     spendTimeWithEveryone(): number {
@@ -169,6 +181,12 @@ export const FamilyExtras = {
         const playing = () => GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted() && GameStateManager.INSTANCE.getPersonState() === p;
         // nobody you're spending these weeks with drifts away while they wait for their week
         Relationships.together = new Set(people);
+        // v0.28.1: you still go to work those weeks (pay and promotions), and what happens goes to News
+        const job0 = p.getJobState().getCurrentJob();
+        const level0 = job0 != null ? p.getJobState().getState(job0).getLevel() : 0;
+        const cash0 = Number(p.getMoneyState().getCash().add(p.getMoneyState().getSavings()).toString());
+        let worked = 0;
+        AlertManager.inWeek++;
         try {
             for (const x of people) {
                 if (!playing()) break;
@@ -179,17 +197,21 @@ export const FamilyExtras = {
                 // the full +400 even if they're Stressed or Upset (applyGain would halve it)
                 if (x.getRelationshipProgress() < before + FamilyExtras.togetherBond) x.setRelationshipProgress(before + FamilyExtras.togetherBond);
                 p.getAttributeState().setDeltaValueImmediate(FamilyExtras.togetherModifiers);
-                p.applyWeekly();
+                const job = p.getJobState().getCurrentJob();
+                let inJail = false; try { inJail = p.getCrimeState().getIsInJail(); } catch { /* ignore */ }
+                if (job != null && !inJail) { p.getJobState().work(job, WorkAction.normal); worked++; }   // work() passes the week
+                else p.applyWeekly();
                 weeks++;
                 names.push(x.getFirstName());
             }
         } finally {
             Relationships.together = null;
+            AlertManager.inWeek--;
         }
-        if (weeks > 1 && playing()) {
+        if ((weeks > 1 || worked > 0) && playing()) {
             const list = names.length > 6 ? `${names.slice(0, 5).join(", ")} and ${names.length - 5} more` : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
             AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Time Well Spent",
-                `You spent ${FamilyExtras.weeksText(weeks)} with ${list}${weeks < people.length ? ` (${people.length - weeks} had to wait for another time)` : ""}. Everyone is +${FamilyExtras.togetherBond} closer to you.`,
+                `You spent ${FamilyExtras.weeksText(weeks)} with ${list}${weeks < people.length ? ` (${people.length - weeks} had to wait for another time)` : ""}. Everyone is +${FamilyExtras.togetherBond} closer to you.${FamilyExtras.workLine(p, job0, level0, cash0, worked)}`,
                 R.drawable.family, null, null, null, null, null, null, 504, null), false, 2, null);
         }
         refresh();

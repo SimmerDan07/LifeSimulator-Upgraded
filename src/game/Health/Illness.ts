@@ -341,7 +341,8 @@ export const Illness = {
         if (d.manage && x.managed) opts.push([`Stop ${d.manage.title}`, () => { x.managed = false; return "You stopped your medication. The symptoms are back."; }]);
         opts.push([d.emergency ? "Tough it out (dangerous)" : "Not now", () => ""]);
         const body = `${d.blurb}${d.stages ? `\nStage ${Illness.stageOf(x)} of ${d.stages}.` : ""}\n${Illness.whoPays(p)}${opts.length === 1 ? "\nYou can't afford any treatment right now." : ""}`;
-        LifeMoments.ask(title ?? d.title, body, img(d), opts);
+        // with pop-ups off, an emergency gets the first treatment you can afford; anything else waits on the Health tab
+        LifeMoments.ask(title ?? d.title, body, img(d), opts, { quiet: d.emergency && opts.length > 1 ? "positive" : "negative" });
     },
 
     // ------------------------------------------------------------------ prevention

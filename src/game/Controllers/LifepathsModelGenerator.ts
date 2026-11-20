@@ -2,6 +2,7 @@
 // v0.15.0: the Vampire lifepath (see src/game/Lifepaths/Vampire.ts).
 // v0.19.0: the tab is a menu of paths (Celebrity Life, Vampire); each opens its own screen (GenericListType.lifepath).
 import { ArrayList, R } from "../runtime";
+import { News } from "../Managers/News";
 import { Illness } from "../Health/Illness";
 import { LegacyScreen } from "../Legacy/LegacyScreen";
 import { BaseViewModel } from "../Models/BaseViewModel";
@@ -98,6 +99,11 @@ export class LifepathsModelGenerator {
         if (key === "crime-murder") {
             header.add(new NavigationBarViewModel("Murder", false, 2, null));
             for (const c of CrimeScreen.murderCells(p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key === "news") {   // v0.28.1: what happened while the weeks went by (instead of pop-ups)
+            header.add(new NavigationBarViewModel("News", false, 2, null));
+            for (const c of News.cells(p)) out.add(c);
             return new GenericListFragmentViewModel(out, header, null);
         }
         if (key === "health-history") {   // v0.28.0 (Health tab)

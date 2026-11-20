@@ -205,13 +205,31 @@ LifeMoments.enabled = false;
     alerts.length = 0;
     seq([0.0, 0.99], () => Crime.murder(p, parents[1], "accident"));
     answer(/Accept/); drain();
-    check("you inherit from a parent you killed (for now)", cash(p) >= 590_000, `${cash(p)}`);
     const c = Crime.state(p).open.find((x: any) => x.murder) as any;
-    check("…the murder case remembers it", c && c.inherited >= 490_000);
+    if (!c) {
+        // traced on the spot and convicted (or acquitted): either the money is gone or they walked
+        const convicted = Crime.state(p).record.some((r: any) => (r.victims ?? []).length);
+        check("caught on the spot: a murderer can't keep the inheritance", convicted ? cash(p) < 150_000 : cash(p) >= 590_000, `convicted=${convicted} cash=${cash(p)}`);
+    } else {
+        check("you inherit from a parent you killed (for now)", cash(p) >= 590_000, `${cash(p)}`);
+        check("…the murder case remembers it", c.inherited >= 490_000);
+        alerts.length = 0;
+        Crime.arrest(p, [c], "Detectives found you."); answer(/Public defender/); drain();
+        if (Crime.inJail(p)) check("convicted: the court takes the inheritance back (slayer rule)", cash(p) < 150_000, `${cash(p)}`);
+        else check("convicted: the court takes the inheritance back (slayer rule)", true, "acquitted this run");
+    }
+}
+
+{
+    const p = start(40); setCash(p, 0);
+    const parents = Array.from(p.getFamilyState().getParents() as any) as any[];
+    Crime.state(p).record.push({ crime: "murder", title: "Murder", week: 0, age: 40, weeks: 960, violent: true, juvenile: false, victims: [parents[1].getFullName()] });
+    parents[0].isAlive = false;
+    for (const s of Relationships.siblings(p)) s.isAlive = false;
+    parents[1].wealth = 200_000;
     alerts.length = 0;
-    if (c) Crime.arrest(p, [c], "Detectives found you."); answer(/Public defender/); drain();
-    if (Crime.inJail(p)) check("convicted: the court takes the inheritance back (slayer rule)", cash(p) < 150_000, `${cash(p)}`);
-    else check("convicted: the court takes the inheritance back (slayer rule)", true, "acquitted this run");
+    parents[1].die(); answer(/Accept/); drain();
+    check("already convicted of killing them: the inheritance is taken straight back", cash(p) === 0, `${cash(p)}`);
 }
 
 console.log(failures ? `\n${failures} FAILED` : "\nall legacy checks passed");

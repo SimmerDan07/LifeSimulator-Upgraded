@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { Appearance } from "../Social/Appearance";
+import { News } from "./News";
 import { Illness } from "../Health/Illness";
 import { ILLNESS_DEFS } from "../Health/IllnessData";
 import { Obituary } from "./Obituary";
@@ -83,7 +84,54 @@ export class AlertManager {
     }
     /** v0.22.0: while set (a vampire lying collapsed for years), alerts are collected here instead of shown. */
     static muted: AlertViewModel[] | null = null;
+    /**
+     * v0.28.1 fewer pop-ups: > 0 while weeks go by (Player.applyWeekly, Spend Time with Everyone). Anything that pops
+     * up on its own then goes to News instead, except holidays, dying and naming a baby (AlertManager.mustShow).
+     */
+    static inWeek = 0;
+    static allPopups(): boolean {
+        try { if ((globalThis as any).process?.env?.LIFESIM_ALL_POPUPS) return true; } catch { /* no env */ }
+        try { return !!(GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups; } catch { return false; }
+    }
+    static mustShow(vm: AlertViewModel): boolean {
+        const v: any = vm;
+        if (v.holiday) {
+            // v0.28.1: holiday pop-ups can be turned off too (Game Settings); then a sensible choice is made for you
+            try { return (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups !== false; } catch { return true; }
+        }
+        if (vm.getEditableTextFieldViewModel?.() != null) return true;   // naming a baby
+        const t = vm.getTitle?.();
+        return t === Utils.INSTANCE.getString(R.string.Alert_DeathTitle);
+    }
+    /** Says nothing and makes the sensible choice: positive when asked to (a will, an emergency), otherwise decline. */
+    static quietly(vm: AlertViewModel): void {
+        const v: any = vm;
+        let btn: AlertActionViewModel | null = null;
+        try {
+            const extra = vm.getAdditionalButtons();
+            if (typeof v.quietChoice === "number") {
+                // an option by position: 0 = first (positive), the last = negative, the rest are the extra buttons
+                const n = 1 + (extra?.size?.() ?? 0) + (vm.getNegativeButton() != null ? 1 : 0);
+                const i = Math.max(0, Math.min(n - 1, v.quietChoice));
+                btn = i === 0 ? vm.getPositiveButton() : i === n - 1 && vm.getNegativeButton() != null ? vm.getNegativeButton() : extra.get(i - 1);
+            } else if (v.quietChoice === "positive") btn = vm.getPositiveButton();
+            else btn = vm.getNegativeButton() ?? (extra == null || extra.size() === 0 ? vm.getPositiveButton() : null);
+        } catch { /* ignore */ }
+        const several = (vm.getNegativeButton?.() != null) || ((vm.getAdditionalButtons?.()?.size?.() ?? 0) > 0);
+        News.add(vm, several && btn ? btn.getTitle() : null);
+        try { btn?.getAction()?.invoke(); } catch (e) { console.error(e); }
+    }
     showAlert$0(alertViewModel: AlertViewModel, prioritize: boolean): void {
+        if (AlertManager.muted == null && AlertManager.inWeek > 0 && !AlertManager.allPopups() && !AlertManager.mustShow(alertViewModel)) {
+            // a warning that you're about to die still shows, as a small notice that doesn't block anything
+            if ((alertViewModel as any).critical) {
+                News.add(alertViewModel);
+                this.show(new AlertViewModel(alertViewModel.getTitle(), String(alertViewModel.getMessage?.() ?? ""), alertViewModel.getImageId(), null, null, null, null, null, AlertType.Banner, 0, null));
+                return;
+            }
+            AlertManager.quietly(alertViewModel);
+            return;
+        }
         if (AlertManager.muted != null) {
             // Nobody is there to answer: an "Okay" alert's action still happens (a breakup goes through); a question is declined.
             AlertManager.muted.push(alertViewModel);
@@ -161,7 +209,9 @@ export class AlertManager {
             let lowAttributeMessage: string = attribute.getLowAttributeMessage();
             let objArr = [Integer.valueOf(weeksTillZeroAttributeDeath)];
             let format: string = String.format(lowAttributeMessage, Arrays.copyOf(objArr, objArr.length));
-            AlertManager.showAlert$default(alertManager, new AlertViewModel(str, format, Integer.valueOf(attribute.getLowAttributeImageId()), null, null, null, null, null, null, 504, null), false, 2, null);
+            const lowVm = new AlertViewModel(str, format, Integer.valueOf(attribute.getLowAttributeImageId()), null, null, null, null, null, null, 504, null);
+            (lowVm as any).critical = true;   // v0.28.1: still shown (as a notice) when pop-ups are off
+            AlertManager.showAlert$default(alertManager, lowVm, false, 2, null);
         }
     }
     showBankNoticeAlert(bankruptcyAmount: BigInteger, weeksLeft: number): void {
@@ -536,10 +586,14 @@ export class AlertManager {
             }
         }
         let arrayList2: ArrayList = arrayList;
-        this.showAlert(new AlertViewModel(title, null, imageId, spannableStringBuilder, null, (arrayList2.size() > 0) ? null : new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Alert_Buttons_Okay), {
-            invoke: () => {
-        }
-        }), null, arrayList2, event.getShowAsAlert() ? AlertType.Alert : AlertType.Banner), shouldPrioritize);
+        // v0.28.1: random events never pop up on their own (they go to News), unless all pop-ups are on
+        AlertManager.inWeek++;
+        try {
+            this.showAlert(new AlertViewModel(title, null, imageId, spannableStringBuilder, null, (arrayList2.size() > 0) ? null : new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Alert_Buttons_Okay), {
+                invoke: () => {
+            }
+            }), null, arrayList2, event.getShowAsAlert() ? AlertType.Alert : AlertType.Banner), shouldPrioritize);
+        } finally { AlertManager.inWeek--; }
         event.applyEventModifier(personState);
         let mainGameFragment: MainGameFragment = GameStateManager.INSTANCE.getMainGameFragment();
         if (mainGameFragment != null) {
@@ -548,6 +602,10 @@ export class AlertManager {
     }
     showPromotionAlert(jobState: JobState.JobStateSingle): void {
         Intrinsics.checkParameterIsNotNull(jobState, "jobState");
+        AlertManager.inWeek++;   // v0.28.1: promotions go to News (the Work tab shows your new title)
+        try { this.showPromotionAlertNow(jobState); } finally { AlertManager.inWeek--; }
+    }
+    showPromotionAlertNow(jobState: JobState.JobStateSingle): void {
         AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_Promotion_Title), ExtensionsKt.appendAttributesString$default(ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(new SpannableStringBuilder(), (Utils.INSTANCE.getString(R.string.Alert_Promotion_MessageNewTitle) + ": ") + jobState.getJobTitle(), null, null, null, 14, null)), jobState.getModifiers(), jobState.getSalaryRange(), null, null, 12, null), jobState.getType().getImageId(), {
             invoke: () => {
         }

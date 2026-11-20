@@ -288,7 +288,7 @@ export const Legacy = {
                 pay(mine); take(p, fee, "Lawyer"); return `The will stands. You keep ${money(mine)}, minus the lawyer.`;
             }]);
         }
-        setTimeout0(() => LifeMoments.ask(`The Will of ${parent.getFirstName()}`, lines.join("\n"), R.drawable.will, opts));
+        setTimeout0(() => LifeMoments.ask(`The Will of ${parent.getFirstName()}`, lines.join("\n"), R.drawable.will, opts, { quiet: "positive" }));
     },
     record(p: any, from: string, amount: number) {
         if (amount <= 0) return;
@@ -300,6 +300,12 @@ export const Legacy = {
     slayerCheck(p: any, victim: any, amount: number) {
         try {
             const name = victim.getFullName?.() ?? victim.getFirstName();
+            // already convicted of killing them (caught on the spot): the court takes it straight back
+            if ((p.crime?.record ?? []).some((r: any) => (r.victims ?? []).includes(name))) {
+                take(p, amount, "Forfeited inheritance");
+                LifeMoments.banner("Slayer Rule", `You were convicted of killing ${victim.getFirstName()}, so you can't keep what they left you.`);
+                return;
+            }
             const c = (p.crime?.open ?? []).find((x: any) => x.murder && x.victim === name);
             if (c) c.inherited = (c.inherited ?? 0) + Math.round(amount);
         } catch { /* ignore */ }
