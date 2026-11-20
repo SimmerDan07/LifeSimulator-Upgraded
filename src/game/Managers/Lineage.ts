@@ -39,6 +39,9 @@ export interface LifeRecord {
     /** Converted from an older save's ancestor list (only a name and age are known). */
     legacy?: boolean;
     appearance?: any;
+    /** v0.28.0 Switch Life: handed everything to a child at this age (and still alive until `alive` is false). */
+    retired?: { to: string; age: number };
+    alive?: boolean;
 }
 
 const gsm = (): any => GameStateManager.INSTANCE.getGlobalStateManager();
@@ -74,6 +77,7 @@ export const Lineage = {
     record(p: any, c: any = cem()): LifeRecord {
         const recs = Lineage.records(c);
         let r = recs.find((x) => x.id === p.getId());
+        if (r && r.retired && r.alive === false) return r;   // v0.28.0: a retired life that has since ended
         const fam = (() => { try { return p.getFamilyState(); } catch { return null; } })();
         const partner = fam?.getPartner?.();
         let badges: string[] = [];
@@ -96,6 +100,7 @@ export const Lineage = {
             partner: partner != null ? partner.getFullName() : null,
             vampireYears: Math.floor((p.vampire?.vampireWeeks ?? 0) / 48),
             fame: (() => { try { return Celebrity.fameLine(p); } catch { return null; } })(),
+            ...(p.retiredTo ? { retired: { to: p.retiredTo, age: p.getAgeInYears() }, alive: true } : {}),
             appearance: p.appearance ?? undefined,
         };
         if (r) Object.assign(r, data); else { recs.push(data); r = data; }

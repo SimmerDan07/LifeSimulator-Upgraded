@@ -1,6 +1,8 @@
 // The obituary (v0.17.0): a written summary of a life, shown under the tombstone on the Life Summary screen
 // (and for past lives in the cemetery). The cause of death is recorded when the death alert is shown.
 import { Pair } from "../runtime";
+import { Illness } from "../Health/Illness";
+import { ILLNESS_DEFS } from "../Health/IllnessData";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
@@ -29,6 +31,8 @@ export const Obituary = {
         const t = (a: PersonAttribute) => { try { return a.getTitle(); } catch { return a.name(); } };
         if (reason === t(PersonAttribute.health)) {
             if (Vampire.isVampire(p)) return "Starved for blood";
+            const ill = Illness.deathCause(p);   // v0.28.0
+            if (ill) return ill;
             return p.getAgeInYears() >= 70 ? "Old age" : "Poor health";
         }
         if (reason === t(PersonAttribute.happiness)) return "A broken spirit";
@@ -50,7 +54,7 @@ export const Obituary = {
             case "Slain by vampire hunters": return "at the hands of vampire hunters";
             case "Final Rest (one last sunrise)": return "choosing to watch one last sunrise";
             case "Bankruptcy": return "penniless after going bankrupt";
-            default: return "";
+            default: { const d = ILLNESS_DEFS.find((x) => x.title === cause); if (d) return d.kind === "injury" ? `from a ${cause.toLowerCase()}` : `after a battle with ${cause.toLowerCase().replace(/^type 2 /, "")}`; return ""; }
         }
     },
     social(p: any, kind: string): any[] { try { return p.getSocial().list(kind); } catch { return []; } },
@@ -98,7 +102,9 @@ export const Obituary = {
         const his = p.getSex() === Sex.female ? "her" : "his";
         const cause = p.deathCause ?? "";
         const age = p.getAgeInYears(), trueAge = p.getTrueAgeInYears();
-        let t = `${p.getFullName()} died at the age of ${age}` + (trueAge !== age ? ` (true age ${trueAge})` : "") + (Obituary.phrase(cause) ? ", " + Obituary.phrase(cause) : "") + ".";
+        let t = p.retiredTo
+            ? `${p.getFullName()} handed everything down to ${p.retiredTo} at the age of ${age} and retired.`   // v0.28.0 Switch Life
+            : `${p.getFullName()} died at the age of ${age}` + (trueAge !== age ? ` (true age ${trueAge})` : "") + (Obituary.phrase(cause) ? ", " + Obituary.phrase(cause) : "") + ".";
         const vs = Vampire.peek(p);
         if (vs != null && (vs.isVampire || vs.cured) && vs.vampireWeeks > 0) {
             const y = Math.floor(vs.vampireWeeks / WPY());

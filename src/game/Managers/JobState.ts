@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { World } from "../World/World";
+import { Illness } from "../Health/Illness";
 import { Careers } from "../Careers/Careers";
 import { ArrayList, ArraysKt, BigInteger, CollectionsKt, Intrinsics, JMath, MapsKt, R, SpannableStringBuilder, TuplesKt, TypeCastException } from "../runtime";
 import { AgeLimits } from "./Schooling";
@@ -121,6 +122,7 @@ export class JobState {
         Celebrity.onWork(personState, job, state.getLevel(), workAction.getPayModifier());
         // v0.26.0: the new careers (seasons, followers, on-the-job moments)
         Careers.onWork(personState, job, state.getLevel());
+        Illness.onWork(personState, workAction.name());   // v0.28.0: all-nighters can burn you out
         if (!state.isMaxLevel()) {
             if (state.getProgress() >= (job.weeksForPromotion(state.getLevel()) - 1)) {
                 let educationRequirement: CompletableAction = state.getType().educationRequirement(state.getLevel() + 1);

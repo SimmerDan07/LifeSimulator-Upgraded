@@ -220,6 +220,7 @@ export const Vampire = {
         s.turnedAtWeeks = p.getAgeInWeeks();
         s.turnedTrueWeek = p.getTrueAgeInWeeks();
         s.thirst = 0; s.suspicion = 0; s.weeksAtMaxThirst = 0; s.cureWeeks = 0;
+        try { Vampire.hooks.rise?.(p); } catch { /* ignore */ }
         s.bloodPower = Math.max(s.bloodPower, 1);
         Vampire.alert("You Rise a Vampire", `You wake up hungry and ageless. You'll stay ${p.getAgeInYears()} forever, but you need blood every week and the sun is no longer your friend. Your Lifepaths tab is your home now.`, Vampire.image);
     },
@@ -565,6 +566,8 @@ export const Vampire = {
         yearly: null as ((p: any, years: number) => void) | null,
         /** v0.27.0: police trouble while hunting (Crime: heat). */
         police: null as ((p: any) => void) | null,
+        /** v0.28.0: rising cures every illness (Illness). */
+        rise: null as ((p: any) => void) | null,
     },
     /** Set by Crossover: a celebrity power couple ends when you fake your death. */
     forgetCelebPartner: null as ((p: any) => void) | null,

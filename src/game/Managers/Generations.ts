@@ -34,6 +34,8 @@ import { Relationships } from "../Social/Relationships";
 import { ExtendedFamily } from "../Social/ExtendedFamily";
 import { SaveCodec } from "../save/SaveCodec";
 import { Lineage } from "./Lineage";
+import { Legacy } from "../Legacy/Legacy";
+import { Vampire } from "../Lifepaths/Vampire";
 
 export class Generations {
     /** Youngest age you can take over as (same minimum age the game uses for players). */
@@ -62,7 +64,8 @@ export class Generations {
         const heirs = Generations.eligibleHeirs(parent);
         const intro = new TextLabelViewModel(
             `${parent.getFullName()} has passed away. Choose a child to carry on the family line. ` +
-            `They inherit ${ExtensionsKt.numberDisplayString(Generations.estate(parent), true)} plus all homes, possessions, businesses and investments.`,
+            `The will is read when you choose:\n${Legacy.planText(Legacy.plan(parent, heirs[0] ?? null), "the child you choose")}\n` +
+            `Homes, possessions, businesses and heirlooms go to them too.${Legacy.will(parent).written ? "" : " (No will: probate fees apply.)"}`,
             null, false, false, null, null, 62, null);
         content.add(new SingleLabelCellViewModel("HeirIntro", intro));
         content.add(new HeaderTitleViewModel(`Generation ${parent.getGeneration() + 1}`));
@@ -85,10 +88,25 @@ export class Generations {
     /** v0.27.0: things that pass from a parent to their heir (set by other modules, e.g. Crime). */
     static heirHooks: ((parent: any, heir: any) => void)[] = [];
     /** Hand the game over to `child`. Call after the parent's death has been recorded. */
-    static continueAs(child: Person): void {
+    static continueAs(child: Person, opts: { handover?: { keep: number } } = {}): void {
         const gsm = GameStateManager.INSTANCE.getGlobalStateManager();
         const parent = GameStateManager.INSTANCE.getPersonState();
-        const estate = Generations.estate(parent);
+        // v0.28.0: Switch Life (a living handover) or a will (after a death)
+        const live = opts.handover != null;
+        let kept = 0, heirMoney: number, willLines: string[] = [];
+        let afterWill: ((heir: any) => void) | null = null;
+        if (live) {
+            const total = Legacy.liquid(parent);
+            kept = Math.round(total * opts.handover!.keep);
+            heirMoney = total - kept;
+            (parent as any).retiredTo = child.getFirstName();
+            (parent as any).deathCause = `Retired: handed everything to ${child.getFirstName()}`;
+        } else {
+            const st = Legacy.settle(parent, child);
+            heirMoney = st.heir; willLines = st.lines; afterWill = st.after;
+        }
+        heirMoney += Math.max(0, Math.round((child as any).wealth ?? 0));   // gifts they already had
+        const estate = BigInteger.valueOf(heirMoney);
 
         // v0.18.0: make sure the parent has a family line (and older saves' ancestor names are records) first
         Lineage.lineIdOf(parent);
@@ -97,6 +115,7 @@ export class Generations {
         const snapshot = SaveCodec.decode(SaveCodec.encode(parent)) as Player;
         gsm.getCemetaryState().removeLife(parent.getId());
         gsm.getCemetaryState().addLife(snapshot);
+        delete (parent as any).retiredTo;
 
         const heir = new Player(child.getFirstName(), child.getLastName() ?? parent.getLastName(), child.getGender(),
             child.getSexuality() ?? Sexuality.straight, child.getSex(), child.getAgeInWeeks());
@@ -150,8 +169,15 @@ export class Generations {
         const dead = new Person(Relationship.parent, parent.getSex(), parent.getLastName(), parent.getAgeInWeeks());
         dead.setFirstName(parent.getFirstName());
         (dead as any).appearance = { ...Appearance.of(parent) };
-        dead.setAlive(false);
-        dead.setBuried(true);
+        if (live) {
+            // v0.28.0 Switch Life: the old you lives on as a retired parent, with what they kept
+            dead.setTrueAgeInWeeks(parent.getTrueAgeInWeeks());
+            (dead as any).wealth = kept;
+            (dead as any).formerLifeId = parent.getId();
+        } else {
+            dead.setAlive(false);
+            dead.setBuried(true);
+        }
         dead.setRelationshipProgress(child.getRelationshipProgress());
         fam.getFamilyMembers().add(dead);
         const partner = parent.getFamilyState().getPartner();
@@ -181,6 +207,9 @@ export class Generations {
         // v0.27.0: the heir's native language; other modules (Crime) pass on what they need to
         World.onNewLife(heir);
         for (const h of Generations.heirHooks) { try { h(parent, heir); } catch { /* ignore */ } }
+        // v0.28.0: a vampire who hands over their life stays a vampire (and never ages); heirlooms, will shares
+        if (live && Vampire.isVampire(parent)) { try { const m = heir.getSocial().metaFor(dead.getId()); m.vampire = true; m.knows = true; } catch { /* ignore */ } }
+        if (live) Legacy.passDown(parent, heir);
 
         // Hand over control.
         gsm.getSaveState().currentSlot().setPersonState(heir);
@@ -190,12 +219,19 @@ export class Generations {
         const f = GameStateManager.INSTANCE.getMainGameFragment();
         if (f != null) f.updateUI(null);
 
+        const props = propCount ? `, including ${propCount} propert${propCount === 1 ? "y" : "ies"} (see Real Estate on your Profile)` : "";
         AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(
             `Generation ${heir.getGeneration()}`,
-            `You are now ${heir.getFullName()}, ${age}, child of ${parent.getFullName()}. ` +
-            `You inherited ${ExtensionsKt.numberDisplayString(estate, true)} and everything your parent owned` +
-            (propCount ? `, including ${propCount} propert${propCount === 1 ? "y" : "ies"} (see Real Estate on your Profile).` : "."),
+            live
+                ? `${parent.getFirstName()} handed everything down and retired${kept ? `, keeping ${ExtensionsKt.numberDisplayString(BigInteger.valueOf(kept), true)} to live on` : ""}. ` +
+                  `You are now ${heir.getFullName()}, ${age}, with ${ExtensionsKt.numberDisplayString(estate, true)} and everything your parent owned${props}. ` +
+                  `${parent.getFirstName()} is still around: find them on your Love tab.`
+                : `You are now ${heir.getFullName()}, ${age}, child of ${parent.getFullName()}. ` +
+                  `You inherited ${ExtensionsKt.numberDisplayString(estate, true)} and everything your parent owned${props}.` +
+                  (willLines.length ? `\n\n${willLines.join("\n")}` : ""),
             "will", null, null, null, null, null, null, 504, null), false, 2, null);
+        // the will's other effects (siblings' shares, heirlooms, a contested will) come after the welcome
+        if (afterWill) { try { afterWill(heir); } catch { /* ignore */ } }
     }
 
     /** Extra rows for the profile identity card. */

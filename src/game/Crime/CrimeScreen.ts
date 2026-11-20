@@ -16,7 +16,7 @@ import { Appearance } from "../Social/Appearance";
 import { Vampire, LifeActionDef, LifeActions } from "../Lifepaths/Vampire";
 import { Relationships } from "../Social/Relationships";
 import { Activities } from "../World/Activities";
-import { CRIMES, CRIME_KINDS, CrimeDef, FRONTS, GANG_RESPECT, MAFIA_RESPECT, MURDER } from "./CrimeData";
+import { CRIMES, CRIME_KINDS, CrimeDef, FRONTS, GANG_RESPECT, MAFIA_RESPECT, MURDER, MURDER_COLD_YEARS } from "./CrimeData";
 import { Crime, money, LIFE_SENTENCE } from "./Crime";
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
@@ -63,7 +63,7 @@ const TROUBLE: LifeActionDef[] = [
         run: (p) => { const s = Crime.state(p); s.heat = Math.max(0, s.heat - 35); show("Laundered", "Your cash came out the other side squeaky clean. (Heat −35)"); } },
     { id: "fakeId", title: "Buy a New Identity", image: R.drawable.possesion_passport, cost: 75000,
         lock: (p) => Crime.block(p) ?? (p.getAgeInYears() < 18 ? "From age 18" : respect(p) < 30 && !org(p) ? "Needs underworld connections (30 respect or a gang/family)" : !Crime.peek(p)?.fugitive && !Crime.peek(p)?.open?.length && !(Crime.peek(p)?.record?.length) ? "You don't need one" : null),
-        note: () => "A new name and papers: you stop being a fugitive, minor open cases and your record disappear (murders stay open).\n",
+        note: () => "A new name and papers: you stop being a fugitive, minor open cases and your record disappear (murder cases stay open until they're closed).\n",
         run: (p) => {
             const s = Crime.state(p);
             const fresh = ["Novak", "Silva", "Hart", "Lindqvist", "Moreau", "Kane", "Doyle", "Vargas"][Math.floor(Math.random() * 8)];
@@ -237,7 +237,7 @@ export const CrimeScreen = {
         out.push(info(R.drawable.police_badge, s.fugitive ? "WANTED: Fugitive" : `Heat: ${Crime.heatLabel(s.heat)}`,
             `Respect ${s.respect} · ${s.stats.crimes} crime${s.stats.crimes === 1 ? "" : "s"} · ${money(s.stats.earned)} earned · ${s.stats.caught} arrest${s.stats.caught === 1 ? "" : "s"}${s.stats.kills ? ` · ${s.stats.kills} dead` : ""}\n` +
             `Record: ${rec.length ? rec.slice(-3).map((r) => `${r.title} (age ${r.age}${r.weeks ? `, ${Crime.years(r.weeks)}` : ", fine"}${r.juvenile ? ", sealed at 18" : ""})`).join("; ") : "clean"}` +
-            (s.open.length ? `\nOpen cases against you: ${s.open.length}${s.open.some((c) => c.murder) ? " (including murder)" : ""}.` : "") +
+            (s.open.length ? `\nOpen cases against you: ${s.open.length}${s.open.some((c) => c.murder) ? ` (including murder: closed unsolved in ${Math.max(1, Math.ceil(Math.min(...s.open.filter((c) => c.murder).map((c) => MURDER_COLD_YEARS * 48 - (p.calendarWeeks() - c.week))) / 48))} years)` : ""}.` : "") +
             (Crime.recordBlock(p) ? `\n${Crime.recordBlock(p)}: careers with background checks won't hire you.` : "")));
         out.push(new MeterViewModel("Police heat", Math.round(s.heat), 100, s.heat >= 60 ? "red" : s.heat >= 30 ? "gold" : "green",
             s.heat >= 35 && s.open.length ? "With open cases and this much heat, a warrant could come any week." : "Heat cools by itself every week.", `${Math.round(s.heat)} / 100`));
@@ -279,7 +279,7 @@ export const CrimeScreen = {
             out.push(new HeaderTitleViewModel(k.title));
             for (const c of LifeActions.cells(list.map(crimeRow), p)) out.push(c);
             if (k.id === "violent") {
-                out.push(new ActionCellSingleViewModel(R.drawable.skull, "Murder", text(`Someone in your life. Pick a person, then a method. They will really die, and the case never closes. From age 18.`),
+                out.push(new ActionCellSingleViewModel(R.drawable.skull, "Murder", text(`Someone in your life. Pick a person, then a method. They will really die. Detectives work an unsolved murder for ${MURDER_COLD_YEARS} years before the case is closed. From age 18.`),
                     new ButtonViewModel(p.getAgeInYears() < 18 ? "From 18" : "Choose", null, p.getAgeInYears() >= 18, false, p.getAgeInYears() < 18, false, false,
                         { invoke: () => { if (p.getAgeInYears() >= 18) navigate("crime-murder"); return null; } }), null, null));
             }

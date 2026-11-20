@@ -55,6 +55,8 @@ export const CRIMES: CrimeDef[] = [
 export const CRIME_BY_ID: Record<string, CrimeDef> = Object.fromEntries(CRIMES.map((c) => [c.id, c]));
 /** Murder (its own flow: pick a victim, then a method). Sentence in weeks. */
 export const MURDER = { id: "murder", title: "Murder", sentence: [960, 2400] as [number, number], heat: 35, respect: 20 };
+/** v0.28.0: an unsolved murder is closed after this many years (other crimes go cold after 5). */
+export const MURDER_COLD_YEARS = 20;
 
 // ---------------------------------------------------------------- organisations
 export const GANG_RANKS = ["Prospect", "Member", "Enforcer", "Lieutenant", "Shot Caller"];

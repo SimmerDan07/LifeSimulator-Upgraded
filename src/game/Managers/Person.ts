@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Integer, Intrinsics, JMath, NoWhenBranchMatchedException, R, Random, SpannableStringBuilder, StringCompanionObject, TypeCastException, UUID } from "../runtime";
+import { Legacy } from "../Legacy/Legacy";
 import { Relationships } from "../Social/Relationships";
 import { Vampire } from "../Lifepaths/Vampire";
 import { Babies } from "../Social/Babies";
@@ -484,9 +485,9 @@ export class Person {
         this.isAlive = false;
         Vampire.onFamilyDeath(this);
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
-        if ((this.relationship === Relationship.parent) && !personState.getFamilyState().getParentsStillLiving()) {
-            AlertManager.INSTANCE.showInheritanceAlert(personState.getFamilyState().getCombinedParentRelationshipProgressStatus());
-        } else if (this.relationship === Relationship.lover) {
+        // v0.28.0: real estates and wills (the original paid a random sum when the last parent died)
+        try { Legacy.onRelativeDeath(this); } catch (e) { console.error(e); }
+        if (this.relationship === Relationship.lover) {
             if (((pregnantChild = personState.getFamilyState().getPregnantChild()) != null) && Babies.carrierOf(pregnantChild) === "partner") {
                 personState.getFamilyState().getFamilyMembers().remove(pregnantChild);
             }

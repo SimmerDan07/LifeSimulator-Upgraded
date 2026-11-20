@@ -4,6 +4,9 @@
 //   attributes 0–100, money finite, relationships 0–1000, fame/vampire/hobby numbers in range, no "undefined"/"NaN"
 //   in anything on screen, and every 150 steps the save survives a round trip unchanged.
 // Usage: node dist-test/deepfuzz.mjs [steps per scenario] [seed]
+import { Illness } from "../src/game/Health/Illness";
+import { Legacy } from "../src/game/Legacy/Legacy";
+import { Lineage } from "../src/game/Managers/Lineage";
 import { Crime } from "../src/game/Crime/Crime";
 import { Country } from "../src/game/Enums/Country";
 import { Possession } from "../src/game/Enums/Possession";
@@ -129,6 +132,9 @@ function screens(): { name: string; models: any }[] {
     const regions = ["americas", "europe", "asia", "africa"];
     out.push({ name: "world", models: lp.screen("world:" + regions[Math.floor(rng() * regions.length)]) });
     if (rng() < 0.3) out.push({ name: "languages", models: lp.screen("languages") });
+    // v0.28.0: legacy (will, gifts, Switch Life) and medical history
+    if (rng() < 0.35) out.push({ name: "legacy", models: lp.screen("legacy") });
+    if (rng() < 0.15) out.push({ name: "health-history", models: lp.screen("health-history") });
     // v0.26.0 Career Center: one group screen per step (rotating) keeps the action list a sensible size
     const cat = CAREER_CATEGORIES[Math.floor(rng() * CAREER_CATEGORIES.length)].id;
     out.push({ name: "careers:" + cat, models: lp.screen("careers:" + cat) });
@@ -177,6 +183,30 @@ function invariants(where: string) {
         if (cr.org && (cr.org.rank < 0 || cr.org.rank > 4)) report("CRIME", `rank ${cr.org.rank}`, where);
     }
     if (p.getCountry() == null) report("WORLD", "no country", where);
+    // v0.28.0 illnesses and legacy
+    const il = Illness.peek(p);
+    if (il) {
+        if (Vampire.isVampire(p) && il.list.length) report("ILLNESS", `vampire with ${il.list.map((x) => x.id).join(",")}`, where);
+        for (const x of il.list) {
+            const d = Illness.def(x.id);
+            if (!d) { report("ILLNESS", `unknown ${x.id}`, where); continue; }
+            if (d.stages && ((x.stage ?? 1) < 1 || (x.stage ?? 1) > d.stages)) report("ILLNESS", `${x.id} stage ${x.stage}`, where);
+            if (x.course && x.course.left < 0) report("ILLNESS", `${x.id} course ${x.course.left}`, where);
+            if (il.list.filter((y) => y.id === x.id).length > 1) report("ILLNESS", `${x.id} twice`, where);
+        }
+    }
+    const lg = Legacy.peek(p);
+    if (lg) {
+        if (new Set(lg.heirlooms.map((h) => h.id)).size !== lg.heirlooms.length) report("LEGACY", "duplicate heirloom", where);
+        if (!["heir", "equal", "partner"].includes(lg.will.mode)) report("LEGACY", `will mode ${lg.will.mode}`, where);
+    }
+    for (const par of Array.from(p.getFamilyState().getParents() as any) as any[]) {
+        if (!par.formerLifeId) continue;
+        const rec: any = Lineage.find(par.formerLifeId);
+        if (!rec) report("LEGACY", "retired parent without a life record", where);
+        else if (rec.alive !== par.getIsAlive()) report("LEGACY", `record alive=${rec.alive} but parent alive=${par.getIsAlive()}`, where);
+        if (typeof par.wealth === "number" && (!Number.isFinite(par.wealth) || par.wealth < 0)) report("LEGACY", `parent wealth ${par.wealth}`, where);
+    }
     const sm = SocialMedia.peek(p);
     if (sm) {
         for (const [k, v] of Object.entries(sm.f ?? {}) as [string, number][]) if (!Number.isFinite(v) || v < 0) report("SOCIAL", `${k}=${v}`, where);
@@ -215,6 +245,9 @@ const SCENARIOS: Record<string, () => void> = {
     worker: () => start(23, (p) => { rich(p, 60000); for (const n of ["highSchool", "college_biology", "nursing", "emtTraining", "electricalTrade", "cdl", "fireAcademy", "culinarySchool", "gameDesign"]) p.getCompletableActionState().completeAction((CompletableAction as any)[n]); }),
     influencer: () => start(19, (p) => { rich(p, 20000); SocialMedia.createAccount(p); SocialMedia.addFollowers(p, 40000, "cliptok"); p.getJobState().switchJob((Job as any).contentCreator); }),
     vampcreator: () => start(26, (p) => { rich(p, 200000); Vampire.rise(p); Vampire.state(p).bloodPower = 20; SocialMedia.createAccount(p); SocialMedia.addFollowers(p, 15000, "snapgram"); }),
+    // v0.28.0
+    patriarch: () => start(66, (p) => { rich(p, 3_000_000); lover(p, "Rose"); for (const [n, a] of [["Ava", 38], ["Ben", 35], ["Cal", 16]] as [string, number][]) { const k = new Person(Relationship.child, Sex.female, p.getLastName(), a * W); k.setFirstName(n); k.setRelationshipProgress(700); p.getFamilyState().getFamilyMembers().add(k); } Legacy.addHeirloom(p, "pocketWatch", "Grandpa"); Legacy.writeWill(p, "equal", 10); }),
+    sickly: () => start(68, (p) => { rich(p, 400000); Illness.catch(p, "heartDisease", "fuzz"); const c = Illness.catch(p, "cancer", "fuzz")!; c.stage = 2; c.detected = true; Illness.catch(p, "flu", "fuzz"); }),
     hobbyist: () => start(40, (p) => { rich(p, 100000); for (const id of ["painting", "running", "writing"]) Hobbies.state(id, p).skill = 85; }),
 };
 function start(age: number, tweak: (p: any) => void) {

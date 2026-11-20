@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { Crime } from "../Crime/Crime";
+import { Illness } from "../Health/Illness";
 import { World } from "../World/World";
 import { Activities } from "../World/Activities";
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Double, Integer, Intrinsics, JMath, Layout, MapsKt, Pair, R, Random, SpannableStringBuilder, StringCompanionObject, StringsKt, TuplesKt, TypeCastException, TypeIntrinsics, UUID, Unit } from "../runtime";
@@ -509,6 +510,7 @@ export class Player {
             World.afterMove(this, fromCountry, travelCountry);   // v0.27.0
         }
         Activities.onLeisure(this, action);   // v0.27.0
+        Illness.onLeisure(this, action);      // v0.28.0: smoking, drinking, risky fun
         Vampire.onLeisure(this, action);
         Seasons.onLeisure(this, action);
         // v0.27.0: the prison yard (escapes, riots) and its consequences
@@ -542,6 +544,7 @@ export class Player {
             return;
         }
         // v0.15.0: the Elixir of Youth no longer makes you younger; it is now the vampire Cure (Lifepaths tab).
+        Illness.onHealthEvent(this, action.name());   // v0.28.0: a doctor or hospital visit can clear up what you have
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForHealth(action), false, 2, null);
         this.applyWeekly();
     }
@@ -885,6 +888,7 @@ export class Player {
             Careers.afterWeek(this);       // v0.26.0: career rules (fitness, retirement from sports)
             SocialMedia.afterWeek(this);   // v0.26.0: followers, deals, drama
             Crime.afterWeek(this);         // v0.27.0: heat, warrants, prison, gangs and families
+            Illness.afterWeek(this);       // v0.28.0: catching and getting over illnesses
             if (Vampire.isInTorpor(this) === false && mainGameFragment != null) MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
         }
     }
@@ -1041,6 +1045,7 @@ export class Player {
         Subscriptions.collectWeeklyValues(this);
         Seasons.collectWeeklyValues(this);       // v0.26.0
         Crime.collectWeeklyValues(this);
+        Illness.collectWeeklyValues(this);      // v0.28.0
         SocialMedia.collectWeeklyValues(this);   // v0.26.0
         Vampire.collectWeeklyValues(this);
         Celebrity.collectWeeklyValues(this);

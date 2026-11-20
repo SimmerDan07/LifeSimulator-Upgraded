@@ -142,11 +142,8 @@ export const Activities = {
 
 // ---------------------------------------------------------------- effects
 const EFFECTS: Record<string, (p: any, a: ActivityDef) => void> = {
-    risky: (p, a) => {
-        if (!roll(0.03) || Vampire.isVampire(p)) return;
-        attr(p, -15, -5, 0);
-        result("Ouch!", `Something went wrong at ${a.title.toLowerCase().replace(/^go /, "")}. You'll be fine, but it hurts. (−15 health)`, (R.drawable as any)[a.image]);
-    },
+    // v0.28.0: risky fun can now end in a real injury (Illness.onLeisure: broken bones, concussions)
+    risky: () => { /* see Illness.onLeisure */ },
     fishing: (p, a) => {
         if (!roll(0.3)) return;
         const fish = pick(["a huge trout", "a bass the size of your arm", "a salmon", "an old boot (it still counts)"]);

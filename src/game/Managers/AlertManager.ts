@@ -1,6 +1,8 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { Appearance } from "../Social/Appearance";
+import { Illness } from "../Health/Illness";
+import { ILLNESS_DEFS } from "../Health/IllnessData";
 import { Obituary } from "./Obituary";
 import { Generations } from "./Generations";
 import { GameInAppPurchase } from "../Enums/GameInAppPurchase";
@@ -201,7 +203,13 @@ export class AlertManager {
     }
     showDeathAlert(attribute: PersonAttribute): void {
         Intrinsics.checkParameterIsNotNull(attribute, "attribute");
-        this.showDeathAlertWithMessage(attribute.getDeathMessage(), attribute.getTitle());
+        // v0.28.0: if an illness was draining your health, that's what you died of
+        let ill: string | null = null;
+        try { if (attribute === PersonAttribute.health) ill = Illness.deathCause(GameStateManager.INSTANCE.getPersonState()); } catch { /* ignore */ }
+        const lower = ill ? ill.replace(/\b([A-Z])([a-z]+)/g, (_m: string, a: string, b: string) => a.toLowerCase() + b) : "";
+        const kind = ill ? ILLNESS_DEFS.find((d) => d.title === ill)?.kind : null;
+        const article = ill && (kind === "injury" || /^(heart attack|stroke|bad burn)$/.test(lower)) ? (/^[aeiou]/.test(lower) ? "an " : "a ") : "";
+        this.showDeathAlertWithMessage(ill ? `You have died from ${article}${lower}.` : attribute.getDeathMessage(), attribute.getTitle());
     }
     /** Death pop-up with any message (used for attribute deaths and Assisted Dying). */
     showDeathAlertWithMessage(message: string, reason: string, image: any = R.drawable.skull): void {
@@ -417,6 +425,7 @@ export class AlertManager {
         objArr[0] = lowerCase;
         objArr[1] = member.getFullName();
         objArr[2] = member.getDeathReason();
+        (member as any).deathReason = objArr[2];   // v0.28.0: the family line / will reading use the same reason
         objArr[3] = member.getRelationshipStatus().getDeathReasonForStatus();
         let format: string = String.format(string, Arrays.copyOf(objArr, objArr.length));
         AlertManager.showAlert$default(this, new AlertViewModel(Utils.INSTANCE.getString(R.string.FamilyAlert_DeathTitle), ExtensionsKt.appendAttributesString$default(ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(spannableStringBuilder, format, null, null, null, 14, null)), modifiers, null, null, null, 14, null), R.drawable.grave, Utils.INSTANCE.getString(R.string.Common_OhNo), {

@@ -83,7 +83,7 @@ check("parent kept in cemetery (snapshot)", !!ceme && ceme !== p);
 const profile = new ProfileModelGenerator().generateViewModels();
 check("profile shows Generation", JSON.stringify(profile.getContentViewModels().map((c: any) => c?.label?.stringBuilder?.text ?? "")).includes("Generation"));
 const alert = alerts.find((a) => /Generation 2/.test(a.getTitle()));
-check("welcome alert", !!alert, alert?.getMessage());
+check("welcome alert", !!alert, alert?.getMessage() ?? alerts.map((a) => a.getTitle()).join(" | "));
 // play on + save round trip
 let err = "";
 try {

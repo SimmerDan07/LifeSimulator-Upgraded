@@ -164,6 +164,36 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
       the original "Criminal" badge (10+ years inside) works; Bilingual needs a language besides your native one.
     - Tests: `test/world.ts`, `test/crime.ts` (in `npm run test:features`); `test:deep` adds foreigner, criminal, Don,
       inmate and teen-in-Korea scenarios.
+  - **v0.28.0 The Legacy Update**:
+    - **Switch Life** (Profile › Legacy & Inheritance; `src/game/Legacy/LegacyScreen.ts` `SwitchLife`,
+      `Generations.continueAs(child, { handover: { keep } })`): hand a child your money, homes, possessions,
+      businesses, investments, pets and heirlooms and play on as them without dying; keep 0%, 25% or half to retire on.
+      The old you lives on as a retired parent (`Person.formerLifeId`, `wealth`; a vampire stays turned and never
+      ages); the family line records "handed everything to …, still living" (`LifeRecord.retired/alive`) and is
+      finished when they die (`Legacy.closeFormerLife`), when what they kept comes back through the will reading.
+      Not from prison or while collapsed.
+    - **Inheritance rework** (`src/game/Legacy/Legacy.ts`, `LegacyData.ts`): your will (a lawyer, $1,000; free for
+      lawyers): everything to your heir, split equally between your children, or half to your spouse; a charity
+      share; a family trust (halves inheritance tax). Inheritance tax by country (`ESTATE_TAX`, money and investments
+      above a tax-free amount; homes tax-free). No will: 5% probate and a brother or sister may contest it. Parents
+      and partners have money of their own (`Legacy.wealthOf`, shown on the Love tab): a parent's estate goes to the
+      other parent, then is split between the children by closeness (contest it if you're short-changed); a spouse
+      inherits tax-free, an unmarried partner doesn't. Gifts to grown children (tax-free, theirs if you continue as
+      them). 16 family heirlooms (some teach a hobby, +25% value a generation). Slayer rule: convicted of murdering
+      someone you inherited from, the court takes it back (`Crime.hooks.forfeit`).
+    - **Illnesses** (`src/game/Health/IllnessData.ts`, `Illness.ts`; Health tab › Conditions, Medical History):
+      49 illnesses and injuries (infections, injuries, chronic, mental health, serious) with weekly symptoms, natural
+      recovery, treatments and courses (chemotherapy, physio, therapy…), chronic illnesses you can manage with daily
+      medication, hidden ones a checkup finds, four-stage cancer, emergencies, complications (flu → pneumonia, heart
+      disease → heart attack). Risk factors: season, age, kids at school, diet, gym, smoking and drinking, homeless or
+      in prison, tropical climate, job, overwork, family history (heirs inherit it), philanthropy (Cancer Research,
+      Disease Eradication). Costs: public healthcare by country (`HEALTHCARE`), the new Health Insurance subscription,
+      parents pay for kids, the prison infirmary is free. Flu shots and checkups. The original Health tab treatments
+      can clear things up. Dying of an illness names it. **Vampires are dead**: immune, and rising cures everything
+      (`Vampire.hooks.rise`). The Cancer Survivor and Life of Crime achievements can be earned now.
+    - **Murder cases close** after 20 years unsolved (`MURDER_COLD_YEARS`); the Crime screen shows when.
+    - Tests: `test/legacy.ts`, `test/illness.ts`; `test:deep` adds patriarch and sickly scenarios, ILLNESS/LEGACY
+      invariants and the Legacy / Medical History screens.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

@@ -40,6 +40,7 @@ export const SUBSCRIPTIONS: SubscriptionDef[] = [
     { id: "gym", title: "Gym Membership", image: R.drawable.health_workout, weekly: 50, mods: [2, 0, 0], minAge: 14, blurb: "Work out whenever you like." },
     { id: "coach", title: "Gym Coach", image: R.drawable.icon_sub_coach, weekly: 150, mods: [3, 0, 0], minAge: 14, requires: "gym", blurb: "A personal trainer at your gym." },
     { id: "therapist", title: "Therapist", image: R.drawable.health_psychologist, weekly: 200, mods: [0, 0, 4], minAge: 12, blurb: "A weekly session for your mental health." },
+    { id: "healthInsurance", title: "Health Insurance", image: R.drawable.health_doctorvisit, weekly: 100, mods: [0, 0, 0], minAge: 18, blurb: "Pays 70% of your medical bills (after any public healthcare)." },
 ];
 
 export const AUTO_SAVE_OPTIONS = [25, 50, 75, 80];
@@ -165,8 +166,9 @@ class SubscriptionCell {
     getModifiers(): Modifiers { return new Modifiers(this.d.mods[0], this.d.mods[1], this.d.mods[2]); }
     getActionTitle(): string { return this.on() ? "Cancel" : `${money(this.d.weekly)}/wk`; }
     getAdditionalDescription(): string {
-        if (this.on()) return `Active${Subscriptions.paused() ? " (paused while you're in jail)" : ""} · ${money(this.d.weekly)} a week · every week: `;
-        return `${this.d.blurb} Every week: `;
+        const none = this.d.mods.every((m) => m === 0);
+        if (this.on()) return `Active${Subscriptions.paused() ? " (paused while you're in jail)" : ""} · ${money(this.d.weekly)} a week${none ? `. ${this.d.blurb}` : " · every week: "}`;
+        return none ? this.d.blurb : `${this.d.blurb} Every week: `;
     }
     getAgeRange(): any { return null; }
     getRequiredItem(): any { return null; }

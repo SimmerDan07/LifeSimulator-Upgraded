@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { Appearance } from "../Social/Appearance";
+import { LegacyScreen } from "../Legacy/LegacyScreen";
 import { RealEstateScreens } from "../RealEstate/RealEstateScreens";
 import { Generations } from "../Managers/Generations";
 import { ArrayList, BigInteger, Integer, Pair, R, SpannableStringBuilder } from "../runtime";
@@ -36,6 +37,9 @@ export class ProfileModelGenerator implements IViewModelGenerator {
         let arrayList: ArrayList = new ArrayList();
         arrayList.addAll(this.getIdentityViewModels());
         arrayList.addAll(this.getHousingViewModels());
+        // v0.28.0: your will, heirlooms and Switch Life
+        arrayList.add(new HeaderTitleViewModel("Legacy"));
+        arrayList.add(LegacyScreen.profileCell());
         // v0.13.0: weekly subscriptions (gym, coach, therapist)
         arrayList.add(new HeaderTitleViewModel("Subscriptions"));
         for (const c of Subscriptions.cells()) arrayList.add(c);

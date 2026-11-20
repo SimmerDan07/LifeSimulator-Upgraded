@@ -1,6 +1,7 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, Integer, R, SpannableStringBuilder } from "../runtime";
+import { Illness } from "../Health/Illness";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { Vampire } from "../Lifepaths/Vampire";
 import { BaseViewModel } from "../Models/BaseViewModel";
@@ -37,6 +38,8 @@ export class HealthModelGenerator implements IViewModelGenerator {
         let leftRightCellViewModel: LeftRightCellViewModel = new LeftRightCellViewModel("HealthStatusModel", new TextLabelViewModel("", null, false, false, null, ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(new SpannableStringBuilder(), Utils.INSTANCE.getString(R.string.Health_Header_Health) + ": ", null, null, null, 14, null), healthStatus.getTitle(), Integer.valueOf(personState.getHealthStatus().getColorId()), null, null, 12, null), 30, null), new TextLabelViewModel("", null, false, false, null, ExtensionsKt.appendNormal$default(ExtensionsKt.appendAttributesString$default(new SpannableStringBuilder(), new Modifiers(healthStatus.getHealthModifier(), 0.0, 0.0), null, null, PersonAttribute.health, 6, null), "/" + Utils.INSTANCE.getString(R.string.Common_Week), null, null, null, 14, null), 30, null), null, 8, null);
         arrayList.add(singleLabelCellViewModel);
         arrayList.add(leftRightCellViewModel);
+        for (const c of Illness.cells(personState)) arrayList.add(c);   // v0.28.0 illnesses
+        arrayList.add(new HeaderTitleViewModel("Treatments"));
         for (const healthEvent of HealthEvent.INSTANCE.eventsForPlayer(personState)) {
             arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, healthEvent, null, 2, null));
         }

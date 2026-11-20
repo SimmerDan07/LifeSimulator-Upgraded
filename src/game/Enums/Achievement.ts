@@ -118,7 +118,7 @@ export class Achievement extends JEnum {
                 let format5: string = String.format(string5, Arrays.copyOf(objArr5, objArr5.length));
                 return format5;
             case Achievement.lifeOfCrime:
-                return "";
+                return "Reach 500 respect in the underworld (Lifepaths › Crime)";
             case Achievement.largeFamily:
                 let stringCompanionObject6 = StringCompanionObject.INSTANCE;
                 let string6: string = Utils.INSTANCE.getString(R.string.Achievement_LargeFamilyDescription);
@@ -298,6 +298,15 @@ export class Achievement extends JEnum {
             case Achievement.highAchiever:
                 i2 = GameStateManager.INSTANCE.getGlobalStateManager().getAchievementBadgeState().completedBadges().length;
                 i = Achievement.highAchieverNumberOfBadges;
+                break;
+            // v0.28.0: these two could never be earned in the port; crime and illnesses are real now
+            case Achievement.cancerSurvivor:
+                i2 = (player as any).cancerSurvivor ? 1 : 0;
+                i = 1;
+                break;
+            case Achievement.lifeOfCrime:
+                i2 = Math.min(500, (player as any).crime?.respect ?? 0);
+                i = 500;
                 break;
             case Achievement.businessMagnet:
                 i2 = ((CollectionsKt.last(ArraysKt.sortedWith(GameStateManager.INSTANCE.getPersonState().getBusinessState().getStates(), {

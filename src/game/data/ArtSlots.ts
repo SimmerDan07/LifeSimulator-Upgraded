@@ -3,6 +3,8 @@
 import { CAREERS, DEGREES } from "../Careers/CareerData";
 import { ACTIVITY_DEFS, ACTIVITY_CATEGORIES } from "../World/ActivityData";
 import { CRIMES, FRONTS } from "../Crime/CrimeData";
+import { ILLNESS_DEFS } from "../Health/IllnessData";
+import { HEIRLOOMS } from "../Legacy/LegacyData";
 export interface ArtSlot { name: string; fallback: string; where: string; row: string }
 
 export const ART_SLOTS: ArtSlot[] = [
@@ -125,5 +127,8 @@ export const ART_SLOTS: ArtSlot[] = [
     ...ACTIVITY_DEFS.map((a) => ({ name: a.image, fallback: a.fallback, where: a.cat === "local" ? "Leisure › Local Favourites" : "Leisure › Things to Do", row: a.title })),
     ...CRIMES.map((c) => ({ name: c.image, fallback: c.fallback, where: "Lifepaths › Crime", row: c.title })),
     ...FRONTS.map((f) => ({ name: "icon_front_" + f.id.toLowerCase(), fallback: f.fallback, where: "Lifepaths › Crime › Fronts", row: f.title })),
+    // v0.28.0 illnesses and family heirlooms
+    ...ILLNESS_DEFS.map((d) => ({ name: d.image, fallback: d.fallback, where: "Health › Conditions", row: d.title })),
+    ...HEIRLOOMS.map((h) => ({ name: "icon_heirloom_" + h.id.toLowerCase(), fallback: h.fallback, where: "Profile › Legacy › Heirlooms", row: h.title })),
 ];
 export const ART_FALLBACK: Record<string, string> = Object.fromEntries(ART_SLOTS.map((s) => [s.name, s.fallback]));

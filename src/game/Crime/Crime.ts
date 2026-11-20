@@ -4,7 +4,7 @@
 //   vampire powers, a crew) and how hot the police already are. A failed crime can get you arrested on the spot.
 // - Heat (0–100) is police attention. It cools by itself; laying low, bribes and good deeds cool it faster.
 //   Every crime you get away with stays an open case: the hotter you are, the likelier the police come knocking.
-//   Murders are never closed: detectives keep working them.
+//   Unsolved murders stay open for 20 years (MURDER_COLD_YEARS); detectives keep working them until then.
 // - Court: plead guilty, take the public defender, hire a lawyer, defend yourself (if you're a lawyer), bribe the
 //   judge (crime families), or turn State's witness (crime families: a new name, but they never forget).
 // - Prison: real now. You live in a cell (your lease ends; homes you own wait for you), eat prison food, lose your
@@ -37,7 +37,7 @@ import { Celebrity } from "../Lifepaths/Celebrity";
 import { Activities } from "../World/Activities";
 import { World } from "../World/World";
 import { COUNTRY_BY_ID } from "../World/WorldData";
-import { CRIMES, CRIME_BY_ID, CrimeDef, FAMILY_NAMES, FRONTS, GANG_NAMES, GANG_RANKS, GANG_RESPECT, MAFIA_RANKS, MAFIA_RESPECT, MURDER } from "./CrimeData";
+import { CRIMES, CRIME_BY_ID, CrimeDef, FAMILY_NAMES, FRONTS, GANG_NAMES, GANG_RANKS, GANG_RESPECT, MAFIA_RANKS, MAFIA_RESPECT, MURDER, MURDER_COLD_YEARS } from "./CrimeData";
 
 export interface RecordEntry { crime: string; title: string; week: number; age: number; weeks: number; violent: boolean; juvenile: boolean }
 export interface OpenCase { crime: string; title: string; week: number; violent: boolean; murder?: boolean; victim?: string; sentence: [number, number] }
@@ -227,7 +227,8 @@ export const Crime = {
         s.record.push({ crime: main.crime, title: main.title, week: now(p), age: p.getAgeInYears(), weeks, violent, juvenile });
         s.heat = Math.min(s.heat, 10);
         Crime.sendToJail(p, weeks, main.title, violent, juvenile);
-        return `${extra ? extra + " " : ""}Guilty. You were sentenced to ${years(weeks)}${juvenile ? " in juvenile detention" : ""}${weeks >= LIFE_SENTENCE ? " (life)" : ""}.`;
+        const slayer = Crime.hooks.forfeit?.(p, cases) ?? null;   // v0.28.0: no inheriting from your victim
+        return `${extra ? extra + " " : ""}Guilty. You were sentenced to ${years(weeks)}${juvenile ? " in juvenile detention" : ""}${weeks >= LIFE_SENTENCE ? " (life)" : ""}.${slayer ? " " + slayer : ""}`;
     },
     acquit(p: any, msg: string): string { Crime.addHeat(p, -30); attr(p, 0, 10, 5); return msg; },
     /** Turn State's witness: the charges go away, so does your organisation, and you get a new name. */
@@ -341,8 +342,11 @@ export const Crime = {
         if (s.bribeUntil > t) cool += 2;
         if (s.org?.own) cool -= 1;
         s.heat = clamp(s.heat - cool, 0, 100);
-        // old cases go cold (not murders)
-        s.open = s.open.filter((c) => c.murder || t - c.week < 5 * WPY());
+        // old cases go cold: 5 years, murders after 20
+        for (const c of s.open.filter((x) => x.murder && t - x.week >= MURDER_COLD_YEARS * WPY())) {
+            Crime.banner("Case Closed", `After ${MURDER_COLD_YEARS} years, the police closed the case of ${c.victim}'s death. Unsolved.`);
+        }
+        s.open = s.open.filter((c) => t - c.week < (c.murder ? MURDER_COLD_YEARS : 5) * WPY());
         if (s.org) Crime.orgWeek(p, s);
         // fugitives get caught
         if (s.fugitive && roll(0.06)) { Crime.recapture(p); return; }
@@ -529,7 +533,7 @@ export const Crime = {
         if (method === "drain") { const v = Vampire.state(p); v.thirst = 0; v.suspicion = Math.min(100, v.suspicion + 15); }
         attr(p, 0, -10, Vampire.isVampire(p) ? -5 : -20);
         const how = { poison: "Poison in their drink", accident: "A tragic accident, the police said", ambush: "A dark street, no witnesses", drain: "Drained dry under a full moon", hitman: "The hitman was a professional" }[method];
-        return `${how}. ${name} is dead. The case is open, and it will stay open. (Heat up; −${Vampire.isVampire(p) ? 5 : 20} sanity)`;
+        return `${how}. ${name} is dead. The case is open: detectives will work it for ${MURDER_COLD_YEARS} years. (Heat up; −${Vampire.isVampire(p) ? 5 : 20} sanity)`;
     },
     /** Kills a person in your life using the game's own death handling (inheritance, widowhood, funerals). */
     kill(p: any, x: any) {
@@ -604,7 +608,7 @@ export const Crime = {
     },
 
     // ------------------------------------------------------------------ helpers
-    hooks: {} as { news?: (p: any, text: string) => void; cleanJob?: (job: any) => boolean },
+    hooks: {} as { news?: (p: any, text: string) => void; cleanJob?: (job: any) => boolean; forfeit?: (p: any, cases: OpenCase[]) => string | null },
     alert(title: string, msg: string, image: any = R.drawable.police_badge) {
         try { AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(title, msg, image, null, null, null, null, null, null, 504, null), false, 2, null); } catch { /* no UI */ }
     },

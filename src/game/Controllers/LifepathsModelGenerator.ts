@@ -2,6 +2,8 @@
 // v0.15.0: the Vampire lifepath (see src/game/Lifepaths/Vampire.ts).
 // v0.19.0: the tab is a menu of paths (Celebrity Life, Vampire); each opens its own screen (GenericListType.lifepath).
 import { ArrayList, R } from "../runtime";
+import { Illness } from "../Health/Illness";
+import { LegacyScreen } from "../Legacy/LegacyScreen";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentViewModel";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
@@ -96,6 +98,16 @@ export class LifepathsModelGenerator {
         if (key === "crime-murder") {
             header.add(new NavigationBarViewModel("Murder", false, 2, null));
             for (const c of CrimeScreen.murderCells(p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key === "health-history") {   // v0.28.0 (Health tab)
+            header.add(new NavigationBarViewModel("Medical History", false, 2, null));
+            for (const c of Illness.historyCells(p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key != null && key.startsWith("legacy")) {   // v0.28.0 (Profile tab): your will, heirlooms, Switch Life
+            header.add(new NavigationBarViewModel(LegacyScreen.title(key), false, 2, null));
+            for (const c of LegacyScreen.cells(key, p)) out.add(c);
             return new GenericListFragmentViewModel(out, header, null);
         }
         if (key != null && key.startsWith("activities:")) {

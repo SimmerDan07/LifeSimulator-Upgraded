@@ -156,8 +156,10 @@ export const FamilyTree = {
     },
     lineText(r: LifeRecord): string {
         if (r.legacy) return `Lived to ${r.age}`;
+        if (r.retired && r.alive) return `Handed everything to ${r.retired.to} at ${r.retired.age} · still living`;   // v0.28.0
         const bits = [`Lived to ${r.age}` + (r.trueAge !== r.age ? ` (true age ${r.trueAge})` : "")];
-        if (r.cause) bits.push(r.cause);
+        if (r.retired) bits.push(`handed everything to ${r.retired.to} at ${r.retired.age}`);
+        if (r.cause && !/^Retired:/.test(r.cause)) bits.push(r.cause);
         if (r.vampireYears > 0) bits.push(`vampire for ${r.vampireYears} years`);
         if (r.fame) bits.push(r.fame);
         if (r.partner) bits.push(`partner ${r.partner}`);

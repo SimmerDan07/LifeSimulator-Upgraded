@@ -596,7 +596,10 @@ export class GenericListModelGenerator {
                     }
                     personState = (CollectionsKt.first((arrayList13 as unknown as ArrayList)) as unknown as Player);
                 }
-                arrayList.add(new TombstoneViewModel(personState.getGetDeathTombstoneString()));
+                // v0.28.0: a life handed down with Switch Life (still living) has no tombstone
+                const lifeRec: any = Lineage.find(personState.getId());
+                if (lifeRec?.retired && lifeRec.alive) arrayList.add(new SingleLabelCellViewModel("Retired", new TextLabelViewModel(`${personState.getFullName()} handed everything to ${lifeRec.retired.to} at ${lifeRec.retired.age} and is still living, in your family.`, null, false, false, null, null, 62, null)));
+                else arrayList.add(new TombstoneViewModel(personState.getGetDeathTombstoneString()));
                 for (const vm of Obituary.viewModels(personState)) arrayList.add(vm);   // v0.17.0
                 let singleButtonViewModel: SingleButtonViewModel = new SingleButtonViewModel(new ButtonViewModel(ExtensionsKt.appendFontAwesomeCharacter$default(ExtensionsKt.appendBold$default(ExtensionsKt.appendFontAwesomeCharacter$default(new SpannableStringBuilder(), Utils.INSTANCE.getString(R.string.fa_star_solid), R.color.flatYellow, null, 4, null), ("  " + Utils.INSTANCE.getString(R.string.DeathLifeSummaryButtonShare)) + "  ", R.color.flatWhite, null, null, 12, null), Utils.INSTANCE.getString(R.string.fa_star_solid), R.color.flatYellow, null, 4, null), false, false, false, false, false, {
                     invoke: () => {
@@ -642,7 +645,7 @@ export class GenericListModelGenerator {
                 const pg = Paging.slice(lives, "cemetery", 25, "first");
                 if (pg.pages > 1) arrayList.add(Paging.pager("cemetery", pg.page, pg.pages, `Lives ${pg.from}–${pg.to} of ${lives.length} (newest first)`, GenericListType.cemetery));
                 for (const live of pg.items) {
-                    const sub = ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(new SpannableStringBuilder(), Utils.Strings.INSTANCE.formatWithColon(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(live.age)) + (live.generation > 1 ? `  ·  Generation ${live.generation}` : ""), null, null, null, 14, null));
+                    const sub = ExtensionsKt.appendNewline(ExtensionsKt.appendNormal$default(new SpannableStringBuilder(), Utils.Strings.INSTANCE.formatWithColon(Utils.INSTANCE.getString(R.string.identity_name_age), String.valueOf(live.age)) + (live.generation > 1 ? `  ·  Generation ${live.generation}` : "") + (live.retired && live.alive ? "  ·  retired, still living" : ""), null, null, null, 14, null));
                     ExtensionsKt.appendBold$default(sub, `${live.badges.length} ${Utils.INSTANCE.getString(R.string.Menu_Leaderboard_Badges)}`, R.color.flatGreen, 14, null, 8, null);
                     arrayList.add(new LeftRightCellViewModel("Life." + live.id, new TextLabelViewModel(live.name, null, false, false, null, null, 62, null), new TextLabelViewModel(sub, false, false, null, 14, null), {
                         invoke: () => { Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.gameSummary, live.id, false, 4, null); }

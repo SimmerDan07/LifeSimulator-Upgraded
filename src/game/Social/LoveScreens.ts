@@ -4,6 +4,7 @@
 // Past Relationships and More. Empty groups are hidden. Inside a group: oldest first, the deceased last under "In memory".
 // Every card opens the same person screen: a large card, an About card, then Spend time / Big moments / Hard choices.
 import { Appearance } from "./Appearance";
+import { Legacy } from "../Legacy/Legacy";
 import { ArrayList, BigInteger, R, SpannableStringBuilder } from "../runtime";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { GenericListFragmentViewModel } from "../Fragments/GenericListFragmentViewModel";
@@ -153,7 +154,14 @@ export const LoveScreens = {
             else { allowance = ExtensionsKt.numberDisplayString$default(p.getCurrentAllowance(), false, 1, null); color = R.color.flatGreen; }
             const c = new LeftRightCellViewModel("ParentAllowance", ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(new SpannableStringBuilder(), S("Family_AllowanceLabel") + ": ", null, null, null, 14, null), allowance, color, null, null, 12, null));
             out.add(c);
-            LoveScreens.group(parents, out, (living) => { if (living.length) out.add(ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(PersonInteraction.roadTrip, null)); });
+            LoveScreens.group(parents, out, (living) => {
+                // v0.28.0: parents have money of their own (one of them may be the old you, after Switch Life)
+                for (const x of living) {
+                    const w = Legacy.wealthOf(x);
+                    out.add(new SingleLabelCellViewModel("ParentWealth" + x.getId(), text(`${x.getFirstName()}: ${(x as any).formerLifeId ? "retired (your former life) · " : ""}${Legacy.wealthLabel(w).toLowerCase()}, ${ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(w)), true)} to their name.`)));
+                }
+                if (living.length) out.add(ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(PersonInteraction.roadTrip, null));
+            });
         }
 
         // Children (pregnancy included)
