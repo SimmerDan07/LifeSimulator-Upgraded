@@ -363,6 +363,19 @@ function boot() {
     window.addEventListener("beforeunload", () => { try { GameStateManager.INSTANCE.saveData(); } catch {} });
     const saveNow = () => { try { if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) GameStateManager.INSTANCE.saveData(); } catch {} };
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveNow(); });
+    // Android app (android/): the system back button calls __lifesimBack (true = handled here, false = leave the
+    // app), and the app calls __lifesimSave when it goes to the background.
+    (window as any).__lifesimSave = saveNow;
+    (window as any).__lifesimBack = (): boolean => {
+        const modal = document.querySelector(".modal-backdrop");
+        if (modal) {   // a pop-up: OK closes a message, "no" closes a yes/no question; a real choice waits for a tap
+            const btns = modal.querySelectorAll<HTMLButtonElement>(".modal-buttons .btn");
+            if (btns.length === 1 || btns.length === 2) btns[btns.length - 1].click();
+            return true;
+        }
+        if (nav.top()?.canGoBack) { nav.pop(); return true; }
+        return false;
+    };
     setInterval(() => { try { if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) GameStateManager.INSTANCE.saveData(); } catch {} }, 30000);
 
     GameStateManager.INSTANCE.init();

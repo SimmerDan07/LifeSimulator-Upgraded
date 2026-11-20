@@ -215,6 +215,18 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     wherever a holiday comes from (`AlertManager.holidaysOn`, checked before the weekly gate). With holidays on, each
     holiday is one pop-up: how it went is a small notice and goes to News (`LifeMoments.notice`; holiday-only
     messages are notices too). News keeps attribute icons (`NewsItem.spans`).
+  - **v0.29.0 Android**: the game comes back to Android phones and tablets (`android/`, Capacitor 8, app id
+    `com.lifesim.upgraded`, restored from v0.9.0 and updated).
+    - `npm run android` (`tools/build-android.mjs`): builds the game into `dist-android/` (viewport, `body.android`),
+      sets versionCode/versionName from package.json (0.29.0 → 2900) and runs `cap sync`.
+    - "Build APK.bat" builds and signs the APK on Windows with Android Studio (`android/app/lifesim-upgraded.keystore`,
+      one fixed key so updates install over each other and keep saves).
+    - Saves are files in the app's storage, like the Windows Saves folder (`SaveFiles.java` as `window.lifesimFS`,
+      added by `SaveFilesPlugin` before the page loads; .tmp + .bak). Not localStorage, which is capped at a few MB.
+    - Android back button = the game's back arrow; on a pop-up it closes an OK or yes/no pop-up (choosing no) and
+      leaves real choices alone; on the main screen it sends the app to the background. Saved when the app pauses.
+    - Phone/tablet layouts in style.css: below 760px and 560px wide (two-row HUD, compact cells) and short landscape
+      screens (one-row HUD). Full screen, safe areas, no text selection or tap flashes.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you
