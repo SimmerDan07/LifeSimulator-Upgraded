@@ -1,5 +1,6 @@
 // The Family Tree screen (v0.17.0): every generation from your grandparents down to your great-grandchildren,
 // each row split into family groups ("Mom's side", "Aunt Rosa's children", "Your children"…). Tap anyone to open them.
+import { TrueAge } from "../Managers/TrueAge";
 import { Appearance, ORIGINAL } from "./Appearance";
 import { ArrayList } from "../runtime";
 import { BaseViewModel } from "../Models/BaseViewModel";
@@ -37,7 +38,7 @@ export const FamilyTree = {
             id: x.getId(),
             name: x.getFirstName(),
             relation: relation ?? FamilyTree.relationOf(x),
-            sub: dead ? "Deceased" : `Age ${x.getAgeInYears()}` + (x.getTrueAgeInYears?.() > x.getAgeInYears() ? ` (true ${x.getTrueAgeInYears()})` : ""),
+            sub: dead ? "Deceased" : `Age ${x.getAgeInYears()}` + (x.getTrueAgeInYears?.() > x.getAgeInYears() ? ` (true ${TrueAge.text(x)})` : ""),
             imageId: LoveScreens.headImage(x),
             dead,
             you: false,
@@ -157,7 +158,7 @@ export const FamilyTree = {
     lineText(r: LifeRecord): string {
         if (r.legacy) return `Lived to ${r.age}`;
         if (r.retired && r.alive) return `Handed everything to ${r.retired.to} at ${r.retired.age} · still living`;   // v0.28.0
-        const bits = [`Lived to ${r.age}` + (r.trueAge !== r.age ? ` (true age ${r.trueAge})` : "")];
+        const bits = [`Lived to ${r.age}` + (r.trueAge !== r.age ? ` (true age ${(r as any).trueAgeText ?? TrueAge.format(r.trueAge)})` : "")];
         if (r.retired) bits.push(`handed everything to ${r.retired.to} at ${r.retired.age}`);
         if (r.cause && !/^Retired:/.test(r.cause)) bits.push(r.cause);
         if (r.vampireYears > 0) bits.push(`vampire for ${r.vampireYears} years`);

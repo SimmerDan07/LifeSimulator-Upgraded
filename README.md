@@ -235,6 +235,12 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     progress?" still asks (`essential`). Death goes on to the tombstone (never an automatic second chance);
     achievements never restart your life. Toasts show icons, stack up to 4, stay longer for longer text, tap to close.
     Answering a holiday no longer marks all of News as read. Test env `LIFESIM_NO_POPUPS=1`.
+  - **v0.29.2 Endless true age**: `src/game/Managers/TrueAge.ts`. Player/Person keep up to 2^48 weeks in
+    `trueAgeInWeeks` and carry whole blocks into `trueAgeBlocks` (BigInteger, unlimited; saved by SaveCodec).
+    `getTrueAgeInWeeks/Years` stay plain numbers for clocks and comparisons (capped at MAX_SAFE_INTEGER);
+    `TrueAge.weeks/years` are exact bigints; `getTrueAgeText()` / `TrueAge.text` show every digit with commas
+    (Profile, Vampire screen, family, Family Tree, obituary, cemetery records `trueAgeText`). Increments go through
+    `addTrueAgeWeeks`/`TrueAge.add`; heirs and family copy with `TrueAge.copy`. Test: `test/trueage.ts`.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

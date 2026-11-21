@@ -4,6 +4,7 @@
 // - How long you've been together with your partner, and how long you've been married.
 // - "Spend Time with Everyone": a week with each person you have a relationship with (v0.21.0: partner, parents, children,
 //   siblings, extended family, friends and pets — 12 relationships = 12 weeks).
+import { TrueAge } from "./TrueAge";
 import { BigInteger, R } from "../runtime";
 import { WorkAction } from "../Enums/WorkAction";
 import { GenericListType } from "../Fragments/GenericListType";
@@ -37,14 +38,22 @@ export const FamilyExtras = {
 
     // ---------------------------------------------------------------- true age
     trueAgeYears(person: any): number {
-        // Older saves never advanced family members' true age (original bug), so it can lag behind their age.
-        if ((person.trueAgeInWeeks ?? 0) < person.getAgeInWeeks()) person.trueAgeInWeeks = person.getAgeInWeeks();
-        return Math.floor(person.trueAgeInWeeks / WPY());
+        FamilyExtras.fixTrueAge(person);
+        return TrueAge.yearsNumber(person);
+    },
+    /** Every digit, with commas (v0.29.2: the true age has no ceiling). */
+    trueAgeText(person: any): string {
+        FamilyExtras.fixTrueAge(person);
+        return TrueAge.text(person);
+    },
+    /** Older saves never advanced family members' true age (original bug), so it can lag behind their age. */
+    fixTrueAge(person: any): void {
+        if (person.trueAgeBlocks == null && (person.trueAgeInWeeks ?? 0) < person.getAgeInWeeks()) person.trueAgeInWeeks = person.getAgeInWeeks();
     },
     /** "34 (true age 34)" / "34 (true age 44)" — v0.24.0: everyone's true age is always shown. */
     ageText(person: any): string {
-        const age = person.getAgeInYears(), trueAge = FamilyExtras.trueAgeYears(person);
-        return `${age} (true age ${Math.max(age, trueAge)})`;
+        FamilyExtras.fixTrueAge(person);
+        return `${person.getAgeInYears()} (true age ${FamilyExtras.trueAgeText(person)})`;
     },
 
     // ---------------------------------------------------------------- elixir for others

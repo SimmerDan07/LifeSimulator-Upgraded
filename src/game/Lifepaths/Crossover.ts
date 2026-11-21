@@ -11,6 +11,7 @@
 // - Feed on a Superfan (Rising Star+): −40 thirst, +5 suspicion, and sometimes they tell the tabloids.
 // - Midnight Show (vampire with a celebrity career): a night crowd, +5% fans, no sunlight.
 // Also in Celebrity.ts: Charm gives +20% fan gains; paparazzi sometimes catch a vampire on camera (+suspicion, +fans).
+import { TrueAge } from "../Managers/TrueAge";
 import { R } from "../runtime";
 import { Vampire, FEEDING, LifeActionDef } from "./Vampire";
 import { Celebrity, FAME, TIERS } from "./Celebrity";
@@ -126,7 +127,7 @@ export const Crossover = {
             const s = Celebrity.peek(p);
             if (s == null || s.fans < 100000 || years % 5 !== 0) return;
             Celebrity.addFans(p, s.fans * 0.02);
-            World.news(p, `${p.getFullName()} at ${p.getTrueAgeInYears()}: still looks ${p.getAgeInYears()}. What's the secret?`);
+            World.news(p, `${p.getFullName()} at ${TrueAge.text(p)}: still looks ${p.getAgeInYears()}. What's the secret?`);
         };
         const turn = Vampire.turn;
         Vampire.turn = (p: any, person: any) => {

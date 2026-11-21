@@ -370,6 +370,7 @@ export const Legacy = {
         const handed = r.retired?.age ?? r.age;
         r.age = age;
         r.trueAge = member.getTrueAgeInYears?.() ?? age;
+        r.trueAgeText = member.getTrueAgeText?.();
         r.cause = member.deathReason ? String(member.deathReason) : "Old age";
         r.obituary = `${r.name} died at the age of ${age}, ${age - handed} year${age - handed === 1 ? "" : "s"} after handing everything down to ${r.retired?.to ?? "a child"}. ` + String(r.obituary ?? "").replace(/^[^.]*\.\s*/, "");
     },

@@ -26,6 +26,8 @@ export interface LifeRecord {
     sex: string;
     age: number;
     trueAge: number;
+    /** v0.29.2: every digit (the number above stops at about 9 quadrillion). */
+    trueAgeText?: string;
     cause: string;
     badges: string[];
     tombstone: [string, string][];
@@ -91,6 +93,7 @@ export const Lineage = {
             sex: p.getSex?.()?.name?.() ?? "male",
             age: p.getAgeInYears(),
             trueAge: p.getTrueAgeInYears?.() ?? p.getAgeInYears(),
+            trueAgeText: p.getTrueAgeText?.() ?? undefined,
             cause: p.deathCause ?? "",
             badges,
             tombstone: Lineage.tombstonePairs(p),

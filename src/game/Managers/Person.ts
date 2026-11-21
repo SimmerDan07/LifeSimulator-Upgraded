@@ -1,3 +1,4 @@
+import { TrueAge } from "./TrueAge";
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Integer, Intrinsics, JMath, NoWhenBranchMatchedException, R, Random, SpannableStringBuilder, StringCompanionObject, TypeCastException, UUID } from "../runtime";
@@ -68,6 +69,8 @@ export class Person {
     sex: Sex = null;
     sexuality: Sexuality = null;
     trueAgeInWeeks: number = 0;
+    /** v0.29.2: whole blocks of TrueAge.BLOCK weeks carried out of trueAgeInWeeks (unlimited). */
+    trueAgeBlocks?: BigInteger;
     /** Partner only: when you started dating / got married (player's true age in weeks). Undefined in older saves. */
     togetherSinceWeek: number = null;
     marriedSinceWeek: number = null;
@@ -212,7 +215,7 @@ export class Person {
             i = Constants.Time.INSTANCE.getWeeksPerYear() * Constants.Person.INSTANCE.getMinAgeInYears();
         }
         if (i2 > 0) {
-            this.trueAgeInWeeks += i2;
+            TrueAge.add(this, i2);
         }
         this.ageInWeeks = i;
     }
@@ -223,14 +226,16 @@ export class Person {
         return AgeGroup.INSTANCE.getAgeGroup(this.getAgeInYears());
     }
     getTrueAgeInWeeks(): number {
-        return this.trueAgeInWeeks;
+        return TrueAge.weeksNumber(this);
     }
     setTrueAgeInWeeks(i: number): void {
-        this.trueAgeInWeeks = i;
+        TrueAge.set(this, i);
     }
+    addTrueAgeWeeks(n: number): void { TrueAge.add(this, n); }
     getTrueAgeInYears(): number {
-        return JMath.idiv(this.trueAgeInWeeks, Constants.Time.INSTANCE.getWeeksPerYear());
+        return TrueAge.yearsNumber(this);
     }
+    getTrueAgeText(): string { return TrueAge.text(this); }
     getChanceOfDeathThisWeek(): number {
         let pet: Pet;
         if (Vampire.isTurned(this)) return 0;
@@ -406,7 +411,10 @@ export class Person {
     advanceWeek(weeksToAdvance: number): void {
         if (this.isAlive) {
             // someone you turned into a vampire stops ageing (their true age keeps counting)
-            if (Vampire.isTurned(this)) this.trueAgeInWeeks = Math.max(this.trueAgeInWeeks ?? 0, this.ageInWeeks) + weeksToAdvance;
+            if (Vampire.isTurned(this)) {
+                if (this.trueAgeBlocks == null && (this.trueAgeInWeeks ?? 0) < this.ageInWeeks) this.trueAgeInWeeks = this.ageInWeeks;
+                TrueAge.add(this, weeksToAdvance);
+            }
             else this.setAgeInWeeks(this.ageInWeeks + weeksToAdvance);
             if (!this.getNotYetBorn() && (weeksToAdvance <= 1)) {
                 let personState: Player = GameStateManager.INSTANCE.getPersonState();

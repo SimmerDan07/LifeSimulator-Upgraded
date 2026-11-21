@@ -1,6 +1,7 @@
 // Lifepaths tab: hidden paths a life can take that change what your character is.
 // v0.15.0: the Vampire lifepath (see src/game/Lifepaths/Vampire.ts).
 // v0.19.0: the tab is a menu of paths (Celebrity Life, Vampire); each opens its own screen (GenericListType.lifepath).
+import { TrueAge } from "../Managers/TrueAge";
 import { ArrayList, R } from "../runtime";
 import { News } from "../Managers/News";
 import { Illness } from "../Health/Illness";
@@ -188,7 +189,7 @@ export class LifepathsModelGenerator {
         const s = Vampire.state(p);
         const years = Vampire.years(p);
         const turnedAt = Math.floor(s.turnedAtWeeks / 48);
-        const trueAge = Math.floor(p.getTrueAgeInWeeks() / 48);
+        const trueAge = TrueAge.text(p);
         out.add(new HeaderTitleViewModel("Vampire"));
         const powers = (s.powers ?? []).map((id: string) => POWERS.find((x) => x.id === id)?.title).filter(Boolean).join(", ");
         out.add(info(Vampire.image, years > 0 ? `Vampire for ${years} year${years === 1 ? "" : "s"}` : "A newly risen vampire",
@@ -216,7 +217,7 @@ export class LifepathsModelGenerator {
             out.add(new HeaderTitleViewModel("Eternal Bond"));
             const married = bond.marriedSinceWeek != null;
             const since = bond.marriedSinceWeek ?? bond.togetherSinceWeek;
-            const yrs = since != null ? Math.floor((p.getTrueAgeInWeeks() - since) / 48) : null;
+            const yrs = since != null ? Math.floor(Math.max(0, p.getTrueAgeInWeeks() - since) / 48) : null;
             out.add(info(R.drawable.icon_bond, `Eternal Bond with ${bond.getFirstName()}`,
                 (yrs != null ? `${married ? "Married" : "Together"} ${yrs} year${yrs === 1 ? "" : "s"}. ` : "") + "You never drift apart, fight hunters side by side (70% to win) and share your blood diet (it costs double; with no diet, they hunt alone: +2 suspicion a week). Hunt Together, Dance Through the Night and Eternal Vows are on their Love tab screen."));
         }

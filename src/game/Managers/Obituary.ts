@@ -1,5 +1,6 @@
 // The obituary (v0.17.0): a written summary of a life, shown under the tombstone on the Life Summary screen
 // (and for past lives in the cemetery). The cause of death is recorded when the death alert is shown.
+import { TrueAge } from "./TrueAge";
 import { Pair } from "../runtime";
 import { Illness } from "../Health/Illness";
 import { ILLNESS_DEFS } from "../Health/IllnessData";
@@ -104,7 +105,7 @@ export const Obituary = {
         const age = p.getAgeInYears(), trueAge = p.getTrueAgeInYears();
         let t = p.retiredTo
             ? `${p.getFullName()} handed everything down to ${p.retiredTo} at the age of ${age} and retired.`   // v0.28.0 Switch Life
-            : `${p.getFullName()} died at the age of ${age}` + (trueAge !== age ? ` (true age ${trueAge})` : "") + (Obituary.phrase(cause) ? ", " + Obituary.phrase(cause) : "") + ".";
+            : `${p.getFullName()} died at the age of ${age}` + (trueAge !== age ? ` (true age ${TrueAge.text(p)})` : "") + (Obituary.phrase(cause) ? ", " + Obituary.phrase(cause) : "") + ".";
         const vs = Vampire.peek(p);
         if (vs != null && (vs.isVampire || vs.cured) && vs.vampireWeeks > 0) {
             const y = Math.floor(vs.vampireWeeks / WPY());
@@ -131,7 +132,7 @@ export const Obituary = {
     rows(p: any): Pair<string, string>[] {
         const rows: [string, string][] = [];
         rows.push(["Cause of death", p.deathCause ?? "Unknown"]);
-        rows.push(["Age", p.getTrueAgeInYears() !== p.getAgeInYears() ? `${p.getAgeInYears()} (true age ${p.getTrueAgeInYears()})` : String(p.getAgeInYears())]);
+        rows.push(["Age", p.getTrueAgeInYears() !== p.getAgeInYears() ? `${p.getAgeInYears()} (true age ${TrueAge.text(p)})` : String(p.getAgeInYears())]);
         const vs = Vampire.peek(p);
         if (vs != null && vs.vampireWeeks > 0 && (vs.isVampire || vs.cured)) rows.push(["Vampire for", plural(Math.floor(vs.vampireWeeks / WPY()), "year")]);
         rows.push(["Net worth", ExtensionsKt.numberDisplayString$default(p.getNetWorth(), false, 1, null)]);

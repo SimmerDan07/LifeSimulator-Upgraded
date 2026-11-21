@@ -12,6 +12,7 @@
 // Vampires can't have biological children. Endings: the Vampiric Cure (the reworked Elixir of Youth) or Final Rest.
 // v0.16.0: the Vampiric Cure costs $300 billion; one vampire life per lifetime (no turning again after the Cure);
 // a vampire's health never decays (only vampire dangers hurt it); blood diets replace food diets.
+import { TrueAge } from "../Managers/TrueAge";
 import { seasonForMonth } from "../World/WorldData";
 import { ArrayList, BigInteger, R } from "../runtime";
 import { GameStateManager } from "../Managers/GameStateManager";
@@ -229,7 +230,7 @@ export const Vampire = {
     /** The week passes while frozen: true age and calendar move, your body doesn't. */
     tickFrozen(p: any) {
         const s = Vampire.state(p);
-        p.setTrueAgeInWeeks(p.getTrueAgeInWeeks() + 1);
+        p.addTrueAgeWeeks(1);   // v0.29.2: exact, however old
         s.calendarOffset++;
         s.vampireWeeks++;
     },
@@ -631,7 +632,7 @@ export const Vampire = {
         Relationships.circle(p).add(f);
         const m = Relationships.circle(p).metaFor(f.id);
         m.vampire = true; m.knows = true;
-        Vampire.alert("Coven", `You met ${f.getFullName()}, a vampire who looks ${f.getAgeInYears()} but is really ${f.getTrueAgeInYears()}.`, Vampire.image);
+        Vampire.alert("Coven", `You met ${f.getFullName()}, a vampire who looks ${f.getAgeInYears()} but is really ${TrueAge.text(f)}.`, Vampire.image);
     },
 
     // ------------------------------------------------------------------ loved ones

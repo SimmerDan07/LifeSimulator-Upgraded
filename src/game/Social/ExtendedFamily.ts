@@ -10,6 +10,7 @@
 //   siblings (nieces/nephews) and aunts/uncles (cousins).
 // - Heirs inherit the tree one generation down (grandparents ← your parents, aunts/uncles ← your siblings,
 //   cousins ← your nieces/nephews, nieces/nephews ← your other grandchildren, children ← the heir's own kids).
+import { TrueAge } from "../Managers/TrueAge";
 import { R } from "../runtime";
 import { Constants } from "../Utils/Constants";
 import { GameStateManager } from "../Managers/GameStateManager";
@@ -292,7 +293,7 @@ export const ExtendedFamily = {
                 const k = new Person(g.firstName, g.lastName, g.getGender(), g.sexuality ?? Sexuality.straight, g.getSex(), Relationship.child, g.getAgeInWeeks(), null);
                 k.setId(g.id);
                 if (g.appearance) (k as any).appearance = { ...g.appearance };
-                k.setTrueAgeInWeeks(g.getTrueAgeInWeeks());
+                TrueAge.copy(g, k);
                 k.setRelationshipProgress(g.getRelationshipProgress());
                 if (!g.getIsAlive()) { k.setAlive(false); k.setBuried(g.getIsBuried()); }
                 heir.getFamilyState().getFamilyMembers().add(k);

@@ -7,6 +7,7 @@
 // - Anniversaries come from the Together/Married counters; a missed one costs 40. Birthdays come from age.
 // - Siblings are rolled for new games (0–3) and inherited by heirs; a breakup or divorce keeps your ex.
 // - Friends are met at school or work, or with "Meet New People" (up to 10).
+import { TrueAge } from "../Managers/TrueAge";
 import { BigInteger, R } from "../runtime";
 import { Constants } from "../Utils/Constants";
 import { GameStateManager } from "../Managers/GameStateManager";
@@ -286,7 +287,7 @@ export const Relationships = {
         if (Relationships.canGetBackTogether(ex) != null) return false;
         const p = player();
         const lover = new Person(ex.firstName, ex.lastName, ex.getGender(), ex.sexuality ?? Sexuality.straight, ex.getSex(), Relationship.lover, ex.getAgeInWeeks(), ex.loverPersonality ?? LoverPersonality.cheerful);
-        lover.setTrueAgeInWeeks(ex.getTrueAgeInWeeks());
+        TrueAge.copy(ex, lover);
         lover.setRelationshipProgress(ex.getRelationshipProgress());
         Relationships.circle(p).remove(ex.id);
         p.getFamilyState().date(lover);

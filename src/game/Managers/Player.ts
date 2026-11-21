@@ -1,3 +1,4 @@
+import { TrueAge } from "./TrueAge";
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
 import { Crime } from "../Crime/Crime";
@@ -159,6 +160,8 @@ export class Player {
     tempState: TempState = null;
     traitState: TraitState = null;
     trueAgeInWeeks: number = 0;
+    /** v0.29.2: whole blocks of TrueAge.BLOCK weeks carried out of trueAgeInWeeks (unlimited). */
+    trueAgeBlocks?: BigInteger;
     constructor(firstName: string, lastName: string, gender: Gender, sexuality: Sexuality, sex: Sex, i: number) {
         Intrinsics.checkParameterIsNotNull(firstName, "firstName");
         Intrinsics.checkParameterIsNotNull(lastName, "lastName");
@@ -287,7 +290,7 @@ export class Player {
             i2 = i - this.ageInWeeks;
         }
         if (i2 > 0) {
-            this.trueAgeInWeeks += i2;
+            TrueAge.add(this, i2);
         }
         this.ageInWeeks = i;
     }
@@ -304,14 +307,18 @@ export class Player {
         return (this.getBirthMonth() + monthsSinceBirthday) % 12;
     }
     getTrueAgeInWeeks(): number {
-        return this.trueAgeInWeeks;
+        return TrueAge.weeksNumber(this);
     }
     setTrueAgeInWeeks(i: number): void {
-        this.trueAgeInWeeks = i;
+        TrueAge.set(this, i);
     }
+    /** v0.29.2: no ceiling — carried weeks live in trueAgeBlocks (see TrueAge). */
+    addTrueAgeWeeks(n: number): void { TrueAge.add(this, n); }
     getTrueAgeInYears(): number {
-        return JMath.idiv(this.trueAgeInWeeks, Constants.Time.INSTANCE.getWeeksPerYear());
+        return TrueAge.yearsNumber(this);
     }
+    /** Every digit, with commas. */
+    getTrueAgeText(): string { return TrueAge.text(this); }
     getAgeGroup(): AgeGroup {
         return AgeGroup.INSTANCE.getAgeGroup(this.getAgeInYears());
     }
@@ -468,7 +475,7 @@ export class Player {
     /** The tombstone's facts (v0.18.0: also saved in each life's record). */
     tombstonePairs(): Pair[] {
         let pairArr: Pair[] = new Array(8).fill(null);
-        pairArr[0] = new Pair(Utils.INSTANCE.getString(R.string.identity_name_trueAge), String.valueOf(this.getTrueAgeInYears()));
+        pairArr[0] = new Pair(Utils.INSTANCE.getString(R.string.identity_name_trueAge), this.getTrueAgeText());
         pairArr[1] = new Pair(Utils.INSTANCE.getString(R.string.identity_name_networth), String.valueOf(ExtensionsKt.numberDisplayString$default(this.getNetWorth(), false, 1, null)));
         pairArr[2] = new Pair(Utils.INSTANCE.getString(R.string.ProfileStatus_RelationshipStatus), this.romanticRelationshipStatus.getTitle());
         let string: string = Utils.INSTANCE.getString(R.string.SectionHeader_Education);
@@ -1317,7 +1324,7 @@ export class Player {
     }
     initializeAge(ageInYears: number, updateHousing: boolean): void {
         this.ageInWeeks = Constants.Time.INSTANCE.getWeeksPerYear() * ageInYears;
-        this.trueAgeInWeeks = this.ageInWeeks;
+        TrueAge.set(this, this.ageInWeeks);
         if (updateHousing) {
             if (ageInYears < 18) {
                 this.housingState.moveHere(Housing.parentsHouse);
@@ -1384,7 +1391,7 @@ export class Player {
     }
     initializeAgeInYears(ageInYears: number): void {
         this.ageInWeeks = ageInYears * Constants.Time.INSTANCE.getWeeksPerYear();
-        this.trueAgeInWeeks = this.ageInWeeks;
+        TrueAge.set(this, this.ageInWeeks);
     }
     applyPerkStateEffects(): void {
         if (this.perkState.hasPerk(Perk.trustFund)) {

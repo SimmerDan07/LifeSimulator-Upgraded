@@ -1,6 +1,7 @@
 // Generational play (Life Sim Upgraded): when you die, continue the family line as one of your children.
 // The heir inherits the estate (money after debts, homes, possessions, businesses, stocks, pets),
 // keeps their own job, gets schooling that matches their age/job, and remembers their parents.
+import { TrueAge } from "./TrueAge";
 import { nativeLanguageOf } from "../World/WorldData";
 import { World } from "../World/World";
 import { Celebrity } from "../Lifepaths/Celebrity";
@@ -119,7 +120,7 @@ export class Generations {
 
         const heir = new Player(child.getFirstName(), child.getLastName() ?? parent.getLastName(), child.getGender(),
             child.getSexuality() ?? Sexuality.straight, child.getSex(), child.getAgeInWeeks());
-        heir.setTrueAgeInWeeks(child.getTrueAgeInWeeks());
+        TrueAge.copy(child, heir);
         heir.setCountry(parent.getCountry());
         (heir as any).nativeLanguage = nativeLanguageOf(parent.getCountry().name());   // v0.27.0: grew up here
         heir.setLifeScenario(parent.getLifeScenario());
@@ -171,7 +172,7 @@ export class Generations {
         (dead as any).appearance = { ...Appearance.of(parent) };
         if (live) {
             // v0.28.0 Switch Life: the old you lives on as a retired parent, with what they kept
-            dead.setTrueAgeInWeeks(parent.getTrueAgeInWeeks());
+            TrueAge.copy(parent, dead);
             (dead as any).wealth = kept;
             (dead as any).formerLifeId = parent.getId();
         } else {
