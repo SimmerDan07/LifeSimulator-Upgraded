@@ -142,6 +142,15 @@ LifeMoments.enabled = false;
     Vampire.rise(p); drain(); Vampire.state(p).powers = ["shadowStep"];
     p.leisureAction(Leisure.prisonEscape); drain();
     check("Shadow Step: a vampire's escape always works", !Crime.inJail(p) && Crime.state(p).fugitive && Crime.heat(p) >= 90);
+    {   // v0.29.3: …and the manhunt can't catch you in the very week you got out (it did, about 1 time in 20)
+        let all = true;
+        for (let t = 0; t < 40; t++) {
+            Crime.sendToJail(p, 200, "Robbery", true, false); drain();
+            p.leisureAction(Leisure.prisonEscape); drain();
+            if (Crime.inJail(p) || !Crime.state(p).fugitive) all = false;
+        }
+        check("Shadow Step: 40 escapes, 40 times free (no same-week recapture)", all);
+    }
     check("fugitives are blocked from background-check jobs", /fugitive/.test(Careers.applyBlock(Job.police, p) ?? ""));
     p.getCompletableActionState().completeAction(CompletableAction.japanese);
     p.buyItem(Possession.passport);

@@ -154,7 +154,8 @@ function invariants(where: string) {
         const r = x.getRelationshipProgress();
         if (!Number.isFinite(r) || r < 0 || r > 1000) report("REL", `${x.getTitle?.() ?? x.kind} ${x.getFirstName?.()} = ${r}`, where);
         const ag = x.getAgeInWeeks?.();
-        if (ag != null && (!Number.isFinite(ag) || ag < 0)) report("AGE", `${x.getFirstName?.()} ageWeeks=${ag}`, where);
+        // a baby on the way has a negative age (weeks until birth); anything else below zero is wrong
+        if (ag != null && (!Number.isFinite(ag) || ag < -48 || (ag < 0 && !x.getNotYetBorn?.()))) report("AGE", `${x.getFirstName?.()} ageWeeks=${ag}`, where);
     }
     const cs = Celebrity.peek(p);
     if (cs) {

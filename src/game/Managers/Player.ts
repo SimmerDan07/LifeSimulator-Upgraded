@@ -522,7 +522,7 @@ export class Player {
         Vampire.onLeisure(this, action);
         Seasons.onLeisure(this, action);
         // v0.27.0: the prison yard (escapes, riots) and its consequences
-        const ev = Crime.leisureEvent(this, action, RandomEvent.INSTANCE.randomEventForLeisure(action));
+        const ev = Crime.leisureEvent(this, action, RandomEvent.INSTANCE.randomEventForLeisure(action), RandomEvent.prison_escape_success);
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, ev, false, 2, null);
         Crime.afterLeisureEvent(this, action, ev);
         this.applyWeekly();

@@ -300,6 +300,7 @@ export const Crime = {
         if (how === "escape") {
             p.getHousingState().moveHere(Housing.homeless);
             s.fugitive = true; s.heat = 100; s.stats.escapes++;
+            (s as any).escapedWeek = now(p);   // v0.29.3: you get away first — no recapture in the week you escape
         } else {
             const pf = (() => { try { return p.getRealEstate(); } catch { return null; } })();
             const owned = j?.prevResidence && pf?.get?.(j.prevResidence);
@@ -350,7 +351,7 @@ export const Crime = {
         s.open = s.open.filter((c) => t - c.week < (c.murder ? MURDER_COLD_YEARS : 5) * WPY());
         if (s.org) Crime.orgWeek(p, s);
         // fugitives get caught
-        if (s.fugitive && roll(0.06)) { Crime.recapture(p); return; }
+        if (s.fugitive && t - ((s as any).escapedWeek ?? -99) > 1 && roll(0.06)) { Crime.recapture(p); return; }
         // detectives on open murder cases
         for (const c of s.open.filter((x) => x.murder)) {
             if (roll(0.012 + s.heat / 2000)) { Crime.arrest(p, [c], `Detectives connected you to the death of ${c.victim}.`); return; }
@@ -586,10 +587,12 @@ export const Crime = {
     },
 
     // ------------------------------------------------------------------ the prison yard (Leisure tab) and prison events
-    leisureEvent(p: any, action: any, ev: any): any {
+    leisureEvent(p: any, action: any, ev: any, escapeSuccess?: any): any {
         const name = action?.name?.();
         if (name === "prisonEscape") {
-            if (Vampire.isVampire(p) && Vampire.has("shadowStep", p)) return (ev?.constructor as any)?.prison_escape_success ?? ev;
+            // v0.29.3: Shadow Step always works — even when the escape roll came up with no event at all
+            // (it used to fall through to "a guard caught you in the vent", +12 weeks)
+            if (Vampire.isVampire(p) && Vampire.has("shadowStep", p)) return escapeSuccess ?? (ev?.constructor as any)?.prison_escape_success ?? ev;
         }
         if (name === "prisonRiot" && ev?.name?.() === "prison_riot_beatenUp" && (Crime.state(p).prisonGang || roll(Activities.fightBonus(p) * 3))) return (ev.constructor as any).prison_riot_kungfu;
         return ev;
