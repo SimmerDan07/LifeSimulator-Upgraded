@@ -1,7 +1,8 @@
-# Builds the iPhone / browser version on every push to main and publishes it to the gh-pages branch.
-# GitHub Pages (Settings → Pages → Deploy from a branch → gh-pages / root) serves it at
-# https://simmerdan07.github.io/LifeSimulator-Upgraded/ — open that in Safari on the iPhone,
-# then Share → Add to Home Screen.
+# Builds the iPhone / browser version on every push to main and publishes it to GitHub Pages at
+# https://simmerdan07.github.io/LifeSimulator-Upgraded/ — open that in Safari on the iPhone, then Share → Add to Home Screen.
+# Works with either Pages setting (Settings → Pages → Source):
+#   "GitHub Actions"          → the deploy job below publishes it directly;
+#   "Deploy from a branch"    → pick gh-pages / (root); the build job pushes the site there.
 name: Build iPhone web app
 
 on:
@@ -11,6 +12,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: web
@@ -49,3 +52,21 @@ jobs:
           echo "Published v$V to gh-pages" >> "$GITHUB_STEP_SUMMARY"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-web
+
+  deploy:
+    needs: web
+    runs-on: ubuntu-latest
+    # only does anything when Settings → Pages → Source is "GitHub Actions"; otherwise the gh-pages branch is used
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
