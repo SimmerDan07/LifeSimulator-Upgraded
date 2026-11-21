@@ -274,6 +274,14 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `Vampire.curePrice`, instant, confirm) → `Vampire.cureOther` sets `meta.cureWeeks = Vampire.cureWeeks`;
     `Vampire.tickCures(p)` (Player weekly, after OneNight) counts down and then sets `meta.vampire = false`,
     `meta.cured = true` (Turn is locked for them: one vampire life). Tests at the end of test/vampire.ts.
+  - **v0.31.0 iPhone (web app)**: `npm run web` (tools/build-web.mjs) → `dist-web/` (no Electron files, iOS meta tags,
+    `manifest.webmanifest`, icons from `web/`, `pwa.js` registers `sw.js` = `web/sw.template.js` with every file
+    listed for an offline copy, cache per version). `.github/workflows/web.yml` force-pushes it to `gh-pages`
+    (GitHub Pages: https://simmerdan07.github.io/LifeSimulator-Upgraded/). Storage without `window.lifesimFS`:
+    IndexedDB (`lifesim` / `files`), read into memory before `boot()`, writes queued (`storage.flush()`), old
+    localStorage saves still read. Settings › Back Up Your Save / Load a Backup (`SettingsManager.backUpSave /
+    loadBackup`, `UIBridge.backUp / pickFile / replaceSave`; share sheet or download; not on Android's WebView).
+    Saves on `pagehide` too. Bundle target adds `safari15`.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

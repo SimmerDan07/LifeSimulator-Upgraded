@@ -1,0 +1,51 @@
+# Builds the iPhone / browser version on every push to main and publishes it to the gh-pages branch.
+# GitHub Pages (Settings → Pages → Deploy from a branch → gh-pages / root) serves it at
+# https://simmerdan07.github.io/LifeSimulator-Upgraded/ — open that in Safari on the iPhone,
+# then Share → Add to Home Screen.
+name: Build iPhone web app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: web
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the web app
+        run: npm run web
+
+      - name: Publish to the gh-pages branch
+        working-directory: dist-web
+        run: |
+          V=$(node -p "require('../package.json').version")
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Life Simulator v$V (web app)"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+          echo "Published v$V to gh-pages" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

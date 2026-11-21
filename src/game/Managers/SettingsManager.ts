@@ -16,6 +16,9 @@ import { SettingRow } from "./SettingRow";
 import { SettingsRowViewModel } from "../Models/SettingsRowViewModel";
 import { TelemetryManager } from "./TelemetryManager";
 import { Utils } from "../Utils/Utils";
+import { GameStateManager } from "./GameStateManager";
+import { Constants } from "../Utils/Constants";
+import { SaveCodec } from "../save/SaveCodec";
 
 export class SettingsManager {
     static INSTANCE: SettingsManager = new SettingsManager();
@@ -41,13 +44,58 @@ export class SettingsManager {
             arrayList.add(new SettingsRowViewModel("Save Folder", R.drawable.menu_saves, true, true, {
                 invoke: () => SettingsManager.INSTANCE.showSaveFolder(),
             }));
+            // v0.31.0: back up your save to a file, and load one (move a life between PC, browser and iPhone)
+            if (UIBridge.canBackUp()) {
+                arrayList.add(new SettingsRowViewModel("Back Up Your Save", R.drawable.menu_share, true, true, {
+                    invoke: () => SettingsManager.INSTANCE.backUpSave(),
+                }));
+                arrayList.add(new SettingsRowViewModel("Load a Backup", R.drawable.menu_saves, true, true, {
+                    invoke: () => SettingsManager.INSTANCE.loadBackup(),
+                }));
+            }
             return new GenericListFragmentViewModel(arrayList, arrayList2, arrayList3);
         }
+    }
+    info(title: string, msg: string, image: any = R.drawable.menu_saves): void {
+        AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(title, msg, image, null, null, null, null, null, null, 504, null), false, 2, null);
+    }
+    backUpSave(): void {
+        const gsm = GameStateManager.INSTANCE;
+        try { if (gsm.getGlobalStateManager().getSaveState().getHasGameStarted()) gsm.saveData(); } catch { /* keep going */ }
+        const text = UIBridge.readFile(Constants.File.INSTANCE.getSaveFileName());
+        if (text == null || text.length === 0) { this.info("Back Up Your Save", "There's nothing saved yet."); return; }
+        const d = new Date();
+        const pad = (n: number) => String(n).padStart(2, "0");
+        let who = "";
+        try { who = "-" + gsm.getPersonState().getFullName().replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, ""); } catch { /* no life */ }
+        const name = `LifeSimulator${who}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.txt`;
+        void UIBridge.backUp(name, text).then((r) => {
+            if (r === "cancelled") return;
+            if (r === "failed") this.info("Back Up Your Save", "The backup couldn't be made on this device.");
+            else this.info("Backed Up", `Your save (every save slot) is in the file "${name}".\n\nKeep it somewhere safe. On another device, open Settings › Load a Backup and pick this file to carry on the same lives.`);
+        });
+    }
+    loadBackup(): void {
+        void UIBridge.pickFile().then((text) => {
+            if (text == null) return;
+            let summary = "";
+            try {
+                const g: any = SaveCodec.decode(text.trim());
+                const pl = g.getSaveState().currentSlot().getPersonState();
+                if (pl != null) summary = ` of ${pl.getFullName()} (age ${pl.getAgeInYears()})`;
+            } catch {
+                this.info("Load a Backup", "That file isn't a Life Simulator save.");
+                return;
+            }
+            AlertManager.INSTANCE.showConfirmationAlert(new AlertViewModel("Load a Backup", `Load this backup${summary}? The game on this device is replaced by the backup (all save slots). Back it up first if you want to keep it.`, R.drawable.menu_saves, null, null, null, null, null, null, 504, null), {
+                invoke: () => { void UIBridge.replaceSave(Constants.File.INSTANCE.getSaveFileName(), text.trim()); },
+            });
+        });
     }
     showSaveFolder(): void {
         const dir = UIBridge.saveFolder();
         if (dir == null) {
-            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Save Folder", "This version keeps your save in the browser. The Windows game saves to Documents\\Life Simulator\\Saves.", R.drawable.menu_saves, null, null, null, null, null, null, 504, null), false, 2, null);
+            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Save Folder", "This version keeps your saves on this device, inside the app (they stay when you close it). To keep a copy or move a life to another device, use Back Up Your Save. The Windows game saves to Documents\\Life Simulator\\Saves.", R.drawable.menu_saves, null, null, null, null, null, null, 504, null), false, 2, null);
             return;
         }
         AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Save Folder", `Your saves are in:\n${dir}\n\nCopy this folder to back up your game.`, R.drawable.menu_saves, null, null,
