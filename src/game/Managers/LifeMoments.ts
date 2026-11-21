@@ -448,16 +448,16 @@ export const LifeMoments = {
         const s = LifeMoments.state(p);
         s.last = LifeMoments.now(p);
         s.seen[m.id] = s.last;
-        LifeMoments.ask(m.title, built.text, m.image, built.options);
+        LifeMoments.ask(m.title, built.text, m.image, built.options, { random: true });   // life moments happen to you
         return m;
     },
     /** `how.holiday` keeps it popping up; `how.quiet` is the choice made for you when it doesn't (AlertManager.quietly). */
-    ask(title: string, text: string, image: any, options: Opt[], how: { holiday?: boolean; quiet?: "positive" | "negative" | number } = {}) {
+    ask(title: string, text: string, image: any, options: Opt[], how: { holiday?: boolean; quiet?: "positive" | "negative" | number; random?: boolean } = {}) {
         // first option = green, last = red, any in between are extra buttons (like Celebrity.choice)
         // v0.28.1b: after you answer a holiday, how it went is a small notice (and in News), not a second pop-up
         const wrap = (o: Opt) => new AlertActionViewModel(o[0], { invoke: () => {
             const r = safe(o[1]);
-            if (r) { if (how.holiday && AlertManager.inWeek === 0) LifeMoments.notice(title, text, r, image, o[0]); else LifeMoments.result(title, r, image, { holiday: how.holiday }); }
+            if (r) { if (how.holiday && AlertManager.inWeek === 0) LifeMoments.notice(title, text, r, image, o[0]); else LifeMoments.result(title, r, image, { holiday: how.holiday, random: how.random }); }
             refresh(); return null;
         } });
         const extra = new ArrayList<AlertActionViewModel>();
@@ -467,15 +467,17 @@ export const LifeMoments = {
                 wrap(options[0]), options.length > 1 ? wrap(options[options.length - 1]) : null, extra, AlertType.Alert, 0, null);
             if (how.holiday) vm.holiday = true;
             if (how.quiet != null) vm.quietChoice = how.quiet;
+            if (how.random) vm.random = true;
             AlertManager.showAlert$default(AlertManager.INSTANCE, vm, false, 2, null);
         } catch { /* no UI */ }
     },
-    result(title: string, text: string, image: any, how: { holiday?: boolean } = {}) {
+    result(title: string, text: string, image: any, how: { holiday?: boolean; random?: boolean } = {}) {
         try {
             // a holiday that only tells you something is a small notice (and in News), not a pop-up
             const vm: any = how.holiday ? new AlertViewModel(title, text, image, null, null, null, null, null, AlertType.Banner, 0, null)
                 : new AlertViewModel(title, text, image, null, null, null, null, null, null, 504, null);
             if (how.holiday) { vm.holiday = true; if (AlertManager.holidaysOn()) News.add(vm); }
+            if (how.random) vm.random = true;
             AlertManager.showAlert$default(AlertManager.INSTANCE, vm, true, 2, null);
         } catch { /* no UI */ }
     },

@@ -248,6 +248,12 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     (23,914 presses, 691 buttons, 1,933 list screens, ~25 min). Fix: no recapture in the week you escape prison
     (`escapedWeek`; Shadow Step's "always works" escape was undone ~1 in 20 times). Invariants allow unborn babies'
     negative ages.
+  - **v0.29.4 Random events only**: the switch (now "No pop-ups for random events") silences only random events:
+    `AlertManager.isRandom(vm)` = the weeks going by (`inWeek`), inside `AlertManager.randomly(fn)`, or `vm.random`
+    (`LifeMoments.ask/result(…, { random: true })`; `LifeMoments.trigger`, wills, arrests). `randomly` wraps the
+    leisure surprises (Illness/Vampire/Seasons.onLeisure, Crime.afterLeisureEvent), work surprises (Careers/Illness
+    onWork) and `SocialMedia.event`. Menus you open (Automatic Savings, amounts, confirmations, names, info, results)
+    pop up as normal; random events are never "confirmed" for you (no more `isConfirmation`).
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

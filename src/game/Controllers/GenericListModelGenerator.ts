@@ -587,11 +587,11 @@ export class GenericListModelGenerator {
                     // v0.29.1: one switch turns off every pop-up in the game; the finer switches only matter while it's off
                     const gs: any = GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings();
                     const relist = () => { try { Utils.INSTANCE.reloadGenericList(GenericListType.gameSettings); } catch { /* no UI */ } };
-                    arrayList.add(new CustomizeSwitchViewModel("No pop-ups at all (on: nothing ever pops up; everything goes to News, with choices made for you)", new SwitchViewModel(!!gs.noPopups, false, {
+                    arrayList.add(new CustomizeSwitchViewModel("No pop-ups for random events (on: random events and their choices go to News, with sensible choices made for you; menus you open still pop up)", new SwitchViewModel(!!gs.noPopups, false, {
                         invoke: (z3: boolean) => { gs.noPopups = z3; relist(); },
                     })));
                     if (gs.noPopups) {
-                        arrayList.add(new CustomizeSwitchViewModel("Small corner notices for what you tap (they vanish on their own)", new SwitchViewModel(gs.popupNotices !== false, false, {
+                        arrayList.add(new CustomizeSwitchViewModel("Small corner notices for random events while you play (they vanish on their own)", new SwitchViewModel(gs.popupNotices !== false, false, {
                             invoke: (z3: boolean) => { gs.popupNotices = z3; },
                         })));
                     } else {

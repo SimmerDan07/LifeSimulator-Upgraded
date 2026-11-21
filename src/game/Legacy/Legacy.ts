@@ -167,7 +167,7 @@ export const Legacy = {
                 return `You lost: ${sib.getFirstName()} gets ${money(share)}, and the family is split.`;
             }],
             [`Give them ${money(share)} (half)`, () => { take(heir, share, "Will settlement"); sib.setRelationshipProgress(Math.min(1000, sib.getRelationshipProgress() + 300)); return `Fair is fair. ${sib.getFirstName()} hugged you at the door.`; }],
-        ]));
+        ], { random: true }));
     },
 
     // ------------------------------------------------------------------ will & planning (Legacy screen)
@@ -288,7 +288,7 @@ export const Legacy = {
                 pay(mine); take(p, fee, "Lawyer"); return `The will stands. You keep ${money(mine)}, minus the lawyer.`;
             }]);
         }
-        setTimeout0(() => LifeMoments.ask(`The Will of ${parent.getFirstName()}`, lines.join("\n"), R.drawable.will, opts, { quiet: "positive" }));
+        setTimeout0(() => LifeMoments.ask(`The Will of ${parent.getFirstName()}`, lines.join("\n"), R.drawable.will, opts, { quiet: "positive", random: true }));
     },
     record(p: any, from: string, amount: number) {
         if (amount <= 0) return;

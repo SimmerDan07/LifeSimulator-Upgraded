@@ -15,6 +15,7 @@
 // - Seasons: a Seasonal Post does better, and holidays bring extra followers.
 // - No posting in jail (phones are contraband), while lying collapsed, or during a Digital Detox.
 import { BigInteger, R } from "../runtime";
+import { AlertManager } from "../Managers/AlertManager";
 import { GameStateManager } from "../Managers/GameStateManager";
 import { Modifiers } from "../Managers/Modifiers";
 import { MoneyState } from "../Managers/MoneyState";
@@ -226,7 +227,8 @@ export const SocialMedia = {
     },
 
     // ------------------------------------------------------------------ events
-    event(p: any) {
+    event(p: any) { AlertManager.randomly(() => SocialMedia.eventNow(p)); },
+    eventNow(p: any) {
         const f = SocialMedia.followers(p);
         const list: (() => void)[] = [
             () => LifeMoments.ask("Trolls", `A pile-on: hundreds of strangers are in your replies telling you you're wrong about everything.`, R.drawable.icon_post_hottake, [

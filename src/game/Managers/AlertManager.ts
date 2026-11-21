@@ -102,30 +102,24 @@ export class AlertManager {
     static notices(): boolean {
         try { return (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).popupNotices !== false; } catch { return true; }
     }
-    /** An "Are you sure?" or a menu you opened: its "no" button is just No / Cancel / Not now / Never mind / Back. */
-    static isConfirmation(vm: AlertViewModel): boolean {
-        if ((vm as any).confirm) return true;
-        const no = vm.getNegativeButton?.()?.getTitle?.();
-        if (no == null) return false;
-        const t = String(no).trim().toLowerCase();
-        let yesNo = "no";
-        try { yesNo = String(Utils.INSTANCE.getString(R.string.Common_No)).trim().toLowerCase(); } catch { /* default */ }
-        return [yesNo, "no", "cancel", "not now", "never mind", "nevermind", "back", "go back"].includes(t);
-    }
     private static silentDepth = 0;
+    /** v0.29.4: > 0 while a random event is happening (see randomly). */
+    static randomScope = 0;
+    /** Run something that happens to you at random (a surprise during what you're doing): what it shows is a random event. */
+    static randomly<T>(fn: () => T): T { AlertManager.randomScope++; try { return fn(); } finally { AlertManager.randomScope--; } }
+    /** Random = it happened on its own (the weeks going by), inside randomly(), or tagged vm.random. Not a menu you opened. */
+    static isRandom(vm: AlertViewModel): boolean { return AlertManager.inWeek > 0 || AlertManager.randomScope > 0 || !!(vm as any).random; }
     /** The choice made for you when an alert isn't shown (see quietly). */
     static quietPick<T>(vm: T, choice: "positive" | "negative" | number): T { (vm as any).quietChoice = choice; return vm; }
     /**
-     * v0.29.1 "No pop-ups at all": the alert never shows. It goes to News, and a choice is made:
-     * - its own quiet pick if it has one (holidays, wills, emergencies, achievements…);
-     * - "Are you sure?" / a menu with Cancel, right after you tapped something: yes, the first option (you asked for it);
-     * - anything else — on its own or a surprise during what you did: no, thanks (a loan, a reunion, an invitation,
-     *   a stranger's offer…), or OK / the first option if there is no "no".
-     * Something you tapped also gets a small corner notice (unless those are off too). Only "erase this save?" asks.
+     * v0.29.4 "No pop-ups for random events": a random event never shows. It goes to News, and a choice is made:
+     * its own quiet pick if it has one (holidays, wills, emergencies, achievements…), else no thanks (a loan, a
+     * reunion, an invitation, a stranger's offer…), or OK / the first option if there is no "no". One that happened
+     * while you were doing something gets a small corner notice (unless those are off too).
      */
     static silently(vm: AlertViewModel): void {
         const v: any = vm;
-        const tapped = AlertManager.inWeek === 0;
+        const tapped = AlertManager.inWeek === 0;   // it happened while you were doing something (not the weeks going by)
         if (vm.getType() === AlertType.Banner) {
             News.add(vm);
             if (tapped && AlertManager.notices()) AlertManager.INSTANCE.show(vm);
@@ -135,13 +129,13 @@ export class AlertManager {
         AlertManager.silentDepth++;
         try {
             const several = vm.getNegativeButton() != null || (vm.getAdditionalButtons()?.size?.() ?? 0) > 0;
-            if (v.quietChoice == null && tapped && AlertManager.isConfirmation(vm)) v.quietChoice = "positive";
+            // a random event is never "confirmed" for you: its own quiet pick, else no thanks (or OK)
             if (tapped && !several && AlertManager.notices()) {
                 // what happened after your tap, as a small notice that doesn't stop anything
                 const notice = new AlertViewModel(vm.getTitle(), vm.getMessage(), vm.getImageId(), vm.getAttributedMessage(), null, null, null, null, AlertType.Banner, 0, null);
                 AlertManager.INSTANCE.show(notice);
             }
-            AlertManager.quietly(vm);
+            AlertManager.randomly(() => AlertManager.quietly(vm));   // what follows from it is part of the random event too
         } finally { AlertManager.silentDepth--; }
     }
     /** v0.28.1: Game Settings › "Turn off holiday pop-ups" (stored as holidayPopups = false). */
@@ -175,8 +169,9 @@ export class AlertManager {
         try { btn?.getAction()?.invoke(); } catch (e) { console.error(e); }
     }
     showAlert$0(alertViewModel: AlertViewModel, prioritize: boolean): void {
-        // v0.29.1: "No pop-ups at all" — nothing shows, wherever it comes from (only "erase this save?" still asks)
-        if (AlertManager.muted == null && AlertManager.noPopups() && !(alertViewModel as any).essential) { AlertManager.silently(alertViewModel); return; }
+        // v0.29.4: "No pop-ups for random events" — random events and their choices go to News; menus you open
+        // (savings %, amounts, "Are you sure?", names, info) still pop up as normal
+        if (AlertManager.muted == null && AlertManager.noPopups() && !(alertViewModel as any).essential && AlertManager.isRandom(alertViewModel)) { AlertManager.silently(alertViewModel); return; }
         // v0.28.1b: holidays turned off never pop up, whatever else is on and wherever they come from
         if (AlertManager.muted == null && (alertViewModel as any).holiday && !AlertManager.holidaysOn()) { AlertManager.quietly(alertViewModel); return; }
         if (AlertManager.muted == null && AlertManager.inWeek > 0 && !AlertManager.allPopups() && !AlertManager.mustShow(alertViewModel)) {

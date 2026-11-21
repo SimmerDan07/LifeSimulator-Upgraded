@@ -218,7 +218,7 @@ export const Crime = {
         else if (s.org?.kind === "mafia" && cash(p) >= bribe) opts.push([`Bribe the judge (${money(bribe)})`, () => { spend(p, bribe); if (roll(0.65)) return Crime.acquit(p, "Case dismissed. The judge has a new boat."); return Crime.convict(p, all, Math.round(weeks * 1.5), violent, juvenile, "The judge reported the bribe. Extra time for that."); }]);
         if (s.org) opts.push([`Turn State's witness (leave the ${s.org.kind === "mafia" ? "family" : "gang"})`, () => Crime.witness(p)]);
         opts.push(["Public defender (free)", () => roll(0.15) ? Crime.acquit(p, "The public defender pulled it off. Not guilty!") : Crime.convict(p, all, weeks, violent, juvenile)]);
-        LifeMoments.ask("Arrested!", `${why}\nCharges: ${charges}.\nYou're facing about ${years(weeks)}${juvenile ? " in juvenile detention" : " in prison"}.`, R.drawable.police_badge, opts);
+        LifeMoments.ask("Arrested!", `${why}\nCharges: ${charges}.\nYou're facing about ${years(weeks)}${juvenile ? " in juvenile detention" : " in prison"}.`, R.drawable.police_badge, opts, { random: true });   // getting caught is a random event
     },
     convict(p: any, cases: OpenCase[], weeks: number, violent: boolean, juvenile: boolean, extra = ""): string {
         const s = Crime.state(p);

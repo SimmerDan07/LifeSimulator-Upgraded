@@ -121,8 +121,11 @@ export class JobState {
         // v0.19.0 Celebrity Life: celebrity careers earn fans and skill
         Celebrity.onWork(personState, job, state.getLevel(), workAction.getPayModifier());
         // v0.26.0: the new careers (seasons, followers, on-the-job moments)
-        Careers.onWork(personState, job, state.getLevel());
-        Illness.onWork(personState, workAction.name());   // v0.28.0: all-nighters can burn you out
+        // v0.29.4: surprises at work are random events
+        AlertManager.randomly(() => {
+            Careers.onWork(personState, job, state.getLevel());
+            Illness.onWork(personState, workAction.name());   // v0.28.0: all-nighters can burn you out
+        });
         if (!state.isMaxLevel()) {
             if (state.getProgress() >= (job.weeksForPromotion(state.getLevel()) - 1)) {
                 let educationRequirement: CompletableAction = state.getType().educationRequirement(state.getLevel() + 1);

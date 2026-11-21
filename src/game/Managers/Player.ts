@@ -518,13 +518,16 @@ export class Player {
             World.afterMove(this, fromCountry, travelCountry);   // v0.27.0
         }
         Activities.onLeisure(this, action);   // v0.27.0
-        Illness.onLeisure(this, action);      // v0.28.0: smoking, drinking, risky fun
-        Vampire.onLeisure(this, action);
-        Seasons.onLeisure(this, action);
+        // v0.29.4: surprises while you do something are random events ("No pop-ups for random events" covers them)
+        AlertManager.randomly(() => {
+            Illness.onLeisure(this, action);      // v0.28.0: smoking, drinking, risky fun
+            Vampire.onLeisure(this, action);
+            Seasons.onLeisure(this, action);
+        });
         // v0.27.0: the prison yard (escapes, riots) and its consequences
         const ev = Crime.leisureEvent(this, action, RandomEvent.INSTANCE.randomEventForLeisure(action), RandomEvent.prison_escape_success);
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, ev, false, 2, null);
-        Crime.afterLeisureEvent(this, action, ev);
+        AlertManager.randomly(() => Crime.afterLeisureEvent(this, action, ev));
         this.applyWeekly();
     }
     learnSkillOrEducation(action: CompletableAction): void {

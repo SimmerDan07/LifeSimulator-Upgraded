@@ -36,6 +36,7 @@ import { AlertActionViewModel } from "../src/game/Managers/AlertActionViewModel"
 import { LoveActions, loveAction } from "../src/game/Social/LoveActions";
 import { Vampire } from "../src/game/Lifepaths/Vampire";
 import { Achievement } from "../src/game/Enums/Achievement";
+import { Subscriptions } from "../src/game/Managers/Subscriptions";
 
 const shown: any[] = [];
 UIBridge.install({ broadcast() {}, reloadGenericList() {}, navigateTo() {}, backToMainGame() {}, showAlert(vm) { shown.push(vm); }, readFile: () => null, writeFile() {} });
@@ -231,13 +232,13 @@ check("pop-ups for every event are off by default", !AlertManager.allPopups());
     check("divorced: no more paycheck", SpouseIncome.spouse(p) == null);
 }
 
-// ---------------------------------------------------------------- v0.29.1 No pop-ups at all
+// ---------------------------------------------------------------- v0.29.1/v0.29.4 No pop-ups for random events
 {
     const gs: any = GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings();
     const S = (k: string) => Utils.INSTANCE.getString(k);
-    check("No pop-ups at all is off by default", !gs.noPopups && !AlertManager.noPopups());
+    check("No pop-ups for random events is off by default", !gs.noPopups && !AlertManager.noPopups());
     const rows = () => JSON.stringify(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.gameSettings, "", false));
-    check("Game Settings has the No pop-ups switch", /No pop-ups at all/.test(rows()) && !/Small corner notices/.test(rows()));
+    check("Game Settings has the switch", /No pop-ups for random events/.test(rows()) && !/Small corner notices/.test(rows()));
     gs.noPopups = true;
     check("…on: the notices switch shows and the finer switches step aside", /Small corner notices/.test(rows()) && !/Pop-ups for every event/.test(rows()) && !/Turn off holiday/.test(rows()));
     gs.allPopups = true; gs.holidayPopups = true;   // even with the other settings asking for pop-ups
@@ -258,49 +259,72 @@ check("pop-ups for every event are off by default", !AlertManager.allPopups());
     // things that happen on their own: a reunion is skipped
     shown.length = 0;
     AlertManager.inWeek++; try { LifeMoments.trigger(p, "reunion"); } finally { AlertManager.inWeek--; }
-    const last = News.state(p).items[News.state(p).items.length - 1];
+    let last = News.state(p).items[News.state(p).items.length - 1];
     check("a school reunion doesn't pop up; it's skipped and in News", modals().length === 0 && last?.title === "School Reunion" && last?.chose === "Skip it", JSON.stringify(last)?.slice(0, 120));
-    // things you tap
+    // …and a life moment is random even if it comes up while you're doing something
+    shown.length = 0;
+    LifeMoments.trigger(p, "reunion");
+    last = News.state(p).items[News.state(p).items.length - 1];
+    check("a life moment during a tap: still no pop-up (it's a random event)", modals().length === 0 && last?.chose === "Skip it");
+    // v0.29.4: menus you open still pop up — the bug: Automatic Savings picked 25% on its own
+    shown.length = 0;
+    const save0 = Subscriptions.autoSave(p);
+    Subscriptions.askAutoSave(p);
+    check("the Automatic Savings menu pops up (and nothing is picked for you)", modals().length === 1 && modals()[0].getTitle() === "Automatic Savings" && Subscriptions.autoSave(p) === save0, `${modals().length} ${Subscriptions.autoSave(p)}`);
+    { const m = modals()[0]; m.getAdditionalButtons().get(0).getAction().invoke(); AlertManager.INSTANCE.alertDismissed(m); }
+    check("…and the % you pick is the % you get", Subscriptions.autoSave(p) === 50, String(Subscriptions.autoSave(p)));
     shown.length = 0;
     let did = false;
     AlertManager.INSTANCE.showConfirmationAlert(new AlertViewModel(S("Common_AreYouSure"), "Quit your job?", null, null, null, null, null, null, null, 504, null), { invoke: () => { did = true; } });
-    check("\"Are you sure?\" after a tap: no pop-up, it just happens", did && modals().length === 0);
+    check("\"Are you sure?\" after a tap: it asks you (nothing done yet)", !did && modals().length === 1);
+    { const m = modals()[0]; m?.getPositiveButton()?.getAction()?.invoke(); if (m) AlertManager.INSTANCE.alertDismissed(m); }
+    check("…Yes does it", did);
     shown.length = 0;
     AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Gym", "You worked out.", null, null, null, null, null, null, null, 504, null), false, 2, null);
-    check("what you tapped: a small corner notice, not a pop-up", modals().length === 0 && banners().length === 1 && banners()[0].getTitle() === "Gym");
-    gs.popupNotices = false; shown.length = 0;
-    AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Gym", "You worked out again.", null, null, null, null, null, null, null, 504, null), false, 2, null);
-    check("…and with notices off, not even that (still in News)", shown.length === 0 && News.state(p).items.some((i: any) => i.text === "You worked out again."));
-    gs.popupNotices = true;
+    check("what you tapped tells you how it went, as usual", modals().length === 1 && modals()[0].getTitle() === "Gym");
+    if (modals()[0]) AlertManager.INSTANCE.alertDismissed(modals()[0]);
     // a real action: unfriend someone (it asks "Are you sure?")
     const f = Relationships.friends(p)[0];
     shown.length = 0;
     const n0 = Relationships.friends(p).length;
     LoveActions.perform(loveAction("unfriend"), f, p);
-    check("Unfriend: done, no pop-up", modals().length === 0 && Relationships.friends(p).length === n0 - 1, `${n0} -> ${Relationships.friends(p).length}`);
-    // a surprise while doing something: the pale stranger
+    const ask = modals()[0];
+    check("Unfriend asks first", modals().length === 1 && Relationships.friends(p).length === n0);
+    ask?.getPositiveButton()?.getAction()?.invoke(); if (ask) AlertManager.INSTANCE.alertDismissed(ask);
+    check("…and Yes unfriends", Relationships.friends(p).length === n0 - 1, `${n0} -> ${Relationships.friends(p).length}`);
+    // a surprise while doing something: the pale stranger at the night club
     shown.length = 0;
     const r = Math.random; Math.random = () => 0;
-    try { Vampire.maybeStranger(p, { name: () => "nightClub" }); } finally { Math.random = r; }
-    check("the pale stranger: no pop-up (a corner notice), and the path still opens", modals().length === 0 && Vampire.state(p).discovered === true);
-    // a question you didn't ask for, even right after a tap: declined
+    try { AlertManager.randomly(() => Vampire.maybeStranger(p, { name: () => "nightClub" })); } finally { Math.random = r; }
+    check("the pale stranger (a surprise during a night out): no pop-up, a corner notice, and the path still opens", modals().length === 0 && banners().length >= 1 && Vampire.state(p).discovered === true);
+    gs.popupNotices = false; shown.length = 0;
+    AlertManager.randomly(() => AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Lucky Find", "You found $20 on the street.", null, null, null, null, null, null, null, 504, null), false, 2, null));
+    check("…with notices off, not even that (still in News)", shown.length === 0 && News.state(p).items.some((i: any) => i.text === "You found $20 on the street."));
+    gs.popupNotices = true;
+    // a random question: declined
     shown.length = 0; let lent = false;
-    AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Can I Borrow $500?", "Your friend needs money.", null, null, null,
-        new AlertActionViewModel("Lend it", { invoke: () => { lent = true; } }), new AlertActionViewModel("No thanks", { invoke: () => {} }), null, null, 408, null), false, 2, null);
-    check("asked to lend money: no pop-up, politely declined", modals().length === 0 && !lent);
+    const borrow: any = new AlertViewModel("Can I Borrow $500?", "Your friend needs money.", null, null, null,
+        new AlertActionViewModel("Lend it", { invoke: () => { lent = true; } }), new AlertActionViewModel("No", { invoke: () => {} }), null, null, 408, null);
+    borrow.random = true;
+    AlertManager.showAlert$default(AlertManager.INSTANCE, borrow, false, 2, null);
+    check("a friend asking to borrow money: no pop-up, politely declined (even with a plain \"No\")", modals().length === 0 && !lent);
+    // getting arrested after a crime is a random event: no pop-up, public defender
+    shown.length = 0;
+    Crime.arrest(p, [{ crime: "shoplift", title: "Shoplifting", week: 0, violent: false, sentence: [4, 8] }], "A guard saw you.");
+    check("arrested after a crime: no pop-up (it's handled for you)", modals().length === 0);
     // the only question left: wiping a save
     shown.length = 0; let wiped = false;
     AlertManager.INSTANCE.showConfirmationAlert(new AlertViewModel(S("Common_AreYouSure"), S("Alert_Restart_Descrption"), null, null, null, null, null, null, null, 504, null), { invoke: () => { wiped = true; } });
-    check("\"erase your progress?\" still asks (and nothing is erased)", modals().length === 1 && !wiped);
-    dismissAll();
-    // an achievement never restarts your life on its own
+    check("\"erase your progress?\" asks (and nothing is erased)", modals().length === 1 && !wiped);
+    { const m = modals()[0]; m?.getNegativeButton()?.getAction()?.invoke(); if (m) AlertManager.INSTANCE.alertDismissed(m); }
+    // an achievement during the weeks never restarts your life on its own
     shown.length = 0;
     const ach: any = Achievement.values()[0];
-    AlertManager.INSTANCE.showAchievementAlert(ach);
-    check("an achievement: no pop-up, and your life goes on", modals().length === 0 && GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted());
-    // dying: on to the tombstone, never an automatic second chance
+    AlertManager.inWeek++; try { AlertManager.INSTANCE.showAchievementAlert(ach); } finally { AlertManager.inWeek--; }
+    check("an achievement during the week: no pop-up, and your life goes on", modals().length === 0 && GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted());
+    // dying of old age (the weeks going by): on to the tombstone, never an automatic second chance
     shown.length = 0;
-    AlertManager.INSTANCE.showDeathAlertWithMessage("You have died.", "test");
+    AlertManager.inWeek++; try { AlertManager.INSTANCE.showDeathAlertWithMessage("You have died.", "test"); } finally { AlertManager.inWeek--; }
     const d = News.state(p).items[News.state(p).items.length - 1];
     check("dying: no pop-up; the life ends (no automatic revive)", modals().length === 0 && !GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted() && d?.chose !== S("Alert_DeathAction_SecondChance"), JSON.stringify(d)?.slice(0, 140));
     gs.noPopups = false; gs.allPopups = false;
