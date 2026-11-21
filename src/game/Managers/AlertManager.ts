@@ -294,21 +294,23 @@ export class AlertManager {
         let format: string = String.format(string2, Arrays.copyOf(objArr, objArr.length));
         AlertManager.showAlert$default(alertManager, new AlertViewModel(string, format, Integer.valueOf(fromSkill.getImageId()), null, null, null, null, null, null, 504, null), false, 2, null);
     }
+    /** v0.30.1: going bankrupt doesn't end your life: debts on your cash are wiped, savings go with them, and it hurts. */
     showBankruptAlert(): void {
-        TelemetryManager.INSTANCE.logEvent("Death_Alert", MapsKt.mapOf(TuplesKt.to("Reason", "Bankruptcy")));
-        Obituary.record(GameStateManager.INSTANCE.getPersonState(), "Bankruptcy");
-        let alertViewModel: AlertViewModel = new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_Bankrupt), Utils.INSTANCE.getString(R.string.Alert_BankruptMessage), R.drawable.bank_deposit, null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.DeathTombstoneLifeSummary), {
-            invoke: () => {
-            Utils.INSTANCE.navigateTo(GenericListType.gameSummary, Constants.ViewModel.INSTANCE.getTombstoneModeDeath(), false);
-        }
-        }), new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Alert_BankruptRevive), {
-            invoke: () => {
-            InAppPurchaseManager.INSTANCE.purchaseProduct(GameInAppPurchase.revive);
-        }
-        }), null, null, 408, null);
-        GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().setHasGameStarted(false);
-        GameStateManager.INSTANCE.getGlobalStateManager().getCemetaryState().addLife(GameStateManager.INSTANCE.getPersonState());
-        AlertManager.showAlert$default(this, alertViewModel, false, 2, null);
+        TelemetryManager.INSTANCE.logEvent("Bankruptcy", MapsKt.mapOf(TuplesKt.to("Reason", "Bankruptcy")));
+        const p: any = GameStateManager.INSTANCE.getPersonState();
+        const ms = p.getMoneyState();
+        try {
+            // creditors take your savings, the rest of the debt (and your loans) is wiped
+            if (ms.cash.signum() < 0) ms.cash = BigInteger.ZERO;
+            ms.savings = BigInteger.ZERO;
+            ms.setLoanLimitUsed(BigInteger.ZERO);
+        } catch { /* keep going */ }
+        try { p.getAttributeState().setDeltaValueImmediate(new Modifiers(0, -20, -10)); } catch { /* ignore */ }
+        const vm = new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_Bankrupt),
+            "You went bankrupt. Your debts are wiped, and your savings with them. Your credit is ruined and it's a heavy blow (−20 happiness, −10 sanity) — but life goes on.",
+            R.drawable.bank_deposit, null, null, null, null, null, null, 504, null);
+        (vm as any).critical = true;   // a big moment: still a corner notice when weekly pop-ups are quiet
+        AlertManager.showAlert$default(this, vm, false, 2, null);
     }
     showDeathAlert(attribute: PersonAttribute): void {
         Intrinsics.checkParameterIsNotNull(attribute, "attribute");
@@ -318,7 +320,10 @@ export class AlertManager {
         const lower = ill ? ill.replace(/\b([A-Z])([a-z]+)/g, (_m: string, a: string, b: string) => a.toLowerCase() + b) : "";
         const kind = ill ? ILLNESS_DEFS.find((d) => d.title === ill)?.kind : null;
         const article = ill && (kind === "injury" || /^(heart attack|stroke|bad burn)$/.test(lower)) ? (/^[aeiou]/.test(lower) ? "an " : "a ") : "";
-        this.showDeathAlertWithMessage(ill ? `You have died from ${article}${lower}.` : attribute.getDeathMessage(), attribute.getTitle());
+        // v0.30.1: plain words — the only deaths are a stat reaching zero
+        void article;
+        const what = attribute === PersonAttribute.health ? "health" : attribute === PersonAttribute.happiness ? "happiness" : "sanity";
+        this.showDeathAlertWithMessage(`Your ${what} reached zero. You have died.` + (ill ? ` (You had ${lower}.)` : ""), attribute.getTitle());
     }
     /** Death pop-up with any message (used for attribute deaths and Assisted Dying). */
     showDeathAlertWithMessage(message: string, reason: string, image: any = R.drawable.skull): void {

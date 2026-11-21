@@ -483,7 +483,12 @@ export const Vampire = {
             try { attr(p, -40, 0, -10); } finally { Vampire.harming = false; }
             Vampire.alert("Barely Escaped", "You got away, but a stake grazed your heart (−40 health).");
         } else {
-            Vampire.die(p, `${p.getFirstName()} was slain by vampire hunters after ${Vampire.years(p)} years of eternal life.`, "Vampire hunters");
+            // v0.30.1: a vampire only dies by choice (Final Rest) — a stake puts you down, it doesn't end you
+            s.suspicion = 0;
+            Vampire.harming = true;
+            try { attr(p, -60, -10, -15); } finally { Vampire.harming = false; }
+            p.getJobState().setCurrentJob(null);
+            Vampire.alert("Staked", "The hunters drove a stake through your heart and left you for dead. You aren't so easy to kill: days later you pulled it out and crawled home. Your job is gone and the hunters think you're dust (−60 health).");
         }
         refreshUI();
     },

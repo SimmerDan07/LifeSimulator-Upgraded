@@ -185,7 +185,8 @@ check("every illness has an art slot", ILLNESS_DEFS.every((d) => ART_SLOTS.some(
 {
     const p = start(70);
     const x = Illness.catch(p, "pneumonia", "test")!; drain();
-    check("dying while pneumonia drains you: the cause is pneumonia", Obituary.causeFor(p, "Health") === "Pneumonia" && /pneumonia/.test(Obituary.phrase("Pneumonia")));
+    // v0.30.1: the cause is plain ("Health reached zero"); the illness is mentioned in the death message
+    check("dying while pneumonia drains you: health reached zero (the only kind of death)", Obituary.causeFor(p, "Health") === "Health reached zero" && /health reached zero/.test(Obituary.phrase("Health reached zero")));
     void x;
     Illness.catch(p, "heartDisease", "test");
     const heir = start(30);

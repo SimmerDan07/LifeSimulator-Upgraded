@@ -392,7 +392,10 @@ export const Crime = {
         const s = Crime.state(p);
         if (Vampire.isVampire(p)) { s.marked = false; Crime.alert("A Visitor", "A hitman came for you. Bullets don't do much to you. He won't be telling anyone. They've stopped sending people.", R.drawable.skull); return; }
         if (roll(0.7 + Activities.fightBonus(p))) { attr(p, -30, -10, -10); Crime.alert("They Found You", "A hitman found you. You got away, barely (−30 health)."); return; }
-        try { AlertManager.INSTANCE.showDeathAlertWithMessage(`${p.getFirstName()} was found dead. Witness protection only goes so far.`, "Mob hit", R.drawable.grave2); } catch { /* no UI */ }
+        // v0.30.1: a hit no longer kills you outright — it can leave you close to it (only stats at zero kill)
+        s.marked = false;
+        attr(p, -60, -15, -15);
+        Crime.alert("They Found You", "A hitman found you. You took two bullets and survived, barely (−60 health). They think you're dead — the family has stopped looking.", R.drawable.skull);
     },
 
     // ------------------------------------------------------------------ gangs and families

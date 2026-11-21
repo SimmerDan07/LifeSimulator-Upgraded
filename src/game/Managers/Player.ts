@@ -951,10 +951,19 @@ export class Player {
         }
     }
     showDeathAlertsIfRequired(): boolean {
+        // v0.30.1: the only deaths are health, happiness or sanity reaching zero (plus your own choice: Assisted Dying,
+        // Final Rest). Vampires are already dead: nothing kills them unless they choose it.
+        if (Vampire.isVampire(this)) { this.clearDeathCountdowns(); this.showBankruptcyAlertIfRequired(); return false; }
         if (Vampire.isInTorpor(this)) return false;   // v0.22.0: a collapsed vampire can't die of it
         return this.showAttributeDeathAlertIfRequired() || this.showBankruptcyAlertIfRequired();
     }
+    /** v0.30.1: a vampire's zero-stat countdowns never run (no "you will die" warnings either). */
+    clearDeathCountdowns(): void {
+        const a = this.attributeState;
+        a.setLowAttributeCountdown_health(0); a.setLowAttributeCountdown_happiness(0); a.setLowAttributeCountdown_sanity(0);
+    }
     showWarningAlerts(): void {
+        if (Vampire.isVampire(this)) this.clearDeathCountdowns();   // v0.30.1: nothing to warn a vampire about
         AlertManager.INSTANCE.showAttributeLowAlertIfRequired(PersonAttribute.happiness, this.attributeState.getLowAttributeCountdown_happiness());
         AlertManager.INSTANCE.showAttributeLowAlertIfRequired(PersonAttribute.sanity, this.attributeState.getLowAttributeCountdown_sanity());
         AlertManager.INSTANCE.showAttributeLowAlertIfRequired(PersonAttribute.health, this.attributeState.getLowAttributeCountdown_health());
@@ -1009,8 +1018,10 @@ export class Player {
         if (weeksTillZeroAttributeDeath > 0) {
             return false;
         }
+        // v0.30.1: going bankrupt is no longer a death — your debts are wiped and it hurts (see showBankruptAlert)
         AlertManager.INSTANCE.showBankruptAlert();
-        return true;
+        this.moneyState.setLowMoneyCountDown(0);
+        return false;
     }
     updateAchievementAndBadge(): void {
         for (const singleAchievementBadgeState of GameStateManager.INSTANCE.getGlobalStateManager().getAchievementBadgeState().incompletedBadges()) {

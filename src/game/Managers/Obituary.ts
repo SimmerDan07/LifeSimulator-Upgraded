@@ -30,14 +30,10 @@ export const Obituary = {
     },
     causeFor(p: any, reason: string): string {
         const t = (a: PersonAttribute) => { try { return a.getTitle(); } catch { return a.name(); } };
-        if (reason === t(PersonAttribute.health)) {
-            if (Vampire.isVampire(p)) return "Starved for blood";
-            const ill = Illness.deathCause(p);   // v0.28.0
-            if (ill) return ill;
-            return p.getAgeInYears() >= 70 ? "Old age" : "Poor health";
-        }
-        if (reason === t(PersonAttribute.happiness)) return "A broken spirit";
-        if (reason === t(PersonAttribute.sanity)) return "A mental breakdown";
+        // v0.30.1: plain causes — a stat reached zero
+        if (reason === t(PersonAttribute.health)) return "Health reached zero";
+        if (reason === t(PersonAttribute.happiness)) return "Happiness reached zero";
+        if (reason === t(PersonAttribute.sanity)) return "Sanity reached zero";
         if (reason === "Assisted dying") return "Assisted dying";
         if (reason === "Vampire hunters") return "Slain by vampire hunters";
         if (reason === "Final Rest") return "Final Rest (one last sunrise)";
@@ -46,6 +42,9 @@ export const Obituary = {
     },
     phrase(cause: string): string {
         switch (cause) {
+            case "Health reached zero": return "when their health reached zero";
+            case "Happiness reached zero": return "when their happiness reached zero";
+            case "Sanity reached zero": return "when their sanity reached zero";
             case "Old age": return "peacefully of old age";
             case "Poor health": return "after a long battle with poor health";
             case "Starved for blood": return "starved for blood";

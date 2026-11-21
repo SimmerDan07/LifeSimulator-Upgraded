@@ -263,6 +263,13 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     Cheating: `cheatFoundOut` 35% → −40 and upset, or they leave (`breakUp`); a baby hurts them again (−30). Famous
     (10K+ fans): tabloid news, −5 rep if cheating. Child details show Mother/Father (a one-night stand).
     `OneNight.dice` is the roll (tests load it). Test: `test/onenight.ts` (24).
+  - **v0.30.1 Only stats kill**: `Player.showDeathAlertsIfRequired` — the only deaths are the low-attribute
+    countdowns (health, happiness, sanity at 0 for `weeksTillZeroAttributeDeath`), plus the chosen ones
+    (`AssistedDying.perform`, `Vampire.finalRest`). Messages/causes are plain ("Your happiness reached zero. You have
+    died." / `deathCause` "Happiness reached zero"). Vampires: `clearDeathCountdowns()` every week (no deaths, no
+    warnings); `Vampire.fight` lost = "Staked" (−60 health, job gone). `Crime.hit` failure = −60 health.
+    Bankruptcy (`showBankruptAlert`) wipes cash debt, savings and loans (−20 happiness, −10 sanity) and life goes
+    on. Old obituary phrases stay for old saves. `test/deaths.ts` covers all of it.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

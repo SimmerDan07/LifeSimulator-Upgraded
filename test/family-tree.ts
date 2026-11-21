@@ -264,7 +264,7 @@ uncle.isAlive = true; uncle.ageInWeeks = 40 * W + 3; uncle.sex = Sex.male; uncle
         (p.getAttributeState() as any).lowAttributeCountdown_health = 10; p.getAttributeState().setHealth(0); p.applyWeekly();
     }
     check("died", !gsm.getSaveState().getHasGameStarted());
-    check("cause of death recorded", p.deathCause === "Old age" || p.deathCause === "Poor health", String(p.deathCause));
+    check("cause of death recorded (plainly: a stat reached zero)", p.deathCause === "Health reached zero", String(p.deathCause));
     const sum = Array.from(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.gameSummary, "OnDeath", false).getContentViewModels() as any) as any[];
     check("Life Summary: Obituary under the tombstone", titles(sum).includes("Obituary") && text(sum).includes("survived by") && text(sum).includes("Cause of death") && text(sum).includes("Grandchildren (living)"), titles(sum).join(","));
     check("…the cemetery copy keeps it", (gsm.getCemetaryState().getPastLives() as any).some((x: any) => x.deathCause != null));
