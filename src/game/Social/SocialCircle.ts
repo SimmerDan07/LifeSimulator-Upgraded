@@ -19,6 +19,8 @@ export interface PersonMeta {
     loanDue?: number;       // sibling loan: week it may be paid back
     knows?: boolean;        // knows you're a vampire
     vampire?: boolean;      // a vampire (you turned them, or met them in your coven)
+    cureWeeks?: number;     // v0.30.2: weeks left on the Vampiric Cure you bought them
+    cured?: boolean;        // v0.30.2: took the Cure — their one vampire life is over
     collegePaid?: boolean;
     eternalVowsWeek?: number; // v0.17.0 Eternal Bond vows
     celeb?: { career: string; fans: number }; // v0.20.0: a celebrity you dated through Celebrity Life

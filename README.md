@@ -270,6 +270,10 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     warnings); `Vampire.fight` lost = "Staked" (−60 health, job gone). `Crime.hit` failure = −60 health.
     Bankruptcy (`showBankruptAlert`) wipes cash debt, savings and loans (−20 happiness, −10 sanity) and life goes
     on. Old obituary phrases stay for old saves. `test/deaths.ts` covers all of it.
+  - **v0.30.2 Cure for someone else**: Love action `cureThem` (any turned person: `Vampire.isTurned`, cost
+    `Vampire.curePrice`, instant, confirm) → `Vampire.cureOther` sets `meta.cureWeeks = Vampire.cureWeeks`;
+    `Vampire.tickCures(p)` (Player weekly, after OneNight) counts down and then sets `meta.vampire = false`,
+    `meta.cured = true` (Turn is locked for them: one vampire life). Tests at the end of test/vampire.ts.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

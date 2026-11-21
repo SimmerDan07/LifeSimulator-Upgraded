@@ -907,6 +907,7 @@ export class Player {
             Crime.afterWeek(this);         // v0.27.0: heat, warrants, prison, gangs and families
             Illness.afterWeek(this);       // v0.28.0: catching and getting over illnesses
             OneNight.afterWeek(this);      // v0.30.0: a one-night stand's baby (when you're the father)
+            Vampire.tickCures(this);       // v0.30.2: the Vampiric Cure you bought someone
             if (Vampire.isInTorpor(this) === false && mainGameFragment != null) MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
         }
     }

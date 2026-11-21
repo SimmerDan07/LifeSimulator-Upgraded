@@ -204,9 +204,17 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
         run: (t, p) => Vampire.tell(p, t) },
     { id: "turn", title: "Turn Them into a Vampire", image: R.drawable.icon_vamp_turn, who: ["partner", "parent", "child", "sibling", "friend", ...REL], section: "big",
         show: (t, p) => alive(t) && Vampire.isVampire(p) && Vampire.knows(t) && !Vampire.isTurned(t),
-        lock: (t, p) => (age(t) < 18 ? "They must be 18 or older" : Vampire.state(p).bloodPower < Vampire.turnCost ? `Needs ${Vampire.turnCost} blood power` : null),
+        lock: (t, p) => (Relationships.meta(t).cured ? "They've already lived their one vampire life" : age(t) < 18 ? "They must be 18 or older" : Vampire.state(p).bloodPower < Vampire.turnCost ? `Needs ${Vampire.turnCost} blood power` : null),
         note: () => `They stop ageing and join your coven. Costs ${Vampire.turnCost} blood power.\n`,
         run: (t, p) => Vampire.turn(p, t) },
+    // v0.30.2: buy the Vampiric Cure for anyone who's a vampire — you don't have to be one yourself
+    { id: "cureThem", title: "Buy Them the Vampiric Cure", image: R.drawable.icon_vamp_cure, who: ["partner", "parent", "child", "sibling", "friend", ...REL], section: "big", instant: true,
+        cost: Vampire.curePrice,
+        show: (t) => alive(t) && Vampire.isTurned(t),
+        lock: (t) => ((Relationships.meta(t).cureWeeks ?? 0) > 0 ? `${t.getFirstName()} is already taking the Cure` : null),
+        note: (t) => `${t.getFirstName()} becomes human again over ${Vampire.cureWeeks} weeks and starts ageing from ${age(t)}. Their one vampire life is over.\n`,
+        confirm: (t) => `Buy ${t.getFirstName()} the Vampiric Cure? In ${Vampire.cureWeeks} weeks they'll be human again, and they can never be turned again.`,
+        run: (t, p) => Vampire.cureOther(p, t) },
 
     // ---------------------------------------------------------------- Eternal Bond (v0.17.0): you and your partner are both vampires
     { id: "huntTogether", title: "Hunt Together", image: R.drawable.icon_vamp_hunt, who: ["partner"], section: "time", bond: 40, mods: [0, 6, 0],

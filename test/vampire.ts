@@ -1,3 +1,4 @@
+import { SocialPerson } from "../src/game/Social/SocialPerson";
 // v0.15.0: the Vampire lifepath, the Elixir reworked as the Cure, and having children
 // (no more pregnant men, surrogacy, artificial insemination, adopting on your own).
 import { UIBridge, MainGameFragment } from "../src/game/ui/bridge";
@@ -465,6 +466,50 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const kids0 = q.getFamilyState().getChildren().size();
     LoveActions.perform(loveAction("adoptSingle"), null, q); clear();
     check("…a child joins your family, $50,000", q.getFamilyState().getChildren().size() === kids0 + 1);
+}
+
+// ---------------------------------------------------------------- v0.30.2: buy the Vampiric Cure for someone else
+{
+    const q: any = start(LifeScenario.sandboxMode, (np) => np.initializeAge(30, true));
+    Vampire.rise(q); clear();
+    const ana = lover(q, Sex.female, "Ana", 700);
+    Relationships.meta(ana).knows = true; Vampire.state(q).bloodPower = 5;
+    LoveActions.perform(loveAction("turn"), ana, q); clear();
+    const rowsFor = (t: any) => titles(Array.from(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.personDetails, t.getId(), true).getContentViewModels() as any) as any[]);
+    if (ana == null || !Vampire.isTurned(ana)) check("v0.30.2 setup: a turned partner to cure", false);
+    else {
+        check("v0.30.2: a vampire you turned has 'Buy Them the Vampiric Cure' on their screen", rowsFor(ana).includes("Buy Them the Vampiric Cure"));
+        const cell = new LoveActionCell(loveAction("cureThem"), ana);
+        check("…it costs the same as yours ($300 billion)", cell.costValue() === Vampire.curePrice, String(cell.costValue()));
+        rich(q, 400_000_000_000);
+        const cash0 = Number(q.getMoneyState().getCash().toString());
+        LoveActions.perform(loveAction("cureThem"), ana, q);
+        const ask = alerts.find((a) => (a.getTitle?.() ?? a.title) === "Buy Them the Vampiric Cure");
+        check("…asks first", ask != null && /never be turned again/.test(text(ask)));
+        if (ask) { alerts.splice(alerts.indexOf(ask), 1); ask.getPositiveButton().getAction().invoke(); AlertManager.INSTANCE.alertDismissed(ask); }
+        clear();
+        check("…paid, and the Cure is working (4 weeks)", Number(q.getMoneyState().getCash().toString()) <= cash0 - Vampire.curePrice && Relationships.meta(ana).cureWeeks === Vampire.cureWeeks, `${cash0} → ${q.getMoneyState().getCash()}`);
+        check("…can't buy it twice", /already taking the Cure/.test(new LoveActionCell(loveAction("cureThem"), ana).requirementNotMetString(q) ?? ""));
+        week(q, Vampire.cureWeeks);
+        const a0 = ana.getAgeInWeeks();
+        check("…after 4 weeks they're human: no longer a vampire, not in your coven, no Eternal Bond", !Vampire.isTurned(ana) && !Vampire.coven(q).includes(ana) && !Vampire.bonded(q));
+        check("…and you're still a vampire (it was their cure, not yours)", Vampire.isVampire(q));
+        week(q, W);
+        check("…they start ageing again", ana.getAgeInWeeks() >= a0 + W, `${a0} → ${ana.getAgeInWeeks()}`);
+        check("…and can't be turned again (their one vampire life)", /one vampire life/.test(new LoveActionCell(loveAction("turn"), ana).requirementNotMetString(q) ?? "") && !rowsFor(ana).includes("Buy Them the Vampiric Cure"));
+    }
+    // a friend from the coven, bought the Cure by someone who isn't a vampire any more
+    const f = SocialPerson.make("friend", Sex.male, null, 30 * W);
+    Relationships.circle(q).add(f); const m = Relationships.circle(q).metaFor(f.id); m.vampire = true; m.knows = true;
+    Vampire.state(q).isVampire = false; Vampire.state(q).cured = true;
+    check("…works for friends too, even when you're human", rowsFor(f).includes("Buy Them the Vampiric Cure"));
+    Vampire.cureOther(q, f); clear();
+    week(q, Vampire.cureWeeks);
+    const f0 = f.getAgeInWeeks();
+    week(q, 4);
+    check("…the friend is human and ageing", !Vampire.isTurned(f) && f.getAgeInWeeks() === f0 + 4);
+    const human = SocialPerson.make("friend", Sex.female, null, 30 * W); Relationships.circle(q).add(human);
+    check("…and the option isn't there for people who aren't vampires", !rowsFor(human).includes("Buy Them the Vampiric Cure"));
 }
 
 console.log(failures ? `${failures} FAILED` : "ALL PASSED");

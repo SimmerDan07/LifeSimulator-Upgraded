@@ -680,6 +680,33 @@ export const Vampire = {
 
     // ------------------------------------------------------------------ endings
     startCure(p: any) { Vampire.state(p).cureWeeks = Vampire.cureWeeks; },
+    /** v0.30.2: the Vampiric Cure, bought for someone else (your partner, family, a friend, a coven vampire). */
+    cureOther(p: any, person: any) {
+        const m = Relationships.meta(person, p);
+        m.cureWeeks = Vampire.cureWeeks;
+        person.setRelationshipProgress(person.getRelationshipProgress() + 100);
+        Vampire.alert("Vampiric Cure", `${person.getFirstName()} drank the Vampiric Cure (+100 relationship). In ${Vampire.cureWeeks} weeks their heart will beat again.`, R.drawable.health_youthelixir);
+    },
+    /** Weekly: anyone taking the Cure you bought them becomes human when it's done. */
+    tickCures(p: any) {
+        let people: any[] = [];
+        try { people = [...Relationships.familyPeople(p), ...Relationships.circle(p).list().filter((x: any) => x.getIsAlive() && x.kind !== "ex")]; } catch { return; }
+        const done = new Set<string>();
+        for (const x of people) {
+            const id = String(x.getId());
+            if (done.has(id)) continue;
+            done.add(id);
+            const m = Relationships.meta(x, p);
+            if (!((m.cureWeeks ?? 0) > 0)) continue;
+            m.cureWeeks = (m.cureWeeks ?? 1) - 1;
+            if (m.cureWeeks > 0) continue;
+            delete m.cureWeeks;
+            m.vampire = false; m.cured = true;
+            const partner = p.getFamilyState?.()?.getPartner?.();
+            const bond = x === partner && Vampire.isVampire(p) ? " You're still a vampire; your Eternal Bond is broken." : "";
+            AlertManager.randomly(() => Vampire.alert("Human Again", `The Vampiric Cure has done its work: ${x.getFirstName()}'s heart beats again, and they'll start ageing from ${x.getAgeInYears()}.${bond}`, R.drawable.health_youthelixir));
+        }
+    },
     finalRest(p: any) {
         Vampire.die(p, `After ${Vampire.years(p) < 1 ? "less than a year" : Vampire.years(p) === 1 ? "a year" : `${Vampire.years(p)} years`} in the dark, ${p.getFirstName()} chose to rest at last and watched one final sunrise.`, "Final Rest");
         refreshUI();
