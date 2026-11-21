@@ -484,7 +484,7 @@ export const LifeMoments = {
             News.add({ getTitle: () => title, getMessage: () => question, getImageId: () => image }, chose);
             const s = News.state(), it = s.items[s.items.length - 1];
             if (it && it.title === title && it.chose === chose) it.outcome = outcome;
-            News.markRead();   // you just saw it
+            { const st = News.state(); if (st.unread > 0) st.unread--; }   // you just saw this one (only this one)
             AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(title, outcome, image, null, null, null, null, null, AlertType.Banner, 0, null), false, 2, null);
         } catch { /* no UI */ }
     },

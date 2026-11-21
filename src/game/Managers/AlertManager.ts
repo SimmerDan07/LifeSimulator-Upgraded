@@ -93,6 +93,57 @@ export class AlertManager {
         try { if ((globalThis as any).process?.env?.LIFESIM_ALL_POPUPS) return true; } catch { /* no env */ }
         try { return !!(GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups; } catch { return false; }
     }
+    /** v0.29.1: Game Settings › "No pop-ups at all": nothing ever pops up, from the weeks or from what you tap. */
+    static noPopups(): boolean {
+        try { if ((globalThis as any).process?.env?.LIFESIM_NO_POPUPS) return true; } catch { /* no env */ }
+        try { return !!(GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).noPopups; } catch { return false; }
+    }
+    /** …and with it, what you tap still gets a small corner notice (default on). */
+    static notices(): boolean {
+        try { return (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).popupNotices !== false; } catch { return true; }
+    }
+    /** An "Are you sure?" or a menu you opened: its "no" button is just No / Cancel / Not now / Never mind / Back. */
+    static isConfirmation(vm: AlertViewModel): boolean {
+        if ((vm as any).confirm) return true;
+        const no = vm.getNegativeButton?.()?.getTitle?.();
+        if (no == null) return false;
+        const t = String(no).trim().toLowerCase();
+        let yesNo = "no";
+        try { yesNo = String(Utils.INSTANCE.getString(R.string.Common_No)).trim().toLowerCase(); } catch { /* default */ }
+        return [yesNo, "no", "cancel", "not now", "never mind", "nevermind", "back", "go back"].includes(t);
+    }
+    private static silentDepth = 0;
+    /** The choice made for you when an alert isn't shown (see quietly). */
+    static quietPick<T>(vm: T, choice: "positive" | "negative" | number): T { (vm as any).quietChoice = choice; return vm; }
+    /**
+     * v0.29.1 "No pop-ups at all": the alert never shows. It goes to News, and a choice is made:
+     * - its own quiet pick if it has one (holidays, wills, emergencies, achievements…);
+     * - "Are you sure?" / a menu with Cancel, right after you tapped something: yes, the first option (you asked for it);
+     * - anything else — on its own or a surprise during what you did: no, thanks (a loan, a reunion, an invitation,
+     *   a stranger's offer…), or OK / the first option if there is no "no".
+     * Something you tapped also gets a small corner notice (unless those are off too). Only "erase this save?" asks.
+     */
+    static silently(vm: AlertViewModel): void {
+        const v: any = vm;
+        const tapped = AlertManager.inWeek === 0;
+        if (vm.getType() === AlertType.Banner) {
+            News.add(vm);
+            if (tapped && AlertManager.notices()) AlertManager.INSTANCE.show(vm);
+            return;
+        }
+        if (AlertManager.silentDepth > 12) { News.add(vm); return; }   // a question that keeps asking itself
+        AlertManager.silentDepth++;
+        try {
+            const several = vm.getNegativeButton() != null || (vm.getAdditionalButtons()?.size?.() ?? 0) > 0;
+            if (v.quietChoice == null && tapped && AlertManager.isConfirmation(vm)) v.quietChoice = "positive";
+            if (tapped && !several && AlertManager.notices()) {
+                // what happened after your tap, as a small notice that doesn't stop anything
+                const notice = new AlertViewModel(vm.getTitle(), vm.getMessage(), vm.getImageId(), vm.getAttributedMessage(), null, null, null, null, AlertType.Banner, 0, null);
+                AlertManager.INSTANCE.show(notice);
+            }
+            AlertManager.quietly(vm);
+        } finally { AlertManager.silentDepth--; }
+    }
     /** v0.28.1: Game Settings › "Turn off holiday pop-ups" (stored as holidayPopups = false). */
     static holidaysOn(): boolean {
         try { return (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups !== false; } catch { return true; }
@@ -115,14 +166,17 @@ export class AlertManager {
                 const n = 1 + (extra?.size?.() ?? 0) + (vm.getNegativeButton() != null ? 1 : 0);
                 const i = Math.max(0, Math.min(n - 1, v.quietChoice));
                 btn = i === 0 ? vm.getPositiveButton() : i === n - 1 && vm.getNegativeButton() != null ? vm.getNegativeButton() : extra.get(i - 1);
-            } else if (v.quietChoice === "positive") btn = vm.getPositiveButton();
-            else btn = vm.getNegativeButton() ?? (extra == null || extra.size() === 0 ? vm.getPositiveButton() : null);
+            } else if (v.quietChoice === "negative") btn = vm.getNegativeButton() ?? vm.getPositiveButton();
+            else if (v.quietChoice === "positive") btn = vm.getPositiveButton() ?? (extra?.size?.() ? extra.get(0) : null);
+            else btn = vm.getNegativeButton() ?? vm.getPositiveButton() ?? (extra?.size?.() ? extra.get(0) : null);
         } catch { /* ignore */ }
         const several = (vm.getNegativeButton?.() != null) || ((vm.getAdditionalButtons?.()?.size?.() ?? 0) > 0);
         News.add(vm, several && btn ? btn.getTitle() : null);
         try { btn?.getAction()?.invoke(); } catch (e) { console.error(e); }
     }
     showAlert$0(alertViewModel: AlertViewModel, prioritize: boolean): void {
+        // v0.29.1: "No pop-ups at all" — nothing shows, wherever it comes from (only "erase this save?" still asks)
+        if (AlertManager.muted == null && AlertManager.noPopups() && !(alertViewModel as any).essential) { AlertManager.silently(alertViewModel); return; }
         // v0.28.1b: holidays turned off never pop up, whatever else is on and wherever they come from
         if (AlertManager.muted == null && (alertViewModel as any).holiday && !AlertManager.holidaysOn()) { AlertManager.quietly(alertViewModel); return; }
         if (AlertManager.muted == null && AlertManager.inWeek > 0 && !AlertManager.allPopups() && !AlertManager.mustShow(alertViewModel)) {
@@ -194,10 +248,17 @@ export class AlertManager {
     showConfirmationAlert(alert: AlertViewModel, action: Function0<any>): void {
         Intrinsics.checkParameterIsNotNull(alert, "alert");
         Intrinsics.checkParameterIsNotNull(action, "action");
-        AlertManager.showAlert$default(this, new AlertViewModel(alert.getTitle(), alert.getMessage(), alert.getImageId(), null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Common_Yes), action), new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Common_No), {
+        const S = (k: string) => Utils.INSTANCE.getString(k);
+        const msg = String(alert.getMessage() ?? "");
+        // v0.29.1: wiping a whole save is the one question "No pop-ups at all" still asks
+        const essential = [S("Alert_DeleteSaveSlot_Message"), S("Alert_Restart_Descrption"), S("AchievementComplete_RestartConfimration")].includes(msg);
+        const cvm: any = new AlertViewModel(alert.getTitle(), alert.getMessage(), alert.getImageId(), null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Common_Yes), action), new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Common_No), {
             invoke: () => {
         }
-        }), null, null, 408, null), false, 2, null);
+        }), null, null, 408, null);
+        cvm.confirm = true;
+        if (essential) cvm.essential = true;
+        AlertManager.showAlert$default(this, cvm, false, 2, null);
     }
     showAttributeLowAlertIfRequired(attribute: PersonAttribute, week: number): void {
         Intrinsics.checkParameterIsNotNull(attribute, "attribute");
@@ -282,6 +343,7 @@ export class AlertManager {
                 InAppPurchaseManager.INSTANCE.purchaseProduct(GameInAppPurchase.revive);
             }
             }), heirButtons, null, 280, null);
+            AlertManager.quietPick(alertViewModel, "positive");   // v0.29.1 no pop-ups: on to the tombstone (never an automatic revive)
             GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().setHasGameStarted(false);
             GameStateManager.INSTANCE.getGlobalStateManager().getCemetaryState().addLife(GameStateManager.INSTANCE.getPersonState());
             AlertManager.showAlert$default(this, alertViewModel, false, 2, null);
@@ -622,7 +684,7 @@ export class AlertManager {
         let string: string = Utils.INSTANCE.getString(R.string.Alert_Achievement_Description);
         let objArr = [achievement.getTitle()];
         let format: string = String.format(string, Arrays.copyOf(objArr, objArr.length));
-        AlertManager.showAlert$default(this, new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_Achievement_Title), null, Integer.valueOf(achievement.getImageId()), ExtensionsKt.appendNormal$default(spannableStringBuilder, format, null, null, null, 14, null), null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Alert_Achievement_Button_NewGame), {
+        AlertManager.showAlert$default(this, AlertManager.quietPick(new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_Achievement_Title), null, Integer.valueOf(achievement.getImageId()), ExtensionsKt.appendNormal$default(spannableStringBuilder, format, null, null, null, 14, null), null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Alert_Achievement_Button_NewGame), {
             invoke: () => {
             AlertManager.INSTANCE.showConfirmationAlert(new AlertViewModel(Utils.INSTANCE.getString(R.string.Common_AreYouSure), Utils.INSTANCE.getString(R.string.AchievementComplete_RestartConfimration), R.drawable.menu_restart, null, null, null, null, null, null, 504, null), {
                 invoke: () => {
@@ -633,7 +695,7 @@ export class AlertManager {
         }), new AlertActionViewModel(Utils.INSTANCE.getString(R.string.Alert_Achievement_Button_Continue), {
             invoke: () => {
         }
-        }), null, null, 400, null), false, 2, null);
+        }), null, null, 400, null), "negative"), false, 2, null);
     }
     showBadgeEarnedAlert(badge: AchievementBadge): void {
         Intrinsics.checkParameterIsNotNull(badge, "badge");

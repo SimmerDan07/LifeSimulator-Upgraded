@@ -583,14 +583,28 @@ export class GenericListModelGenerator {
                 arrayList.add(customizeSwitchViewModel);
                 arrayList.add(customizeSwitchViewModel2);
                 arrayList.add(customizeSwitchViewModel3);
-                // v0.28.1: only holidays pop up unless you want everything back
-                arrayList.add(new CustomizeSwitchViewModel("Pop-ups for every event (off: everything but holidays goes to News)", new SwitchViewModel(!!(GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups, false, {
-                    invoke: (z3: boolean) => { (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups = z3; },
-                })));
-                // v0.28.1b: worded as a "turn off" switch, so ON means no holiday pop-ups (the old "Holiday pop-ups" switch read backwards)
-                arrayList.add(new CustomizeSwitchViewModel("Turn off holiday pop-ups (on: holidays go to News, with a good choice made for you)", new SwitchViewModel((GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups === false, false, {
-                    invoke: (z3: boolean) => { (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups = !z3; },
-                })));
+                {
+                    // v0.29.1: one switch turns off every pop-up in the game; the finer switches only matter while it's off
+                    const gs: any = GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings();
+                    const relist = () => { try { Utils.INSTANCE.reloadGenericList(GenericListType.gameSettings); } catch { /* no UI */ } };
+                    arrayList.add(new CustomizeSwitchViewModel("No pop-ups at all (on: nothing ever pops up; everything goes to News, with choices made for you)", new SwitchViewModel(!!gs.noPopups, false, {
+                        invoke: (z3: boolean) => { gs.noPopups = z3; relist(); },
+                    })));
+                    if (gs.noPopups) {
+                        arrayList.add(new CustomizeSwitchViewModel("Small corner notices for what you tap (they vanish on their own)", new SwitchViewModel(gs.popupNotices !== false, false, {
+                            invoke: (z3: boolean) => { gs.popupNotices = z3; },
+                        })));
+                    } else {
+                        // v0.28.1: only holidays pop up unless you want everything back
+                        arrayList.add(new CustomizeSwitchViewModel("Pop-ups for every event (off: everything but holidays goes to News)", new SwitchViewModel(!!(GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups, false, {
+                            invoke: (z3: boolean) => { (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).allPopups = z3; },
+                        })));
+                        // v0.28.1b: worded as a "turn off" switch, so ON means no holiday pop-ups (the old "Holiday pop-ups" switch read backwards)
+                        arrayList.add(new CustomizeSwitchViewModel("Turn off holiday pop-ups (on: holidays go to News, with a good choice made for you)", new SwitchViewModel((GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups === false, false, {
+                            invoke: (z3: boolean) => { (GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings() as any).holidayPopups = !z3; },
+                        })));
+                    }
+                }
                 break;
             case GenericListType.gameSummary:
                 if (!Intrinsics.areEqual(key, Constants.ViewModel.INSTANCE.getTombstoneModeDeath())) {

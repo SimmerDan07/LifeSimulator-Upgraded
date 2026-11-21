@@ -289,10 +289,16 @@ function showBanner(vm: AlertViewModel) {
     const t = document.createElement("div");
     t.className = "toast";
     const url = imageUrl(vm.getImageId());
-    t.innerHTML = `${url ? `<img src="${url}" alt="">` : ""}<div><b>${textToHtml(vm.getTitle())}</b><div>${textToHtml(vm.getMessage())}</div></div>`;
-    $("#toasts").appendChild(t);
-    setTimeout(() => t.classList.add("hide"), 3500);
-    setTimeout(() => t.remove(), 4000);
+    const am = vm.getAttributedMessage();
+    const body = am != null ? richToHtml(am) : textToHtml(vm.getMessage() ?? "");
+    t.innerHTML = `${url ? `<img src="${url}" alt="">` : ""}<div><b>${textToHtml(vm.getTitle() ?? "")}</b><div>${body}</div></div>`;
+    t.addEventListener("click", () => t.remove());   // tap to dismiss early
+    const box = $("#toasts");
+    box.appendChild(t);
+    while (box.childElementCount > 4) box.firstElementChild?.remove();   // a burst of notices: keep the newest few
+    const ms = Math.min(7000, 3500 + (t.textContent?.length ?? 0) * 18);   // longer text stays a little longer
+    setTimeout(() => t.classList.add("hide"), ms);
+    setTimeout(() => t.remove(), ms + 500);
 }
 
 // ------------------------------------------------------------------ wiring

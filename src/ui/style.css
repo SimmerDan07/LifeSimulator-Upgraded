@@ -208,6 +208,8 @@ body.no-life #hud .who, body.no-life #hud .stats, body.no-life #hud .money { vis
     padding: 10px 14px; width: 320px; box-shadow: 0 8px 24px rgba(0,0,0,.25); animation: slidein .2s ease; transition: opacity .4s;
 }
 .toast img { width: 36px; height: 36px; }
+.toast { cursor: pointer; }
+.toast > div > div { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; }
 .toast.hide { opacity: 0; }
 .toast-error { position: fixed; bottom: 16px; right: 16px; background: var(--red); z-index: 200; }
 @keyframes fade { from { opacity: 0; } }

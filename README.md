@@ -227,6 +227,14 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
       leaves real choices alone; on the main screen it sends the app to the background. Saved when the app pauses.
     - Phone/tablet layouts in style.css: below 760px and 560px wide (two-row HUD, compact cells) and short landscape
       screens (one-row HUD). Full screen, safe areas, no text selection or tap flashes.
+  - **v0.29.1 No pop-ups at all**: one Game Settings switch turns off every pop-up in the game, from the weeks and
+    from what you tap (`GameSettings.noPopups`, `AlertManager.noPopups/silently`, checked first in `showAlert$0`).
+    Everything goes to News; choices: the alert's own quiet pick, else "Are you sure?" / a menu with Cancel right
+    after a tap → yes (`isConfirmation`), else no thanks (or OK / the first option). What you tap gets a small corner
+    notice ("Small corner notices for what you tap", `popupNotices`, default on). Only "erase this save / your
+    progress?" still asks (`essential`). Death goes on to the tombstone (never an automatic second chance);
+    achievements never restart your life. Toasts show icons, stack up to 4, stay longer for longer text, tap to close.
+    Answering a holiday no longer marks all of News as read. Test env `LIFESIM_NO_POPUPS=1`.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

@@ -10,6 +10,10 @@ export class GameSettings {
     allPopups: boolean = false;
     /** v0.28.1: holidays pop up (off: they go to News too, with a sensible choice made for you). */
     holidayPopups: boolean = true;
+    /** v0.29.1: nothing ever pops up (everything goes to News, choices are made for you). */
+    noPopups: boolean = false;
+    /** v0.29.1: with noPopups, what you tap still gets a small corner notice. */
+    popupNotices: boolean = true;
     constructor() {
         this.hapticsEnabled = true;
         this.musicEnabled = true;
