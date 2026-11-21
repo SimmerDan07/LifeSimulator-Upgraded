@@ -254,6 +254,15 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     leisure surprises (Illness/Vampire/Seasons.onLeisure, Crime.afterLeisureEvent), work surprises (Careers/Illness
     onWork) and `SocialMedia.event`. Menus you open (Automatic Savings, amounts, confirmations, names, info, results)
     pop up as normal; random events are never "confirmed" for you (no more `isConfirmation`).
+  - **v0.30.0 One-night stands**: `src/game/Social/OneNight.ts` + Love action `oneNightStand` (Love tab, under
+    Find Love / your partner; hidden under 18; locked in jail or while away). `open` is a menu (protection / none /
+    never mind); `night` (+6 happiness; cheating −4 sanity) — a man and a woman conceive at `chance.protection` 2% /
+    `chance.none` 15% (`canConceive`: not a vampire, not infertile, not already expecting, the woman 18–45). A woman
+    player: `Babies.startPregnancy(p, "you")` with `child.otherParent`. A man: `p.oneNight.pending` → `afterWeek`
+    (Player weekly tick) tells you after 4–8 weeks and adds the newborn at 40 (`otherParent`, child support as usual).
+    Cheating: `cheatFoundOut` 35% → −40 and upset, or they leave (`breakUp`); a baby hurts them again (−30). Famous
+    (10K+ fans): tabloid news, −5 rep if cheating. Child details show Mother/Father (a one-night stand).
+    `OneNight.dice` is the roll (tests load it). Test: `test/onenight.ts` (24).
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

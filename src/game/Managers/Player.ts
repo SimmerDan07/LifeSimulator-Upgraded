@@ -1,3 +1,4 @@
+import { OneNight } from "../Social/OneNight";
 import { TrueAge } from "./TrueAge";
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
@@ -905,6 +906,7 @@ export class Player {
             SocialMedia.afterWeek(this);   // v0.26.0: followers, deals, drama
             Crime.afterWeek(this);         // v0.27.0: heat, warrants, prison, gangs and families
             Illness.afterWeek(this);       // v0.28.0: catching and getting over illnesses
+            OneNight.afterWeek(this);      // v0.30.0: a one-night stand's baby (when you're the father)
             if (Vampire.isInTorpor(this) === false && mainGameFragment != null) MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
         }
     }

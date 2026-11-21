@@ -3,6 +3,7 @@
 // Love tab: status and group actions on top, then Partner, Parents, Children, Siblings, Friends, Pets,
 // Past Relationships and More. Empty groups are hidden. Inside a group: oldest first, the deceased last under "In memory".
 // Every card opens the same person screen: a large card, an About card, then Spend time / Big moments / Hard choices.
+import { OneNight } from "./OneNight";
 import { Appearance } from "./Appearance";
 import { SpouseIncome } from "./SpouseIncome";
 import { Legacy } from "../Legacy/Legacy";
@@ -147,6 +148,8 @@ export const LoveScreens = {
             if (events.length === 0) out.add(new SingleLabelCellViewModel("NoDating", text(p.getCrimeState().getIsInJail() ? "You can't date while you're in jail." : "Not right now.")));
             for (const e of events) out.add(ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(e, null));
         }
+        // v0.30.0: One-Night Stand (18+; only if you choose it)
+        { const ons = new LoveActionCell(loveAction("oneNightStand"), null); if (ons.visible(p)) out.add(ons.cell()); }
 
         // Parents
         const parents = Relationships.family(Relationship.parent, p);
@@ -305,6 +308,7 @@ export const LoveScreens = {
             const par = ExtendedFamily.parentOf(t, p);
             if (par != null) rows.push([par.getSex()?.name?.() === "female" ? "Mother" : "Father", par.getFullName()]);
         }
+        if (kind === "child") { const op = OneNight.otherParentText(t); if (op) rows.push([t.otherParent?.sex === "female" ? "Mother" : "Father", op]); }
         const kids = ExtendedFamily.childrenOf(t.getId(), p);
         if (kids.length) rows.push(["Children", String(kids.length)]);
         if (kind === "friend") { rows.push(["How you met", Relationships.metAtText(t)]); rows.push(["Friends for", span(Relationships.now() - t.sinceWeek)]); }

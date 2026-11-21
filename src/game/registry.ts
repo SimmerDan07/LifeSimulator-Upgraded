@@ -191,20 +191,21 @@ import * as M187 from "./Social/ExtendedFamily";
 import * as M188 from "./Social/FamilyTree";
 import * as M189 from "./Social/LoveActions";
 import * as M190 from "./Social/LoveScreens";
-import * as M191 from "./Social/Relationships";
-import * as M192 from "./Social/SocialCircle";
-import * as M193 from "./Social/SocialMedia";
-import * as M194 from "./Social/SocialPerson";
-import * as M195 from "./Social/SpouseIncome";
-import * as M196 from "./Unlocks";
-import * as M197 from "./Utils/Constants";
-import * as M198 from "./Utils/ExtensionsKt";
-import * as M199 from "./Utils/Utils";
-import * as M200 from "./Utils/ValueRange";
-import * as M201 from "./World/Activities";
-import * as M202 from "./World/ActivityData";
-import * as M203 from "./World/World";
-import * as M204 from "./World/WorldData";
+import * as M191 from "./Social/OneNight";
+import * as M192 from "./Social/Relationships";
+import * as M193 from "./Social/SocialCircle";
+import * as M194 from "./Social/SocialMedia";
+import * as M195 from "./Social/SocialPerson";
+import * as M196 from "./Social/SpouseIncome";
+import * as M197 from "./Unlocks";
+import * as M198 from "./Utils/Constants";
+import * as M199 from "./Utils/ExtensionsKt";
+import * as M200 from "./Utils/Utils";
+import * as M201 from "./Utils/ValueRange";
+import * as M202 from "./World/Activities";
+import * as M203 from "./World/ActivityData";
+import * as M204 from "./World/World";
+import * as M205 from "./World/WorldData";
 /** Built on first use (not at import time) so import cycles can't leave entries undefined. */
 export function allClasses(): Record<string, any> {
     return Object.assign({},
@@ -414,5 +415,6 @@ export function allClasses(): Record<string, any> {
         M202,
         M203,
         M204,
+        M205,
     );
 }

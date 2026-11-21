@@ -11,6 +11,7 @@ import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { Relationships, MOOD_TITLE } from "./Relationships";
 import { SocialPerson } from "./SocialPerson";
 import { Babies } from "./Babies";
+import { OneNight } from "./OneNight";
 import { Vampire } from "../Lifepaths/Vampire";
 
 export type Section = "time" | "big" | "hard";
@@ -230,6 +231,15 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
         lock: (_t, p) => (age(p) < 18 ? "Must be 18 or older" : null),
         note: () => "Raise a child on your own.\n",
         run: (_t, p) => Babies.adopt(p) },
+    // v0.30.0: only when you choose it; adults only (the cell isn't shown under 18)
+    { id: "oneNightStand", title: "One-Night Stand", image: R.drawable.love_nightclub, who: ["group"], section: "time", instant: true,
+        show: (_t, p) => age(p) >= 18,
+        lock: (_t, p) => OneNight.lock(p),
+        note: (_t) => {
+            const p = player(), partner = p.getFamilyState().getPartner();
+            return "Meet someone for one night. Babies can happen (less likely with protection)." + (partner != null && partner.getIsAlive() ? ` You're with ${partner.getFirstName()}: they may find out.` : "") + "\n";
+        },
+        run: (_t, p) => OneNight.open(p) },
     { id: "meetPeople", title: "Meet New People", image: R.drawable.waving_hand, who: ["group"], section: "time", mods: [0, 2, 0],
         lock: (_t, p) => Relationships.canMeetPeople(p),
         note: () => "Good chance of making a new friend.\n",
