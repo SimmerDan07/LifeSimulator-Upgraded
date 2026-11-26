@@ -285,6 +285,10 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
   - **v0.31.1 Music stops in the background**: `SoundManager.setAway(bool)` pauses the soundtrack and mutes effects;
     main.ts calls it on `visibilitychange`, `pagehide`/`pageshow`, and `window.__lifesimAway` from Android's
     `MainActivity.onPause/onResume`. Resuming retries on the next tap if the phone blocks autoplay.
+  - **v0.31.2 iPhone fit**: style.css `--st/--sb/--sl/--sr` (`env(safe-area-inset-*)`), `--top` = hud + st and
+    `--left` = rail + sl used by #hud/#tabs/#main/#overlay/#toasts; content, list body/foot, footer and the rail pad
+    by `--sb`; modals capped at `100dvh`; landscape stats 2 × 2; narrow `--hud` 108px; text-size-adjust 100%,
+    inputs ≥16px, `overscroll-behavior: contain`. All 0 where there are no insets (Windows, Android full screen).
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you
