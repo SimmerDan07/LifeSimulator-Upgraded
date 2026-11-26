@@ -33,6 +33,9 @@ import { Vampire } from "../Lifepaths/Vampire";
 import { Celebrity } from "../Lifepaths/Celebrity";
 import { Subscriptions } from "./Subscriptions";
 import { Youth } from "../Youth/Youth";
+import { Work } from "../Work/Work";
+import { Hiring } from "../Work/Hiring";
+import { WorkScreens } from "../Work/WorkScreens";
 
 export class JobState {
     static INSTANCE: any;
@@ -116,16 +119,19 @@ export class JobState {
         if (personState.getCrimeState().getIsInJail()) return;   // v0.27.0: no outside work from a cell
         let state: JobState.JobStateSingle = this.getState(job);
         AttributeState.setDeltaValue$default(personState.getAttributeState(), job.modifiers(state.getLevel()), null, 2, null);
-        let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * workAction.getPayModifier() * Vampire.onWork(personState, job) * Careers.payMultiplier(job, personState) * World.payMultiplier(personState, job);
+        // v0.33.0: your effort, employer and raises set the pay (a WorkAction other than "normal" is the old buttons)
+        const payModifier: number = Work.payModifier(personState, workAction);
+        const effortName: string = Work.onWork(personState, workAction);
+        let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * payModifier * Vampire.onWork(personState, job) * Careers.payMultiplier(job, personState) * World.payMultiplier(personState, job);
         // v0.23.0 Automatic Savings: part of the paycheck can go straight to savings
         Subscriptions.payCheck(JMath.toInt(randomValue), personState);
         // v0.19.0 Celebrity Life: celebrity careers earn fans and skill
-        Celebrity.onWork(personState, job, state.getLevel(), workAction.getPayModifier());
+        Celebrity.onWork(personState, job, state.getLevel(), payModifier);
         // v0.26.0: the new careers (seasons, followers, on-the-job moments)
         // v0.29.4: surprises at work are random events
         AlertManager.randomly(() => {
             Careers.onWork(personState, job, state.getLevel());
-            Illness.onWork(personState, workAction.name());   // v0.28.0: all-nighters can burn you out
+            Illness.onWork(personState, effortName);   // v0.28.0: all-nighters can burn you out (v0.33.0: Grinding)
         });
         if (!state.isMaxLevel()) {
             if (state.getProgress() >= (job.weeksForPromotion(state.getLevel()) - 1)) {
@@ -137,6 +143,8 @@ export class JobState {
                     Celebrity.blocked(job, state.getLevel() + 1, personState);
                 } else if (hasDegree && careerBlock != null) {
                     Careers.blocked(job, state.getLevel() + 1, personState);
+                } else if (hasDegree && Work.promotionBlock(personState) != null) {
+                    // v0.33.0: a promotion also needs performance at Meets Expectations (shown on the job card)
                 } else if (hasDegree) {
                     state.setProgress(0);
                     state.setLevel(state.getLevel() + 1);
@@ -148,7 +156,7 @@ export class JobState {
                 }
             } else {
                 // v0.19.0: fame speeds up celebrity careers
-                state.setProgress(Math.min(job.weeksForPromotion(state.getLevel()) - 1, state.getProgress() + 1 + Celebrity.progressBonus(job, personState) + Careers.progressBonus(job, personState)));
+                state.setProgress(Math.min(job.weeksForPromotion(state.getLevel()) - 1, state.getProgress() + Work.progressStep(personState) + Celebrity.progressBonus(job, personState) + Careers.progressBonus(job, personState)));
             }
         }
         AlertManager.showRandomEvent$default(AlertManager.INSTANCE, RandomEvent.INSTANCE.randomEventForJob(state.getType()), false, 2, null);
@@ -159,6 +167,8 @@ export class JobState {
         // v0.27.0: nobody hires you while you're in prison (whatever path tries: coaching, moments, heirs…)
         try { const me = GameStateManager.INSTANCE.getPersonState(); if (me?.getJobState() === this && me.getCrimeState().getIsInJail()) return; } catch { /* no game */ }
         this.currentJob = job;
+        // v0.33.0: every job comes with an employer
+        try { const me = GameStateManager.INSTANCE.getPersonState(); if (me?.getJobState() === this) Work.onHired(me, job, Work.pendingEmployer); } catch { /* no game */ } finally { Work.pendingEmployer = undefined; }
         // v0.32.0: part-time work as a teen counts at your first real job
         try { const me = GameStateManager.INSTANCE.getPersonState(); if (me?.getJobState() === this) Youth.onFirstJob(me); } catch { /* no game */ }
         GameStateManager.INSTANCE.getPersonState().getSideHustleState().deactivateProject();
@@ -316,8 +326,15 @@ export namespace JobState {
             if (spannableStringBuilder.length > 0 && !spannableStringBuilder.toString().endsWith("\n")) ExtensionsKt.appendNewline(spannableStringBuilder);
             ExtensionsKt.appendNormal$default(spannableStringBuilder, careerText, null, null, null, 14, null);
         }
-        return new ActionProgressViewModel(imageId, jobTitle, new TextLabelViewModel("", null, false, false, null, spannableStringBuilder, 30, null), z2 ? Utils.INSTANCE.getString(R.string.Housing_Label_Current) : null, progressBarViewModel, null, new ButtonViewModel(Utils.INSTANCE.getString(R.string.Job_Action_Apply), null, !z2, false, z3, false, false, {
+        // v0.33.0: most careers hire through openings and interviews (Starter Jobs and Celebrity Life stay instant)
+        const openings: boolean = !z2 && Work.enabled && Hiring.usesOpenings(this.type);
+        if (openings && !z3) {
+            if (spannableStringBuilder.length > 0 && !spannableStringBuilder.toString().endsWith("\n")) ExtensionsKt.appendNewline(spannableStringBuilder);
+            ExtensionsKt.appendNormal$default(spannableStringBuilder, `Your Hire Score: ${Hiring.score(this.type, personState)}`, null, null, null, 14, null);
+        }
+        return new ActionProgressViewModel(imageId, jobTitle, new TextLabelViewModel("", null, false, false, null, spannableStringBuilder, 30, null), z2 ? Utils.INSTANCE.getString(R.string.Housing_Label_Current) : null, progressBarViewModel, null, new ButtonViewModel(openings ? "Openings" : Utils.INSTANCE.getString(R.string.Job_Action_Apply), null, !z2, false, z3, false, false, {
             invoke: () => {
+            if (openings) { WorkScreens.navigate("work-openings:" + this.getType().name()); return; }
             if (AgeLimits.tooYoung(AgeLimits.work) != null) return;
             if (Careers.applyBlock(this.getType(), GameStateManager.INSTANCE.getPersonState()) != null) return;
             Retirement.beforeApplying(() => {

@@ -1,6 +1,7 @@
 // Lifepaths tab: hidden paths a life can take that change what your character is.
 // v0.15.0: the Vampire lifepath (see src/game/Lifepaths/Vampire.ts).
 // v0.19.0: the tab is a menu of paths (Celebrity Life, Vampire); each opens its own screen (GenericListType.lifepath).
+import { WorkScreens } from "../Work/WorkScreens";
 import { TrueAge } from "../Managers/TrueAge";
 import { ArrayList, R } from "../runtime";
 import { News } from "../Managers/News";
@@ -106,6 +107,11 @@ export class LifepathsModelGenerator {
         if (key === "youth-activities" || key === "youth-yearbook") {   // v0.32.0
             header.add(new NavigationBarViewModel(key === "youth-yearbook" ? "Yearbook" : "After-School Activities", false, 2, null));
             for (const c of key === "youth-yearbook" ? YouthScreens.yearbook(p) : YouthScreens.activitiesScreen(p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key != null && key.startsWith("work-")) {   // v0.33.0: openings, applications, résumé, hustles, company, retirement
+            header.add(new NavigationBarViewModel(WorkScreens.screenTitle(key), false, 2, null));
+            for (const c of WorkScreens.screen(key, p)) out.add(c);
             return new GenericListFragmentViewModel(out, header, null);
         }
         if (key === "news") {   // v0.28.1: what happened while the weeks went by (instead of pop-ups)

@@ -202,15 +202,18 @@ import * as M198 from "./Utils/Constants";
 import * as M199 from "./Utils/ExtensionsKt";
 import * as M200 from "./Utils/Utils";
 import * as M201 from "./Utils/ValueRange";
-import * as M202 from "./World/Activities";
-import * as M203 from "./World/ActivityData";
-import * as M204 from "./World/World";
-import * as M205 from "./World/WorldData";
-import * as M206 from "./Youth/Youth";
-import * as M207 from "./Youth/YouthData";
-import * as M208 from "./Youth/YouthMoments";
-import * as M209 from "./Youth/YouthScreens";
-import * as M210 from "./Youth/install";
+import * as M202 from "./Work/Work";
+import * as M203 from "./Work/WorkData";
+import * as M204 from "./Work/WorkScreens";
+import * as M205 from "./World/Activities";
+import * as M206 from "./World/ActivityData";
+import * as M207 from "./World/World";
+import * as M208 from "./World/WorldData";
+import * as M209 from "./Youth/Youth";
+import * as M210 from "./Youth/YouthData";
+import * as M211 from "./Youth/YouthMoments";
+import * as M212 from "./Youth/YouthScreens";
+import * as M213 from "./Youth/install";
 /** Built on first use (not at import time) so import cycles can't leave entries undefined. */
 export function allClasses(): Record<string, any> {
     return Object.assign({},
@@ -426,5 +429,8 @@ export function allClasses(): Record<string, any> {
         M208,
         M209,
         M210,
+        M211,
+        M212,
+        M213,
     );
 }

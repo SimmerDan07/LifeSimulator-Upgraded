@@ -19,6 +19,8 @@ import type { LifeScenario } from "../Enums/LifeScenario";
 import { Constants } from "../Utils/Constants";
 import { Utils } from "../Utils/Utils";
 import { SaveCodec } from "../save/SaveCodec";
+import { Work } from "../Work/Work";
+import { installWork } from "../Work/install";
 import { installYouth } from "../Youth/install";
 
 export class GameStateManager {
@@ -34,6 +36,7 @@ export class GameStateManager {
         Crossover.install();   // v0.25.0: Celebrity Life × Vampire cross content (hooks and extra actions)
         installCrime();        // v0.27.0: the Crime update's hooks into careers, moving, heirs, vampires…
         installYouth();        // v0.32.0: Childhood & Teen Years (moments, heirs)
+        installWork();         // v0.33.0: The Career Overhaul (hiring, workplace, hustles, companies, benefits)
         this.globalStateManager = this.loadData();
         const slot = this.globalStateManager.getSaveState().currentSlot();
         if (slot.getPersonState() == null) {
@@ -81,6 +84,7 @@ export class GameStateManager {
     startNewGame(player: Player): void {
         Schooling.fillForAge(player);  // schooling that fits the starting age (preschool…high school)
         World.onNewLife(player);       // v0.27.0: native language (birth country)
+        Work.state(player);            // v0.33.0: a new life starts with the new work system (no "upgrade" note)
         if (!Appearance.valid((player as any).appearance)) Appearance.set(player, Appearance.random(player.getSex()));
         player.applyPerkStateEffects();
         player.applyNameEasternEgg();

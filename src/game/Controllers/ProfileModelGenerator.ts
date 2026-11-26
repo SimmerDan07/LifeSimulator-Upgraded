@@ -28,6 +28,7 @@ import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
 import { Subscriptions } from "../Managers/Subscriptions";
 import { YouthScreens } from "../Youth/YouthScreens";
+import { WorkScreens } from "../Work/WorkScreens";
 
 export class ProfileModelGenerator implements IViewModelGenerator {
     gameTab: MainGameTab = MainGameTab.Profile;
@@ -39,6 +40,7 @@ export class ProfileModelGenerator implements IViewModelGenerator {
         arrayList.addAll(this.getIdentityViewModels());
         arrayList.addAll(this.getHousingViewModels());
         for (const c of YouthScreens.profile()) arrayList.add(c);   // v0.32.0: Growing Up + Yearbook
+        for (const c of WorkScreens.profileCells()) arrayList.add(c);   // v0.33.0: Résumé
         // v0.28.0: your will, heirlooms and Switch Life
         arrayList.add(new HeaderTitleViewModel("Legacy"));
         arrayList.add(LegacyScreen.profileCell());

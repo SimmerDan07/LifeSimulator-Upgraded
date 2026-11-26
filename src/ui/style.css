@@ -142,7 +142,7 @@ body.no-life #hud .who, body.no-life #hud .stats, body.no-life #hud .money { vis
 .btn.negative { background: var(--red); }
 .btn.negative:hover { background: #c2493a; }
 .btn.neutral { background: var(--blue); }
-.work-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.work-buttons { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
 .btn.work { min-height: 58px; font-size: 17px; background: var(--primary); box-shadow: 0 3px 10px rgba(0,0,0,.18); }
 
 .progress { height: 10px; background: #e3e8ea; border-radius: 6px; overflow: hidden; margin-top: 8px; }

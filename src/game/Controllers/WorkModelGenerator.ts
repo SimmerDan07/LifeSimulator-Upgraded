@@ -33,6 +33,7 @@ import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { CrimeScreen } from "../Crime/CrimeScreen";
 import { YouthScreens } from "../Youth/YouthScreens";
+import { WorkScreens } from "../Work/WorkScreens";
 
 export class WorkModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
@@ -59,11 +60,15 @@ export class WorkModelGenerator implements IViewModelGenerator {
             return arrayList;
         }
         // v0.27.0: every career lives in the Career Center; your current job shows at the top
-        if (personState.getJobState().getCurrentJob() != null) arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
+        if (personState.getJobState().getCurrentJob() != null) {
+            arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
+            for (const c of WorkScreens.jobCells(personState)) arrayList.add(c);   // v0.33.0: employer, effort, performance
+        }
         else arrayList.add(new ActionCellSingleViewModel(R.drawable.tab_briefcase, "No job right now",
             new TextLabelViewModel("Browse every career in the Career Center below: 67 careers in 10 groups.", null, false, false, null, null),
             ButtonViewModel.INSTANCE.getHidden(), null, null));
         if (celeb != null) arrayList.add(new SingleLabelCellViewModel("CelebrityWorkNote", new TextLabelViewModel(`Your ${celeb.title.toLowerCase()} career is part of Celebrity Life: open Lifepaths › Celebrity Life for auditions, songs, shows, fans and your team.`, null, false, false, null, null, 62, null)));
+        for (const c of WorkScreens.appsRow(personState)) arrayList.add(c);   // v0.33.0: applications and offers
         const retirement = Retirement.cell();
         if (retirement != null) arrayList.add(retirement);
         for (const c of Careers.centerCells(personState)) arrayList.add(c);
@@ -142,6 +147,9 @@ export class WorkModelGenerator implements IViewModelGenerator {
     }
     getWorkButtonsViewModel(): WorkButtonsViewModel {
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
+        // v0.33.0: one Go to Work button at your chosen effort
+        const go = WorkScreens.goToWorkButtons(personState);
+        if (go != null) return go;
         let workButtonType: WorkType = personState.getWorkButtonType();
         let arrayList: ArrayList = new ArrayList();
         for (const workAction of WorkAction.values()) {
