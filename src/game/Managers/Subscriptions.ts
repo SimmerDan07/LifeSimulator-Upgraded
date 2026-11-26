@@ -23,6 +23,9 @@ import { Modifiers } from "./Modifiers";
 import { MoneyState } from "./MoneyState";
 import { MoneyUpdateType } from "../Enums/MoneyUpdateType";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
+import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
+import { TextLabelViewModel } from "../Models/TextLabelViewModel";
+import { ButtonViewModel } from "../Models/ButtonViewModel";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 
 export interface SubscriptionDef {
@@ -34,13 +37,18 @@ export interface SubscriptionDef {
     minAge: number;
     requires?: string;
     blurb: string;
+    /** v0.33.0: the group it's listed under, who sees it, the job perk that covers it, and a family plan. */
+    group?: string;
+    show?: (p: any) => boolean;
+    covered?: string;
+    family?: boolean;
 }
 
 export const SUBSCRIPTIONS: SubscriptionDef[] = [
-    { id: "gym", title: "Gym Membership", image: R.drawable.health_workout, weekly: 50, mods: [2, 0, 0], minAge: 14, blurb: "Work out whenever you like." },
-    { id: "coach", title: "Gym Coach", image: R.drawable.icon_sub_coach, weekly: 150, mods: [3, 0, 0], minAge: 14, requires: "gym", blurb: "A personal trainer at your gym." },
-    { id: "therapist", title: "Therapist", image: R.drawable.health_psychologist, weekly: 200, mods: [0, 0, 4], minAge: 12, blurb: "A weekly session for your mental health." },
-    { id: "healthInsurance", title: "Health Insurance", image: R.drawable.health_doctorvisit, weekly: 100, mods: [0, 0, 0], minAge: 18, blurb: "Pays 70% of your medical bills (after any public healthcare)." },
+    { id: "gym", group: "Health & Self-Care", title: "Gym Membership", image: R.drawable.health_workout, weekly: 50, mods: [2, 0, 0], minAge: 14, covered: "gym", family: true, blurb: "Work out whenever you like." },
+    { id: "coach", group: "Health & Self-Care", title: "Gym Coach", image: R.drawable.icon_sub_coach, weekly: 150, mods: [3, 0, 0], minAge: 14, requires: "gym", blurb: "A personal trainer at your gym." },
+    { id: "therapist", group: "Health & Self-Care", title: "Therapist", image: R.drawable.health_psychologist, weekly: 200, mods: [0, 0, 4], minAge: 12, blurb: "A weekly session for your mental health." },
+    { id: "healthInsurance", group: "Health & Self-Care", title: "Health Insurance", image: R.drawable.health_doctorvisit, weekly: 100, mods: [0, 0, 0], minAge: 18, covered: "insurance", blurb: "Pays 70% of your medical bills (after any public healthcare)." },
 ];
 
 export const AUTO_SAVE_OPTIONS = [25, 50, 75, 80];
@@ -54,24 +62,48 @@ export const Subscriptions = {
     /** Active subscription ids (Player.subscriptions; undefined in older saves). */
     active(p: any = player()): string[] { return p.subscriptions ?? (p.subscriptions = []); },
     has(id: string, p: any = player()): boolean { return Subscriptions.active(p).includes(id); },
+    /** v0.33.0: a job perk pays for it ("Covered by your job"). Set by installWork. */
+    coverHook: null as ((perk: string, p: any) => boolean) | null,
+    covered(id: string, p: any = player()): boolean { const d = Subscriptions.def(id); return !!(d?.covered && Subscriptions.coverHook?.(d.covered, p)); },
+    /** Subscribed, or covered by your job: the benefit applies. */
+    on(id: string, p: any = player()): boolean { return Subscriptions.has(id, p) || Subscriptions.covered(id, p); },
+    family(id: string, p: any = player()): boolean { return Subscriptions.has(id, p) && (p.subFamily ?? []).includes(id); },
+    setFamily(id: string, on: boolean, p: any = player()) { const l: string[] = (p.subFamily ??= []); p.subFamily = on ? [...new Set([...l, id])] : l.filter((x) => x !== id); },
+    /** This week's price (price rises, family plans, the free first week, job cover). */
+    price(d: SubscriptionDef, p: any = player()): number {
+        let n = d.weekly * ((p.subPrice ?? {})[d.id] ?? 1);
+        if (Subscriptions.family(d.id, p)) n *= 1.5;
+        return Math.round(n);
+    },
+    charge(d: SubscriptionDef, p: any = player()): number {
+        if (Subscriptions.covered(d.id, p)) return 0;
+        if ((p.subTrial ?? {})[d.id] === Subscriptions.week(p)) return 0;
+        return Subscriptions.price(d, p);
+    },
+    priceText(d: SubscriptionDef, p: any = player()): string { return money(Subscriptions.price(d, p)); },
+    week(p: any): number { try { return p.getTrueAgeInWeeks(); } catch { return 0; } },
+    visible(d: SubscriptionDef, p: any = player()): boolean { return Subscriptions.has(d.id, p) || !d.show || d.show(p); },
     /** In jail, or (v0.25.2) a vampire lying collapsed: no gym, no coach, no therapist. */
     paused(p: any = player()): boolean { if (p?.vampire?.inTorpor) return true; try { return !!p.getCrimeState().getIsInJail(); } catch { return false; } },
-    weeklyTotal(p: any = player()): number { return Subscriptions.active(p).reduce((t, id) => t + (Subscriptions.def(id)?.weekly ?? 0), 0); },
+    weeklyTotal(p: any = player()): number { return Subscriptions.active(p).reduce((t, id) => { const d = Subscriptions.def(id); return t + (d ? Subscriptions.charge(d, p) : 0); }, 0); },
 
     /** Why you can't subscribe right now, or null. */
     blocked(d: SubscriptionDef, p: any = player()): string | null {
         if (p.getAgeInYears() < d.minAge) return `Must be at least ${d.minAge} years old`;
         if (d.requires && !Subscriptions.has(d.requires, p)) return `Needs a ${Subscriptions.def(d.requires).title}`;
         if (Subscriptions.paused(p)) return "Not while you're in jail";
-        if (p.getMoneyState().getCash().compareTo(BigInteger.valueOf(d.weekly)) < 0) return `You need ${money(d.weekly)} for the first week`;
+        if (Subscriptions.trialUsed(d.id, p) && p.getMoneyState().getCash().compareTo(BigInteger.valueOf(Subscriptions.price(d, p))) < 0) return `You need ${money(Subscriptions.price(d, p))} for the first week`;
         return null;
     },
     subscribe(id: string, p: any = player()): boolean {
         const d = Subscriptions.def(id);
         if (d == null || Subscriptions.has(id, p) || Subscriptions.blocked(d, p) != null) return false;
         Subscriptions.active(p).push(id);
+        // v0.33.0: the first week of each subscription is free, once per life
+        if (!Subscriptions.trialUsed(id, p)) { (p.subTrial ??= {})[id] = Subscriptions.week(p); }
         return true;
     },
+    trialUsed(id: string, p: any = player()): boolean { return (p.subTrial ?? {})[id] != null; },
     /** Cancel one (and anything that needs it). */
     cancel(id: string, p: any = player()): string[] {
         const gone = [id, ...SUBSCRIPTIONS.filter((d) => d.requires === id).map((d) => d.id)];
@@ -83,11 +115,11 @@ export const Subscriptions = {
     /** Weekly payments and benefits (called from Player.collectWeeklyValues, also used for the previews). */
     collectWeeklyValues(p: any) {
         if (Subscriptions.paused(p)) return;
-        for (const id of Subscriptions.active(p)) {
-            const d = Subscriptions.def(id);
-            if (d == null) continue;
-            MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.weekly), MoneyUpdateType.expense, d.title, null, 8, null);
-            p.getAttributeState().setDeltaValue(new Modifiers(d.mods[0], d.mods[1], d.mods[2]), d.title);
+        for (const d of SUBSCRIPTIONS) {
+            if (!Subscriptions.on(d.id, p)) continue;
+            const c = Subscriptions.has(d.id, p) ? Subscriptions.charge(d, p) : 0;
+            if (c > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(c), MoneyUpdateType.expense, d.title, null, 8, null);
+            if (d.mods.some((m) => m !== 0)) p.getAttributeState().setDeltaValue(new Modifiers(d.mods[0], d.mods[1], d.mods[2]), d.title);
         }
     },
     /** After each week: can't pay → everything is cancelled. */
@@ -99,6 +131,19 @@ export const Subscriptions = {
         try {
             AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Subscriptions Cancelled",
                 `You're out of money, so your subscriptions were cancelled: ${names}.`, R.drawable.redx, null, null, null, null, null, null, 504, null), false, 2, null);
+        } catch { /* no UI */ }
+    },
+
+    /** Family plans: switch plan or cancel. */
+    manage(d: SubscriptionDef, p: any = player()) {
+        const fam = Subscriptions.family(d.id, p);
+        try {
+            AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel(d.title,
+                fam ? `Family plan: ${Subscriptions.priceText(d, p)} a week, and your partner and kids enjoy it too.` : `Just you: ${Subscriptions.priceText(d, p)} a week. A family plan costs 50% more and brings your partner and kids closer.`, d.image, null, null,
+                new AlertActionViewModel(fam ? "Just me" : "Family plan", { invoke: () => { Subscriptions.setFamily(d.id, !fam, p); refreshUI(); return null; } }),
+                new AlertActionViewModel("Never mind", { invoke: () => null }),
+                (() => { const x = new ArrayList<AlertActionViewModel>(); x.add(new AlertActionViewModel("Cancel it", { invoke: () => { Subscriptions.cancel(d.id, p); refreshUI(); return null; } })); return x; })(),
+                AlertType.Alert, 0, null), false, 2, null);
         } catch { /* no UI */ }
     },
 
@@ -150,9 +195,22 @@ export const Subscriptions = {
         return [ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new AutoSaveCell() as any, null),
             ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new BillsCell() as any, null)];
     },
-    cells(): ActionCellSingleViewModel[] {
+    cells(): any[] {
         // v0.24.1: Automatic Savings and Pay Bills from Savings live on the Bank tab only
-        return [...SUBSCRIPTIONS.map((d) => ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new SubscriptionCell(d) as any, null))];
+        // v0.33.0: grouped, with the weekly total; ones that don't apply to you are hidden
+        const p = player();
+        const out: any[] = [];
+        const total = Subscriptions.weeklyTotal(p);
+        if (Subscriptions.active(p).length) out.push(new ActionCellSingleViewModel(R.drawable.hud_bank, `${Subscriptions.active(p).length} active: ${money(total)} a week`, new TextLabelViewModel("Cancel any time. A week in debt cancels them all.", null, false, false, null, null), ButtonViewModel.INSTANCE.getHidden(), null, null));
+        const groups: string[] = [];
+        for (const d of SUBSCRIPTIONS) { const g = d.group ?? "Health & Self-Care"; if (!groups.includes(g)) groups.push(g); }
+        for (const g of groups) {
+            const list = SUBSCRIPTIONS.filter((d) => (d.group ?? "Health & Self-Care") === g && Subscriptions.visible(d, p));
+            if (!list.length) continue;
+            out.push(new HeaderTitleViewModel(g));
+            for (const d of list) out.push(ActionCellSingleViewModel.INSTANCE.initWithActionDescriptor(new SubscriptionCell(d) as any, null));
+        }
+        return out;
     },
 };
 
@@ -162,12 +220,21 @@ class SubscriptionCell {
     on(): boolean { return Subscriptions.has(this.d.id); }
     getTitle(): string { return this.d.title; }
     getImageId(): any { return this.d.image; }
-    getCost(): BigInteger { return BigInteger.valueOf(this.on() ? 0 : this.d.weekly); }
+    covered(): boolean { return Subscriptions.covered(this.d.id); }
+    getCost(): BigInteger { return BigInteger.valueOf(this.on() || this.covered() || !Subscriptions.trialUsed(this.d.id) ? 0 : Subscriptions.price(this.d)); }
     getModifiers(): Modifiers { return new Modifiers(this.d.mods[0], this.d.mods[1], this.d.mods[2]); }
-    getActionTitle(): string { return this.on() ? "Cancel" : `${money(this.d.weekly)}/wk`; }
+    getActionTitle(): string {
+        if (this.covered() && !this.on()) return "Included";
+        if (this.on()) return this.d.family ? "Manage" : "Cancel";
+        return Subscriptions.trialUsed(this.d.id) ? `${Subscriptions.priceText(this.d)}/wk` : "Free Week";
+    }
     getAdditionalDescription(): string {
         const none = this.d.mods.every((m) => m === 0);
-        if (this.on()) return `Active${Subscriptions.paused() ? " (paused while you're in jail)" : ""} · ${money(this.d.weekly)} a week${none ? `. ${this.d.blurb}` : " · every week: "}`;
+        if (this.covered()) return `Covered by your job${none ? `. ${this.d.blurb}` : `. ${this.d.blurb} Every week: `}`;
+        const fam = Subscriptions.family(this.d.id) ? " (family plan)" : "";
+        const trial = !Subscriptions.trialUsed(this.d.id) ? ` First week free, then ${Subscriptions.priceText(this.d)} a week.` : "";
+        if (this.on()) return `Active${fam}${Subscriptions.paused() ? " (paused while you're in jail)" : ""} · ${Subscriptions.priceText(this.d)} a week${none ? `. ${this.d.blurb}` : " · every week: "}`;
+        if (trial) return none ? `${this.d.blurb}${trial}` : `${this.d.blurb}${trial} Every week: `;
         return none ? this.d.blurb : `${this.d.blurb} Every week: `;
     }
     getAgeRange(): any { return null; }
@@ -182,6 +249,8 @@ class SubscriptionCell {
         return b != null && !b.startsWith("You need") ? b : null;
     }
     action(p: any): void {
+        if (this.covered() && !this.on()) return;
+        if (this.on() && this.d.family) { Subscriptions.manage(this.d, p); return; }
         if (this.on()) Subscriptions.cancel(this.d.id, p);
         else Subscriptions.subscribe(this.d.id, p);
         refreshUI();

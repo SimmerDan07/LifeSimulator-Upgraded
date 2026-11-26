@@ -99,7 +99,7 @@ export const Illness = {
         if (inJail(p)) return 0;
         if (p.getAgeInYears() < 18 && atParents(p)) return 0;
         let share = HEALTHCARE[p.getCountry().name()] ?? 1;
-        if (Subscriptions.has("healthInsurance", p)) share *= 1 - INSURANCE_COVERS;
+        if (Subscriptions.on("healthInsurance", p)) share *= 1 - INSURANCE_COVERS;   // v0.33.0: or your job covers it
         return share;
     },
     price(t: TreatDef, p: any = player()): number { return Math.round(t.cost * Illness.payShare(p)); },
@@ -107,7 +107,7 @@ export const Illness = {
         if (inJail(p)) return "The prison infirmary treats you for free.";
         if (p.getAgeInYears() < 18 && atParents(p)) return "Your parents pay your medical bills.";
         const share = HEALTHCARE[p.getCountry().name()] ?? 1;
-        const ins = Subscriptions.has("healthInsurance", p);
+        const ins = Subscriptions.on("healthInsurance", p);
         if (share >= 1) return ins ? `No public healthcare in ${p.getCountry().getTitle()}, but your health insurance pays ${Math.round(INSURANCE_COVERS * 100)}% of every bill.` : `No public healthcare in ${p.getCountry().getTitle()}: you pay every bill. Health insurance (Profile › Subscriptions) pays ${Math.round(INSURANCE_COVERS * 100)}%.`;
         return `Public healthcare in ${p.getCountry().getTitle()} pays ${Math.round((1 - share) * 100)}% of every bill${ins ? `, and your insurance pays ${Math.round(INSURANCE_COVERS * 100)}% of the rest` : ""}.`;
     },

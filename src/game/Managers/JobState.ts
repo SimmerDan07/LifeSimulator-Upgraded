@@ -36,6 +36,7 @@ import { Youth } from "../Youth/Youth";
 import { Work } from "../Work/Work";
 import { Hiring } from "../Work/Hiring";
 import { CareerPath } from "../Work/CareerPath";
+import { Benefits } from "../Work/Benefits";
 import { WorkScreens } from "../Work/WorkScreens";
 
 export class JobState {
@@ -125,7 +126,7 @@ export class JobState {
         const effortName: string = Work.onWork(personState, workAction);
         let randomValue: number = state.getType().pay(state.getLevel()).getRandomValue() * payModifier * Vampire.onWork(personState, job) * Careers.payMultiplier(job, personState) * World.payMultiplier(personState, job);
         // v0.23.0 Automatic Savings: part of the paycheck can go straight to savings
-        Subscriptions.payCheck(JMath.toInt(randomValue), personState);
+        Subscriptions.payCheck(Benefits.payroll(personState, JMath.toInt(randomValue)), personState);   // v0.33.0: your 401(k) share first
         // v0.19.0 Celebrity Life: celebrity careers earn fans and skill
         Celebrity.onWork(personState, job, state.getLevel(), payModifier);
         // v0.26.0: the new careers (seasons, followers, on-the-job moments)

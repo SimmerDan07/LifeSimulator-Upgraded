@@ -44,7 +44,7 @@ const licensed = (p: any) => !!Youth.peek(p)?.license || p.getAgeInYears() >= 25
 
 export const HUSTLES: HustleDef[] = [
     { id: "rideshare", title: "Rideshare Driver", image: "work_uber", action: "Drive a Few Shifts", minAge: 18, pay: 220, mods: [0, -1, -1],
-        needs: (p) => (!owns(p, Possession.car) ? "Needs a car" : !licensed(p) ? "Needs a driver's licence" : null), boost: (p) => (CareerPath.hasCert("cdl", p) ? 0.3 : 0),
+        needs: (p) => (!owns(p, Possession.car) && !Work.hasPerk("car", p) ? "Needs a car" : !licensed(p) ? "Needs a driver's licence" : null), boost: (p) => (CareerPath.hasCert("cdl", p) ? 0.3 : 0),
         blurb: "Your car, your hours. Weekend nights pay best." },
     { id: "freelance", title: "Freelancer", image: "possession_computer_2", action: "Take a Gig", minAge: 16, pay: 260, mods: [0, 0, -1],
         needs: (p) => (Math.max(skill(p, "tech"), skill(p, "creative")) < 20 ? "Needs 20 Code or Creativity skill" : null),

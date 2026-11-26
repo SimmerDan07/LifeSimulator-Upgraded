@@ -163,6 +163,8 @@ export const Work = {
         for (const f of Work.payHooks) m *= f(p);
         return m * Work.state(p).raise;
     },
+    /** A coworking space makes remote days as good as the office (set by installWork). */
+    wfhFull: (_p: any): boolean => false,
     /** Pay multipliers from later stages (your career branch). */
     payHooks: [] as ((p: any) => number)[],
     /** Run after each week's work (career skills grow). */
@@ -173,6 +175,7 @@ export const Work = {
         if (!Work.enabled) return workAction?.name?.() ?? "normal";
         const legacy = workAction != null && workAction.name?.() !== "normal";
         const w = Work.state(p), e = Work.effort(p), emp = Work.employer(p);
+        (w as any).workedAt = Work.now(p);
         // the week's cost (vampires don't lose health to work)
         const vibe = emp ? VIBES[emp.vibe] : null;
         const [h, hap, san] = Work.weekMods(p);
@@ -180,7 +183,7 @@ export const Work = {
         // performance settles towards the effort's target
         const target = clamp((legacy ? effortDef(workAction.name() === "veryHard" ? "grind" : "hard").target : e.target) + (vibe?.target ?? 0) + Work.perfBonus(p), 0, 100);
         let step = (target - w.perf) * 0.12;
-        if (step > 0 && w.wfh) step *= 0.75;
+        if (step > 0 && w.wfh && !Work.wfhFull(p)) step *= 0.75;
         w.perf = clamp(w.perf + step, 0, 100);
         for (const f of Work.workHooks) { try { f(p, legacy ? effortDef(workAction.name() === "veryHard" ? "grind" : "hard") : e); } catch (err) { console.error(err); } }
         return legacy ? workAction.name() : e.overwork;

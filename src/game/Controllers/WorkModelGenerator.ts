@@ -76,6 +76,7 @@ export class WorkModelGenerator implements IViewModelGenerator {
             ButtonViewModel.INSTANCE.getHidden(), null, null));
         if (celeb != null) arrayList.add(new SingleLabelCellViewModel("CelebrityWorkNote", new TextLabelViewModel(`Your ${celeb.title.toLowerCase()} career is part of Celebrity Life: open Lifepaths › Celebrity Life for auditions, songs, shows, fans and your team.`, null, false, false, null, null, 62, null)));
         for (const c of WorkScreens.appsRow(personState)) arrayList.add(c);   // v0.33.0: applications and offers
+        for (const c of WorkScreens.retirementRow(personState)) arrayList.add(c);   // v0.33.0: benefits, 401(k), retirement
         const retirement = Retirement.cell();
         if (retirement != null) arrayList.add(retirement);
         for (const c of Careers.centerCells(personState)) arrayList.add(c);

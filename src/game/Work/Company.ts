@@ -67,6 +67,7 @@ let seq = 0;
 
 export const Companies = {
     managerWage: 1800,
+    careful: (_p: any): boolean => false,
     maxCompanies: 3,
     type(id: string): CompanyType { return COMPANY_TYPES.find((t) => t.id === id) ?? COMPANY_TYPES[0]; },
     all(p: any = player()): Company[] {
@@ -183,7 +184,8 @@ export const Companies = {
     events(c: Company, p: any) {
         if (c.public || !roll(0.03)) return;
         const t = Companies.type(c.type);
-        const ev = pick(["rival", "inspection", "viral", "theft", "supplier", "celebrity", "offer"]);
+        let ev = pick(["rival", "inspection", "viral", "theft", "supplier", "celebrity", "offer"]);
+        if ((ev === "theft" || ev === "supplier") && Companies.careful(p) && roll(0.5)) return;   // accounting software
         if (ev === "rival" && !c.rival) { c.rival = { name: pick(t.names.filter((n) => n !== c.name)) ?? "A new rival", until: Work.now(p) + rnd(26, 60) }; Work.say("A Rival Opens", `${c.rival.name} opened just down the street from ${c.name}. Customers are curious. (Fewer customers for a while; lower prices or better reviews win them back.)`, t.image); }
         else if (ev === "inspection") { const pass = c.stars + (c.quality - 1) * 0.5 + Math.random() > 3; if (pass) Work.say("Inspection", `The inspector gave ${c.name} a clean bill of health.`, t.image); else { take(p, 2000 * c.locations); c.stars = Math.max(1, c.stars - 0.4); Work.say("Inspection", `${c.name} failed an inspection: ${money(2000 * c.locations)} in fines, and the reviews took a hit.`, t.image); } }
         else if (ev === "viral") { c.hype += 0.5; c.stars = Math.min(5, c.stars + 0.3); Work.say("Gone Viral", `A glowing review of ${c.name} went viral. The line is out the door.`, t.image); }

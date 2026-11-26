@@ -60,7 +60,8 @@ export const CareerPath = {
         const b = CareerPath.activeBranch(p);
         if (b?.kind === "fame") { try { Celebrity.addFans(p, 150 + 60 * (Work.jobState(p)?.getLevel() ?? 1)); } catch { /* no fame */ } }
     },
-    courseCost(p: any = player()): number { const job = Work.job(p); return Math.round(200 + CareerPath.skill(Work.group(job), p) * 20); },
+    courseCost(p: any = player()): number { const job = Work.job(p); return Math.round((200 + CareerPath.skill(Work.group(job), p) * 20) * (CareerPath.courseDiscount(p) ? 0.5 : 1)); },
+    courseDiscount: (_p: any): boolean => false,
     courseLock(p: any = player()): string | null {
         if (Work.job(p) == null) return "Needs a job";
         if (CareerPath.skill(Work.group(Work.job(p)), p) >= 100) return "You know it all";

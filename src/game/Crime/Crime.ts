@@ -71,6 +71,7 @@ export const RECORD_YEARS = 7;
 export const MIN_AGE = 13;
 
 export const Crime = {
+    sentenceHooks: [] as ((p: any) => number)[],
     // ------------------------------------------------------------------ state
     peek(p: any = player()): CrimeData | null { return p?.crime ?? null; },
     state(p: any = player()): CrimeData {
@@ -188,6 +189,7 @@ export const Crime = {
         let weeks = 0;
         all.forEach((c, i) => { weeks += rnd(c.sentence[0], c.sentence[1]) * (i === 0 ? 1 : 0.5); });
         weeks *= Crime.justice(p) * (juvenile ? 0.5 : 1) * (1 + Math.min(1, priors * 0.25));
+        for (const h of Crime.sentenceHooks) weeks *= h(p);   // v0.33.0: a lawyer on retainer
         weeks = Math.min(LIFE_SENTENCE, Math.round(weeks));
         const violent = all.some((c) => c.violent);
         // the same crime several times reads "burgle a house (3 counts)"

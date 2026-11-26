@@ -1,5 +1,6 @@
 // AUTO-GENERATED from decompiled Life Simulator code by j2ts.py — edit freely.
 /* eslint-disable */
+import { WorkScreens } from "../Work/WorkScreens";
 import { ArrayList, Integer, R, SpannableStringBuilder } from "../runtime";
 import { Illness } from "../Health/Illness";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
@@ -39,6 +40,7 @@ export class HealthModelGenerator implements IViewModelGenerator {
         arrayList.add(singleLabelCellViewModel);
         arrayList.add(leftRightCellViewModel);
         for (const c of Illness.cells(personState)) arrayList.add(c);   // v0.28.0 illnesses
+        for (const c of WorkScreens.selfCareCells(personState)) arrayList.add(c);   // v0.33.0 self-care
         arrayList.add(new HeaderTitleViewModel("Treatments"));
         for (const healthEvent of HealthEvent.INSTANCE.eventsForPlayer(personState)) {
             arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, healthEvent, null, 2, null));

@@ -59,8 +59,12 @@ export const Retirement = {
             const share = Math.min(Retirement.maxShare, Retirement.sharePerYear * Retirement.yearsIn(st));
             amount = Math.max(amount, Math.round(pay * share));
         }
+        // v0.33.0: your 401(k) and a pension employer add to it
+        try { amount += Retirement.extraHook?.(p) ?? 0; } catch { /* ignore */ }
         return Math.max(amount, Retirement.pension(p));
     },
+    extraHook: null as ((p: any) => number) | null,
+    retireHooks: [] as ((p: any) => void)[],
 
     money(n: number): string { return ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(n)), true); },
 
@@ -103,6 +107,7 @@ export const Retirement = {
         const p = GameStateManager.INSTANCE.getPersonState();
         const pension = Retirement.pensionIfRetiredNow(p);
         const job = p.getJobState().getCurrentJobState();
+        for (const h of Retirement.retireHooks) { try { h(p); } catch { /* ignore */ } }
         p.retired = true;
         p.pensionWeekly = pension;
         p.retiredFrom = job != null ? job.getJobTitle() : null;

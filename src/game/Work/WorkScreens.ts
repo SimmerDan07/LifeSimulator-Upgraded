@@ -9,7 +9,7 @@ import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
 import { WorkButtonsViewModel } from "../Models/WorkButtonsViewModel";
 import { WorkAction } from "../Enums/WorkAction";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
-import { LifeActionDef, LifeActions } from "../Lifepaths/Vampire";
+import { LifeActionDef, LifeActions, Vampire } from "../Lifepaths/Vampire";
 import { Work, money } from "./Work";
 import { EFFORTS, VIBES, PERKS, PROMOTION_PERF, ratingOf, SKIP_INTERVIEW } from "./WorkData";
 import { Hiring, Application } from "./Hiring";
@@ -17,6 +17,9 @@ import { Workplace, BOSS_TYPES } from "./Workplace";
 import { CareerPath } from "./CareerPath";
 import { Hustles, HUSTLES, HUSTLE_LEVELS } from "./Hustles";
 import { Companies, COMPANY_TYPES, QUALITY, PRICES, MARKETING, Company } from "./Company";
+import { Benefits, K401_OPTIONS } from "./Benefits";
+import { SelfCare, SLEEP, QUICK_CARE, CARE, GOALS } from "./SelfCare";
+import { Retirement } from "../Managers/Retirement";
 import { SKILLS, BRANCH_KINDS, CERTS } from "./WorkData";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { Utils } from "../Utils/Utils";
@@ -322,10 +325,73 @@ function companyScreen(id: string, p: any): any[] {
     return out;
 }
 
+// ================================================================== retirement & benefits
+export function retirementRow(p: any = player()): any[] {
+    if (!Work.enabled || p.getAgeInYears() < 18) return [];
+    const b = Benefits.state(p);
+    if (Work.job(p) == null && b.balance < 1 && !Retirement.isRetired(p)) return [];
+    return [btn("achievement_old", "Benefits & 401(k)", `${Work.job(p) ? `Paid leave left: ${Math.floor(Benefits.leaveLeft(p))} of ${Benefits.leaveWeeks(p)} weeks. ` : ""}401(k): ${money(b.balance)}${b.pct ? ` (${b.pct}% of pay)` : ""}.\n`, "Open", () => navigate("work-retirement"))];
+}
+function retirementScreen(p: any): any[] {
+    const out: any[] = [];
+    const b = Benefits.state(p);
+    if (Retirement.isRetired(p)) {
+        out.push(info("achievement_old", "Retired", `Pension: ${money(Retirement.pension(p))} a week, for life.\n`));
+        out.push(new HeaderTitleViewModel("Retired Life"));
+        const vl = Benefits.volunteerLock(p), cl = Benefits.consultLock(p);
+        out.push(btn("family", "Volunteer", "+3 happiness, +2 sanity. Once a week.\n", vl ?? "Go", () => Work.say("Volunteering", Benefits.volunteer(p), "family"), vl == null));
+        out.push(btn("tab_briefcase", "Consult in Your Old Field", "A few days' work for a good fee. Every 4 weeks.\n", cl ?? "Go", () => Work.say("Consulting", Benefits.consult(p), "tab_briefcase"), cl == null));
+        out.push(note("WorkRetiredHustles", "Want more? Side hustles work in retirement too, and taking a job brings you out of it."));
+        return out;
+    }
+    const job = Work.job(p);
+    if (job) {
+        out.push(new HeaderTitleViewModel("Your Benefits"));
+        const e = Work.employer(p)!;
+        out.push(info("tab_briefcase", e.name, `Paid leave: ${Math.floor(Benefits.leaveLeft(p))} of ${Benefits.leaveWeeks(p)} weeks left this year (a week you don't go to work uses it and still pays).${b.parental ? `\nParental leave: ${b.parental} paid weeks off left.` : ""}\n${e.perks.length ? `Perks: ${e.perks.map((k) => (PERKS as any)[k].title).join(", ")}.` : "No other perks."}\n`));
+    }
+    out.push(new HeaderTitleViewModel("401(k)"));
+    const match = Benefits.matchPct(p);
+    out.push(btn("bank_stocks", `401(k): ${money(b.balance)}`, `You put in ${b.pct}% of every paycheck${match ? `, and your employer adds ${match}%` : Work.hasPerk("match", p) ? " (your employer matches half, up to 6%)" : ""}. This year's return: ${Math.round(b.ret * 100)}%.\nLocked until ${Retirement.minAge} (taking it out early costs 10%).\n`, "Change %", () =>
+        Work.menu("401(k) Contributions", "How much of every paycheck goes into your 401(k)?", "bank_stocks", K401_OPTIONS.map((n) => [`${n}%${n === b.pct ? " (now)" : ""}`, () => { Benefits.setPct(n, p); refresh(); return ""; }] as [string, () => string]))));
+    if (b.balance >= 1) out.push(btn("bank_withdrawal", "Cash Out Your 401(k)", `${Benefits.locked(p) ? `Before ${Retirement.minAge}: a 10% penalty. ` : ""}You'd get ${money(b.balance * (Benefits.locked(p) ? 0.9 : 1))}.\n`, "Cash Out", () =>
+        Work.menu("Cash Out?", "All of it, now.", "bank_withdrawal", [["Cash out", () => { const r = Benefits.withdraw(p); refresh(); return r; }], ["Keep it growing", () => ""]])));
+    out.push(new HeaderTitleViewModel("When You Retire"));
+    const now = Retirement.pensionIfRetiredNow(p);
+    const later = Math.round(now + Benefits.payout(p, Benefits.projected(p, 5)) - Benefits.payout(p) + (job ? Workplace.weeklyPay(p) * 0.02 * 5 : 0));
+    out.push(info("achievement_old", "Retirement Income", `If you retired now: about ${money(now)} a week.\nIn 5 years: about ${money(later)} a week.\nThat's your pension (2% of pay per year in your career, up to 70%; at least ${money(Retirement.basicPension)}) plus 6% a year of your 401(k)${Work.hasPerk("pension", p) ? ", plus your employer's pension" : ""}.\n${p.getAgeInYears() >= Retirement.minAge ? "You can retire from the Work tab." : `You can retire from ${Retirement.minAge}.`}\n`));
+    return out;
+}
+
+// ================================================================== self-care (Health tab)
+export function selfCareCells(p: any = player()): any[] {
+    if (!Work.enabled || p.getAgeInYears() < 3) return [];
+    const out: any[] = [new HeaderTitleViewModel("Self-Care")];
+    if (!Vampire.isVampire(p) && p.getAgeInYears() >= 10) {
+        const d = SelfCare.sleepDef(p);
+        out.push(btn("health_meditation", `Sleep: ${d.title}`, `${d.blurb}${SelfCare.sleep(p) !== SelfCare.state(p).sleep ? " (Insomnia keeps you up until it's treated.)" : ""}\n`, "Change", () =>
+            Work.menu("How Much Do You Sleep?", SLEEP.map((x) => `${x.title}: ${x.blurb}`).join("\n\n"), "health_meditation", SLEEP.map((x) => [x.title.replace(/ \(.*\)/, ""), () => { SelfCare.setSleep(x.id, p); refresh(); return ""; }] as [string, () => string]))));
+    }
+    for (const c of LifeActions.cells(QUICK_CARE, p)) out.push(c);
+    const care = LifeActions.cells(CARE, p);
+    if (care.length) { out.push(new HeaderTitleViewModel("Care")); for (const c of care) out.push(c); }
+    if (p.getAgeInYears() >= 10) {
+        out.push(new HeaderTitleViewModel("Self-Care Goals"));
+        const s = SelfCare.state(p);
+        for (const g of GOALS) {
+            const on = s.goals.includes(g.id), done = s.done.includes(g.id);
+            const need = SelfCare.goalNeed(g, p);
+            out.push(btn("skill_selfimprovement", g.title, done ? `Done: the ${g.badge} badge.\n` : on ? `${SelfCare.goalProgress(g, p)} of ${need}. Missing a week just pauses it.\n` : `Reward: a small boost and the ${g.badge} badge.\n`,
+                done ? "Done" : on ? "Drop" : "Start", () => (on ? SelfCare.dropGoal(g.id, p) : SelfCare.startGoal(g.id, p)), !done));
+        }
+    }
+    return out;
+}
+
 export function screenTitle(key: string): string {
     if (key.startsWith("work-company:")) { const c = Companies.get(key.slice(13)); return c ? c.name : "Company"; }
     if (key.startsWith("work-openings:")) { const j = Hiring.jobOf(key.slice(14)); return j ? `${Hiring.careerName(j)} Openings` : "Openings"; }
-    return ({ "work-apps": "Job Applications", "work-resume": "Résumé", "work-certs": "Certifications", "work-hustles": "Side Hustles", "work-start-company": "Start a Company" } as any)[key] ?? "Work";
+    return ({ "work-apps": "Job Applications", "work-resume": "Résumé", "work-certs": "Certifications", "work-hustles": "Side Hustles", "work-start-company": "Start a Company", "work-retirement": "Benefits & Retirement" } as any)[key] ?? "Work";
 }
 export function screen(key: string, p: any = player()): any[] {
     if (key.startsWith("work-openings:")) return openingsScreen(key.slice(14), p);
@@ -333,6 +399,7 @@ export function screen(key: string, p: any = player()): any[] {
     if (key === "work-resume") return resumeScreen(p);
     if (key === "work-certs") return certsScreen(p);
     if (key === "work-hustles") return hustlesScreen(p);
+    if (key === "work-retirement") return retirementScreen(p);
     if (key === "work-start-company") return startScreen(p);
     if (key.startsWith("work-company:")) return companyScreen(key.slice(13), p);
     for (const h of Work.screenHooks) { const r = h(key, p); if (r) return r; }
@@ -344,4 +411,4 @@ export function profileCells(p: any = player()): any[] {
     return [btn("tab_briefcase", "Résumé", "Your Hire Score, job history and references.\n", "Open", () => navigate("work-resume"))];
 }
 
-export const WorkScreens = { hustleCells, companyCells, PATH_ACTIONS, unemployedCells, jobCells, goToWorkButtons, JOB_ACTIONS, appsRow, screen, screenTitle, profileCells, navigate };
+export const WorkScreens = { retirementRow, selfCareCells, hustleCells, companyCells, PATH_ACTIONS, unemployedCells, jobCells, goToWorkButtons, JOB_ACTIONS, appsRow, screen, screenTitle, profileCells, navigate };
