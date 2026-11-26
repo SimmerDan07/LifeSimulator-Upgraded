@@ -143,6 +143,7 @@ export const Relationships = {
         const rate = RelationshipProgressStatus.INSTANCE.getWeeklyDeteriorationRate();
         if (rate >= 0) return 0;
         const kind = Relationships.kindOf(person);
+        if (kind === "coworker") return 0;   // v0.33.0: you see them every week at work
         if (kind === "partner" && Vampire.bonded(p)) return 0;   // v0.17.0 Eternal Bond: you never drift apart
         if (kind === "parent" || kind === "sibling" || RELATIVE_KINDS.includes(kind)) {
             if (p.getAgeInYears() < 18) return 0;
@@ -372,6 +373,7 @@ export const Relationships = {
                 s.isAlive = false;
                 const msg = `Your ${s.getTitle().toLowerCase()} ${s.getFullName()} has died at the age of ${s.getAgeInYears()}.`;
                 if (s.kind === "ex") c.remove(s.id);
+                else if (s.kind === "coworker") { c.remove(s.id); Relationships.banner("Sad News at Work", msg.replace(`Your ${s.getTitle().toLowerCase()}`, `Your ${s.getTitle().toLowerCase()}`)); continue; }
                 else if (s.kind === "auntUncle" || s.kind === "cousin" || s.kind === "nibling") Relationships.banner("Family Loss", msg, R.drawable.love_funeral);
                 else Relationships.alert(s.kind === "friend" ? "A Friend Passed Away" : "Family Loss", msg, R.drawable.love_funeral);
                 if (s.kind === "friend") c.remove(s.id);

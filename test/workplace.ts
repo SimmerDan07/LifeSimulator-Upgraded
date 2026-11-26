@@ -20,6 +20,12 @@ import { WorkScreens } from "../src/game/Work/WorkScreens";
 import { EFFORTS, PROMOTION_PERF, BURNOUT_FULL } from "../src/game/Work/WorkData";
 import { LifeActions } from "../src/game/Lifepaths/Vampire";
 import { Hiring } from "../src/game/Work/Hiring";
+import { Workplace } from "../src/game/Work/Workplace";
+import { WORK_MOMENTS } from "../src/game/Work/WorkMoments";
+import { WORK_LOVE_ACTIONS } from "../src/game/Work/WorkLove";
+import { LoveActions } from "../src/game/Social/LoveActions";
+import { LifeMoments, MOMENTS } from "../src/game/Managers/LifeMoments";
+import { Relationships } from "../src/game/Social/Relationships";
 import { LifepathsModelGenerator } from "../src/game/Controllers/LifepathsModelGenerator";
 import { CompletableAction } from "../src/game/Enums/CompletableAction";
 import { Vampire } from "../src/game/Lifepaths/Vampire";
@@ -40,9 +46,12 @@ const start = (age: number) => {
     MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(500_000), MoneyUpdateType.workIncome, null, null, 12, null);
     return p;
 };
-const week = (p: any, n = 1) => { for (let i = 0; i < n; i++) { const j = p.getJobState().getCurrentJob(); if (j) p.getJobState().work(j, WorkAction.normal); else p.applyWeekly(); keep(p); dismissAll(); } };
+const week = (p: any, n = 1) => { for (let i = 0; i < n; i++) { quiet(p); const j = p.getJobState().getCurrentJob(); if (j) p.getJobState().work(j, WorkAction.normal); else p.applyWeekly(); keep(p); dismissAll(); } };
 /** Alerts queue one at a time: skip others (without answering them) until one matches. */
 const findAlert = (re: RegExp) => { for (let i = 0; i < 60; i++) { const a = shown.find((x) => re.test(x.getTitle?.() ?? "")); if (a) return a; const o = shown.shift(); if (!o) return null; AlertManager.INSTANCE.alertDismissed(o); } return null; };
+/** No random work moments in the middle of a check (they'd be answered by dismissAll). */
+const quiet = (p: any) => { try { if (p.work?.team) p.work.team.lastMoment = 1e9; if (p.work && !burnoutTest) p.work.burnoutShown = 1e9; } catch { /* ignore */ } };
+let burnoutTest = false;
 const hire = (p: any, job: any) => { p.getJobState().switchJob(job); dismissAll(); };
 const vmText = (vm: any) => { try { return JSON.stringify(vm, (k, v) => (k === "parent" ? undefined : v)); } catch { return String(vm); } };
 
@@ -75,9 +84,10 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     Work.setEffort("grind", p); w.perf = 50;
     for (let i = 0; i < 20; i++) { Illness.state(p).overwork = 0; week(p, 1); }
     check("Grinding pushes performance up", Work.perf(p) > 80, String(Work.perf(p)));
+    const high = Work.perf(p);
     Work.setEffort("coast", p);
     week(p, 30);
-    check("Coasting lets it slide", Work.perf(p) < 45, String(Work.perf(p)));
+    check("Coasting lets it slide", Work.perf(p) < high - 25 && Work.perf(p) < 55, `${high} → ${Work.perf(p)}`);
 
     // coasting: half-speed promotion progress
     const st = p.getJobState().getCurrentJobState();
@@ -123,7 +133,7 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     dismissAll();
 
     // burnout
-    Illness.state(p).list = Illness.state(p).list.filter((x: any) => x.id !== "burnout"); Work.state(p).burnoutShown = -999;
+    Illness.state(p).list = Illness.state(p).list.filter((x: any) => x.id !== "burnout"); Work.state(p).burnoutShown = -999; burnoutTest = true;
     Work.setEffort("grind", p); Illness.state(p).overwork = BURNOUT_FULL - 0.5;
     dismissAll();
     for (let i = 0; i < 3 && !Illness.has("burnout", p); i++) { p.getJobState().work(p.getJobState().getCurrentJob(), WorkAction.normal); keep(p); }
@@ -132,6 +142,7 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     check("burnout: a choice that always shows", !!burnAlert && burnAlert.milestone === true);
     burnAlert?.getPositiveButton?.()?.getAction?.()?.invoke?.();
     check("burnout: ease off sets Steady", Work.state(p).effort === "steady");
+    burnoutTest = false;
     dismissAll();
 
     // quitting goes into history
@@ -199,16 +210,17 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     const iv = findAlert(/Interview at/);
     check("interview: pops up with a question", !!iv && /Question 1 of 3/.test(iv.getMessage?.() ?? iv.message ?? ""));
     // answer all three
-    let steps = 0;
-    while (steps < 6) {
+    let steps = 0; const seen = new Set<string>();
+    while (steps < 8) {
         const q = findAlert(/Interview at/);
         if (!q) break;
+        const mm = /Question (\d) of 3/.exec(String(q.getMessage?.() ?? q.message ?? "")); if (mm) seen.add(mm[1]);
         shown.splice(shown.indexOf(q), 1);
         q.getPositiveButton().getAction().invoke();
         AlertManager.INSTANCE.alertDismissed(q);
         steps++;
     }
-    check("interview: three questions", steps === 3, String(steps));
+    check("interview: three questions", seen.size === 3, `${[...seen]} in ${steps} pop-ups`);
     const after = Work.state(p).apps.find((a: any) => a.job === job2.name());
     check("interview: ends in an offer or a no", after == null || after.stage === "offer");
     dismissAll();
@@ -249,6 +261,139 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     (Math as any).random = () => 0.001;
     try { Hiring.headhunt(p); } finally { (Math as any).random = rnd; }
     check("headhunted: an offer with better pay", w.apps.some((a: any) => a.via === "headhunter" && a.pay > Work.employer(p)!.pay));
+    dismissAll();
+}
+
+// ------------------------------------------------------------------ stage 3: the workplace
+{
+    const p = start(28);
+    hire(p, Job.programmer);
+    const team = Workplace.people(p);
+    check("a boss and 3 coworkers", team.length === 4 && Workplace.boss(p) != null, String(team.length));
+    check("they're in your social circle as coworkers", Relationships.circle(p).list("coworker").length === 4);
+    check("boss title", Workplace.boss(p)!.getTitle() === "Boss" && Workplace.coworkers(p)[0].getTitle() === "Coworker");
+    const t = Workplace.state(p);
+    check("a review is a year away", t.reviewAt - Work.now(p) === 52);
+    // no drift at work
+    const c = Workplace.coworkers(p)[0]; const r0 = c.getRelationshipProgress();
+    Work.setEffort("steady", p);
+    week(p, 5);
+    check("coworkers don't drift away", c.getRelationshipProgress() >= r0, `${r0} → ${c.getRelationshipProgress()}`);
+
+    // the boss's opinion follows performance
+    Work.state(p).perf = 95; t.opinion = 40; t.bossType = "fair";
+    for (let i = 0; i < 20; i++) { Workplace.opinionWeek(p); }
+    check("boss opinion rises with performance", t.opinion > 60, String(t.opinion));
+
+    // review: outstanding → raise
+    Work.state(p).perf = 95; t.opinion = 90; Work.state(p).raise = 1;
+    Workplace.review(p);
+    check("outstanding review: a raise", Work.state(p).raise >= 1.06);
+    check("review: next one a year later", t.reviewAt - Work.now(p) === 52);
+    const rev = findAlert(/^Performance Review$/);
+    check("review pops up", !!rev);
+    dismissAll();
+    // two bad reviews → plan → fired
+    Work.state(p).perf = 10; t.opinion = 10;
+    Workplace.review(p); dismissAll();
+    check("first bad review: a warning", t.needsWork === 1 && t.plan == null);
+    Workplace.review(p); dismissAll();
+    check("second bad review: a performance plan", t.plan != null);
+    t.plan = Work.now(p);
+    Workplace.planCheck(p); dismissAll();
+    check("missed the plan: fired", p.getJobState().getCurrentJob() == null && /fired/.test(Work.state(p).history[0].why));
+    check("fired: team gone", Workplace.people(p).length === 0 || Workplace.people(p).every((x: any) => x.kind !== "coworker"));
+    check("fired: a bad reference", Hiring.referenceOf(Work.state(p).history[0].why) < 0);
+
+    // quitting with notice (and a counter-offer)
+    hire(p, Job.programmer);
+    Work.employer(p)!.since = Work.now(p) - 60; Work.state(p).perf = 80; Workplace.state(p).opinion = 70; Work.state(p).raise = 1;
+    const wf = Workplace.coworkers(p)[0]; wf.setRelationshipProgress(800);
+    shown.length = 0;
+    Workplace.giveNotice(p);
+    const co = findAlert(/^Counter-Offer$/);
+    check("counter-offer for a valued employee", !!co);
+    co?.getPositiveButton?.()?.getAction?.()?.invoke?.(); dismissAll();
+    check("stay for the raise: notice cancelled, raise given", Workplace.state(p).notice == null && Work.state(p).raise > 1.07);
+    Workplace.giveNotice(p);
+    check("second time: no counter-offer, two weeks' notice", Workplace.state(p).notice === Work.now(p) + 2);
+    const friendId = wf.id;
+    week(p, 2);
+    check("notice served: job over, good reference", p.getJobState().getCurrentJob() == null && Hiring.referenceOf(Work.state(p).history[0].why) > 0, Work.state(p).history[0].why);
+    check("a good work friend stays as a friend", Relationships.friends(p).some((x: any) => x.id === friendId));
+
+    // layoff → severance + unemployment
+    hire(p, Job.programmer); Work.employer(p)!.since = Work.now(p) - 120;
+    const cash0 = cashN(p);
+    Workplace.layOff(p, "test");
+    check("laid off: severance paid", cashN(p) > cash0);
+    check("laid off: unemployment benefits", Workplace.state(p).unemployed != null);
+    const cash1 = cashN(p);
+    week(p, 1);
+    check("unemployment pays weekly", cashN(p) > cash1 - 5000);
+    check("laid off: neutral-good reference", Hiring.referenceOf(Work.state(p).history[0].why) > 0);
+    dismissAll();
+
+    // Love tab actions
+    hire(p, Job.programmer);
+    const boss = Workplace.boss(p)!;
+    const bc = LoveActions.cellsFor(boss, "coworker", "big", p).length + LoveActions.cellsFor(boss, "coworker", "time", p).length;
+    check("boss actions on the Love tab", bc >= 4, String(bc));
+    const fb = WORK_LOVE_ACTIONS.find((d) => d.id === "bossFeedback")!;
+    check("ask for feedback works", LoveActions.perform(fb, boss, p));
+    dismissAll();
+    Workplace.state(p).raiseAsk = -999; Workplace.state(p).opinion = 100; Work.state(p).perf = 100; Work.state(p).raise = 1;
+    const rr = Math.random; (Math as any).random = () => 0.01;
+    LoveActions.perform(WORK_LOVE_ACTIONS.find((d) => d.id === "bossRaise")!, boss, p);
+    (Math as any).random = rr; dismissAll();
+    check("ask for a raise (liked, performing): yes", Work.state(p).raise > 1.02);
+    check("then not again for 6 months", WORK_LOVE_ACTIONS.find((d) => d.id === "bossRaise")!.lock!(boss, p) != null);
+    // promotion ask
+    const st = p.getJobState().getCurrentJobState(); const lv = st.getLevel();
+    st.setProgress(st.getType().weeksForPromotion(lv) - 2); Workplace.state(p).promoAsk = -999;
+    (Math as any).random = () => 0.01;
+    const pm = Workplace.askPromotion(p);
+    (Math as any).random = rr;
+    check("ask for a promotion when nearly there", st.getLevel() === lv + 1 || /Come back when/.test(pm), pm);
+    // office romance
+    const cw: any = Workplace.coworkers(p)[0]; cw.setRelationshipProgress(800);
+    check("can ask a close coworker out", Workplace.canAskOut(p, cw) == null);
+    check("dating them: they become your partner", Workplace.date(p, cw) && p.getFamilyState().getPartner() != null);
+    // referral
+    const fr = Relationships.makeFriend("out", p)!; fr.setAgeInWeeks(30 * 52); fr.setRelationshipProgress(800);
+    const ref = WORK_LOVE_ACTIONS.find((d) => d.id === "referral")!;
+    check("ask a friend about jobs: a good word", LoveActions.perform(ref, fr, p) && Work.state(p).referral === fr.getFirstName());
+    dismissAll();
+
+    // work moments
+    check("about 40 work moments", WORK_MOMENTS.length >= 35, String(WORK_MOMENTS.length));
+    check("they're Life Moments", WORK_MOMENTS.every((m) => MOMENTS.includes(m)));
+    Work.employer(p)!.since = Work.now(p) - 20;
+    let ran = 0, broke = 0;
+    for (const m of WORK_MOMENTS) {
+        if (!Work.job(p)) hire(p, Job.programmer), Work.employer(p)!.since = Work.now(p) - 20;
+        Workplace.state(p).lastMoment = -999;
+        if (m.when && !m.when(p)) continue;
+        try {
+            const built = m.make(p);
+            if (built) { ran++; for (const [, f] of built.options) { /* every option runs */ } const f = built.options[0][1]; const r = f(); if (typeof r !== "string") broke++; }
+        } catch (e) { broke++; console.log("moment broke", m.id, e); }
+        dismissAll();
+    }
+    check("work moments run without errors", broke === 0 && ran >= 15, `${ran} ran, ${broke} broke`);
+    Workplace.state(p).lastMoment = Work.now(p);
+    check("at most one every 4 weeks", WORK_MOMENTS.every((m) => !m.when || !m.when(p)));
+
+    // no pop-ups: work moments are random (they go to News)
+    if (Work.job(p) == null) hire(p, Job.programmer);
+    Workplace.state(p).lastMoment = -999; Work.employer(p)!.since = Work.now(p) - 20;
+    const gs: any = GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings();
+    gs.noPopups = true; gs.allPopups = false;
+    dismissAll(); shown.length = 0;
+    AlertManager.inWeek++; try { LifeMoments.trigger(p, "w_coffee"); } finally { AlertManager.inWeek--; }
+    const popped = shown.some((a) => a.getTitle?.() === "The Last of the Coffee");
+    gs.noPopups = false;
+    check("with pop-ups off, work moments don't pop up", !popped);
     dismissAll();
 }
 

@@ -96,6 +96,9 @@ export const WORK_ICONS: { name: string; fallback: string; where: string; row: s
     { name: "icon_work_effort", fallback: "tab_briefcase", where: "Work › Your Job", row: "Effort" },
     { name: "icon_work_wfh", fallback: "possession_computer_2", where: "Work › Your Job", row: "Work from Home" },
     { name: "icon_work_allnighter", fallback: "work_data_entry", where: "Work › Your Job", row: "Pull an All-nighter" },
+    { name: "icon_work_quit", fallback: "vacation_take_week_off", where: "Work › Your Job", row: "Quit Your Job" },
+    { name: "icon_work_review", fallback: "work_lawyer", where: "Work › Reviews; Love › Work", row: "Performance Review, Feedback" },
+    { name: "icon_work_fired", fallback: "health_low", where: "Work", row: "Fired / Laid Off" },
 ];
 
 // ------------------------------------------------------------------ hiring (stage 2)

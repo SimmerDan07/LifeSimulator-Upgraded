@@ -13,7 +13,9 @@ import { RelationshipProgressStatus } from "../Enums/RelationshipProgressStatus"
 
 export type SocialKind = "sibling" | "friend" | "ex"
     // v0.17.0 extended family
-    | "grandparent" | "auntUncle" | "cousin" | "nibling" | "grandchild" | "greatGrandchild";
+    | "grandparent" | "auntUncle" | "cousin" | "nibling" | "grandchild" | "greatGrandchild"
+    // v0.33.0: your boss and coworkers (workRole says which)
+    | "coworker";
 /** The extended family kinds (v0.17.0). */
 export const RELATIVE_KINDS = ["grandparent", "auntUncle", "cousin", "nibling", "grandchild", "greatGrandchild"];
 
@@ -50,6 +52,9 @@ export class SocialPerson {
     bornWeek: number = null;
     /** v0.18.0: head style, skin tone and hair color (see Appearance). */
     appearance: { style: number; skin: number; hair: number } = null;
+    /** v0.33.0 coworkers: "boss", "rival", "friend", "gossip", "slacker" or "star"; a boss's style. */
+    workRole: string = undefined;
+    bossType: string = undefined;
 
     static make(kind: SocialKind, sex: Sex, lastName: string | null, ageInWeeks: number): SocialPerson {
         const p = new SocialPerson();
@@ -95,6 +100,7 @@ export class SocialPerson {
     getTitle(): string {
         const male = this.getSex() === Sex.male;
         if (this.kind === "sibling") return male ? "Brother" : "Sister";
+        if (this.kind === "coworker") return this.workRole === "boss" ? "Boss" : "Coworker";
         if (this.kind === "grandparent") return male ? "Grandfather" : "Grandmother";
         if (this.kind === "auntUncle") return male ? "Uncle" : "Aunt";
         if (this.kind === "cousin") return "Cousin";

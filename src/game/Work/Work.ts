@@ -50,6 +50,8 @@ export interface WorkState {
     openings: Record<string, { week: number; list: any[] }>;
     apps: any[];
     referral: string | null;
+    /** Stage 3: the boss, coworkers, reviews (Workplace.ts). */
+    team?: any;
 }
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
@@ -63,6 +65,8 @@ const refresh = () => { try { const f = GameStateManager.INSTANCE.getMainGameFra
 export const Work = {
     enabled: true,
     hooks: {} as { onLeft?: (p: any, why: string) => void },
+    /** Run when a new job starts (the workplace builds your team). */
+    hireHooks: [] as ((p: any) => void)[],
     /** The employer of the offer you accepted, picked up by JobState.switchJob. */
     pendingEmployer: undefined as Employer | undefined,
 
@@ -105,6 +109,7 @@ export const Work = {
         if (w.employer == null || w.employer.job !== job.name()) {
             if (w.employer) Work.left(p, "moved on");
             w.employer = Work.newEmployer(job, p); w.raise = 1; w.perf = 50; w.frac = 0; w.wfh = false;
+            for (const f of Work.hireHooks) { try { f(p); } catch (e) { console.error(e); } }
         }
         return w.employer;
     },
@@ -118,6 +123,7 @@ export const Work = {
         w.employer = employer ?? Work.newEmployer(job, p);
         w.employer.job = job.name(); w.employer.since = Work.now(p);
         w.raise = 1; w.perf = 50; w.frac = 0; w.wfh = false;
+        for (const f of Work.hireHooks) { try { f(p); } catch (e) { console.error(e); } }
     },
     /** The job ended (quit, fired, retired, prison, …): into your job history. */
     left(p: any, why: string) {

@@ -64,7 +64,8 @@ export class WorkModelGenerator implements IViewModelGenerator {
             arrayList.add(personState.getJobState().getCurrentJobState().getViewModel());
             for (const c of WorkScreens.jobCells(personState)) arrayList.add(c);   // v0.33.0: employer, effort, performance
         }
-        else arrayList.add(new ActionCellSingleViewModel(R.drawable.tab_briefcase, "No job right now",
+        else for (const c of WorkScreens.unemployedCells(personState)) arrayList.add(c);
+        if (personState.getJobState().getCurrentJob() == null) arrayList.add(new ActionCellSingleViewModel(R.drawable.tab_briefcase, "No job right now",
             new TextLabelViewModel("Browse every career in the Career Center below: 67 careers in 10 groups.", null, false, false, null, null),
             ButtonViewModel.INSTANCE.getHidden(), null, null));
         if (celeb != null) arrayList.add(new SingleLabelCellViewModel("CelebrityWorkNote", new TextLabelViewModel(`Your ${celeb.title.toLowerCase()} career is part of Celebrity Life: open Lifepaths › Celebrity Life for auditions, songs, shows, fans and your team.`, null, false, false, null, null, 62, null)));

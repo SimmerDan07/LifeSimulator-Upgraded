@@ -10,9 +10,10 @@ import { WorkButtonsViewModel } from "../Models/WorkButtonsViewModel";
 import { WorkAction } from "../Enums/WorkAction";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { LifeActionDef, LifeActions } from "../Lifepaths/Vampire";
-import { Work } from "./Work";
+import { Work, money } from "./Work";
 import { EFFORTS, VIBES, PERKS, PROMOTION_PERF, ratingOf, SKIP_INTERVIEW } from "./WorkData";
 import { Hiring, Application } from "./Hiring";
+import { Workplace, BOSS_TYPES } from "./Workplace";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { Utils } from "../Utils/Utils";
 import { GenericListType } from "../Fragments/GenericListType";
@@ -37,6 +38,10 @@ export const JOB_ACTIONS: LifeActionDef[] = [
         lock: (p) => Work.allNighterLock(p),
         note: () => `+12 performance right now. Once every 4 weeks, and it adds to burnout.\n`,
         run: (p) => Work.say("All-nighter", Work.allNighter(p), "icon_work_allnighter") },
+    { id: "quit", title: () => (Workplace.state().notice != null ? "Working Your Notice" : "Quit Your Job"), image: "icon_work_quit", instant: true,
+        actionTitle: () => (Workplace.state().notice != null ? "Details" : "Quit"),
+        note: () => { const n = Workplace.state().notice; return n != null ? `Your last week is in ${n - Work.now()} week${n - Work.now() === 1 ? "" : "s"}.\n` : "Two weeks' notice for a good reference, or walk out today.\n"; },
+        run: (p) => Workplace.quitMenu(p) },
 ];
 
 function openEffortMenu(p: any) {
@@ -59,8 +64,19 @@ export function jobCells(p: any = player()): any[] {
     out.push(new MeterViewModel("Performance", Math.round(perf), 100, r.tone, `${r.title}${block && promotionReady(p) ? `. Your promotion is waiting: performance must reach ${PROMOTION_PERF}.` : ""}`));
     const b = Work.burnout(p);
     if (b > 0) out.push(new MeterViewModel("Burnout", b, 100, b >= 75 ? "red" : b >= 40 ? "purple" : "blue", b >= 75 ? "Close to burning out. Ease off or take care of yourself." : "Builds with Hard Worker and Grinding; eases when you take it slower."));
+    const t = Workplace.state(p), boss = Workplace.boss(p);
+    const next = t.reviewAt - Work.now(p);
+    if (boss) out.push(note("WorkBoss", `Boss: ${boss.getFullName()} (${BOSS_TYPES[t.bossType]?.title ?? "Fair"}). ${Workplace.opinionText(t.opinion)}.${next > 0 ? ` Next review in ${next} week${next === 1 ? "" : "s"}.` : ""}${t.plan != null ? `\nOn a performance plan: reach 50 within ${Math.max(0, t.plan - Work.now(p))} weeks.` : ""}`));
     for (const c of LifeActions.cells(JOB_ACTIONS, p)) out.push(c);
     return out;
+}
+/** Work tab, no job: unemployment benefits. */
+export function unemployedCells(p: any = player()): any[] {
+    if (!Work.enabled || Work.job(p) != null) return [];
+    const u = Workplace.state(p).unemployed;
+    if (!u) return [];
+    const left = u.until - Work.now(p);
+    return [info("tab_bank", "Unemployment Benefits", `${money(u.weekly)} a week for ${left} more week${left === 1 ? "" : "s"}, until you find work.\n`)];
 }
 function promotionReady(p: any): boolean {
     try { const st = Work.jobState(p); return !st.isMaxLevel() && st.getProgress() >= st.getType().weeksForPromotion(st.getLevel()) - 1; } catch { return false; }
@@ -177,4 +193,4 @@ export function profileCells(p: any = player()): any[] {
     return [btn("tab_briefcase", "Résumé", "Your Hire Score, job history and references.\n", "Open", () => navigate("work-resume"))];
 }
 
-export const WorkScreens = { jobCells, goToWorkButtons, JOB_ACTIONS, appsRow, screen, screenTitle, profileCells, navigate };
+export const WorkScreens = { unemployedCells, jobCells, goToWorkButtons, JOB_ACTIONS, appsRow, screen, screenTitle, profileCells, navigate };

@@ -214,6 +214,13 @@ export const LoveScreens = {
             out.add(LoveScreens.autoFriendsCell(p));
         }
 
+        // v0.33.0: your boss and coworkers
+        const team = Relationships.circle(p).list("coworker").filter((x: any) => x.getIsAlive());
+        if (team.length) {
+            out.add(new HeaderTitleViewModel("Work"));
+            for (const x of [...team].sort((a: any, b: any) => (a.workRole === "boss" ? -1 : b.workRole === "boss" ? 1 : 0))) out.add(LoveScreens.card(x));
+        }
+
         // Pets (living)
         out.add(new HeaderTitleViewModel(S("Common_Pets")));
         for (const pet of Relationships.byAge(Relationships.family(Relationship.pet, p).filter((x) => x.getIsAlive()))) out.add(LoveScreens.card(pet));
@@ -323,6 +330,12 @@ export const LoveScreens = {
         const kids = ExtendedFamily.childrenOf(t.getId(), p);
         if (kids.length) rows.push(["Children", String(kids.length)]);
         if (kind === "friend") { rows.push(["How you met", Relationships.metAtText(t)]); rows.push(["Friends for", span(Relationships.now() - t.sinceWeek)]); }
+        if (kind === "coworker") {
+            const role = t.workRole === "boss" ? "Boss" : ({ rival: "Rival", friend: "Work Friend", gossip: "Office Gossip", slacker: "Slacker", star: "Rising Star" } as any)[t.workRole] ?? "Coworker";
+            rows.push(["At work", role]);
+            if (t.workRole === "boss") { const bt = ({ fair: "Fair", strict: "Strict", lazy: "Laid-back", micro: "Micromanager", mentor: "Mentor" } as any)[t.bossType] ?? "Fair"; rows.push(["Style", bt]); const o = (p as any).work?.team?.opinion; if (o != null) rows.push(["Thinks of your work", o >= 80 ? "One of the best" : o >= 60 ? "Likes it" : o >= 40 ? "Fine" : o >= 20 ? "Has doubts" : "Wants you gone"]); }
+            rows.push(["Worked together", span(Relationships.now() - t.sinceWeek)]);
+        }
         if (kind === "ex") {
             rows.push(["You were", t.exStatus === "married" ? "Married" : t.exStatus === "engaged" ? "Engaged" : "Dating"]);
             rows.push(["Split up", `${span(Relationships.now() - t.sinceWeek)} ago`.replace("less than a year ago", "this year")]);

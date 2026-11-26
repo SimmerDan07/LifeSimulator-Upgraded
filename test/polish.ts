@@ -127,7 +127,7 @@ LifeMoments.enabled = false;   // turned on where tested
     let built = 0, ran = 0;
     const broken: string[] = [];
     // v0.32.0: the school and home moments (y_…) are tested in test/youth.ts; the old Driving Test moment is retired
-    const LIST = MOMENTS.filter((m) => !m.id.startsWith("y_") && m.id !== "drivingTest");
+    const LIST = MOMENTS.filter((m) => !m.id.startsWith("y_") && !m.id.startsWith("w_") && m.id !== "drivingTest");   // v0.33.0: work moments (w_…) are in test/workplace.ts
     for (const m of LIST) {
         const age = Math.min(m.max, Math.max(m.min, m.min >= 60 ? 66 : m.min < 13 ? m.min + 1 : m.min + 6));
         for (let opt = 0; opt < 3; opt++) {
