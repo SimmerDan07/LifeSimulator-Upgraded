@@ -10,10 +10,12 @@ import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { IViewModelGenerator } from "./IViewModelGenerator";
 import { Utils } from "../Utils/Utils";
 import { World } from "../World/World";
+import { YouthScreens } from "../Youth/YouthScreens";
 
 export class EducationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
+        for (const c of YouthScreens.education()) arrayList.add(c);   // v0.32.0: School Life, activities, your future
         arrayList.addAll(this.getEducationViewModels());
         arrayList.addAll(this.getTrainingViewModels());
         arrayList.addAll(this.getSkillsViewModels());

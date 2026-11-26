@@ -13,6 +13,8 @@ import { SocialPerson } from "./SocialPerson";
 import { Babies } from "./Babies";
 import { OneNight } from "./OneNight";
 import { Vampire } from "../Lifepaths/Vampire";
+import { Youth } from "../Youth/Youth";
+import { ACTIVITIES } from "../Youth/YouthData";
 
 export type Section = "time" | "big" | "hard";
 type Mods = [number, number, number];   // health, happiness, sanity
@@ -73,7 +75,10 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
     { id: "parentCall", title: "Call", image: R.drawable.childaction_call, who: ["parent", "sibling"], section: "time", bond: 20, lifts: true, show: (t, p) => apart(t, p) },
     { id: "parentVisit", title: "Visit", image: R.drawable.childaction_visit, who: ["parent", "sibling"], section: "time", bond: 60, mods: [0, 5, 2], show: (t, p) => apart(t, p) },
     { id: "advice", title: "Ask for Advice", image: R.drawable.skill_selfhelp, who: ["parent", "grandparent"], section: "time", bond: 10, mods: [0, 0, 3], lifts: true },
-    { id: "chores", title: "Help Around the House", image: R.drawable.skill_hygieneexpert, who: ["parent"], section: "time", bond: 25, mods: [0, -1, 0], show: (_t, p) => Relationships.livesWithParents(p) },
+    { id: "chores", title: "Help Around the House", image: R.drawable.skill_hygieneexpert, who: ["parent"], section: "time", bond: 25, mods: [0, -1, 0], show: (_t, p) => Relationships.livesWithParents(p),
+        // v0.32.0: the week you help, your pocket money is doubled
+        note: (_t) => (Youth.isYoung(player()) && Youth.allowance(player()) > 0 ? `Doubles this week's pocket money (${Youth.allowance(player())} → ${Youth.allowance(player()) * 2}).\n` : null),
+        run: (_t, p) => { if (Youth.isYoung(p)) { Youth.markDone("chores", p); Youth.addPoints(p, { golden: 1, hardWorker: 1 }); } } },
     { id: "parentVacation", title: "Take Them on Vacation", image: R.drawable.vacation_international, who: ["parent"], section: "big", cost: 2000, bond: 100, mods: [0, 10, 5], lock: adult },
     { id: "askMoney", title: "Ask for Money", image: R.drawable.bank_withdrawal, who: ["parent"], section: "big", bond: -20,
         lock: (t, p) => {
@@ -96,11 +101,38 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
     // ---------------------------------------------------------------- children
     { id: "feedCuddle", title: "Feed and Cuddle", image: R.drawable.love_baby, who: ["child"], section: "time", bond: 10, mods: [0, 3, 2], show: childAge(0, 3) },
     { id: "lullaby", title: "Sing a Lullaby", image: R.drawable.childaction_tellstory, who: ["child"], section: "time", bond: 8, mods: [0, 2, 3], show: childAge(0, 3) },
-    { id: "homework", title: "Help with Homework", image: R.drawable.education_elementaryschool, who: ["child"], section: "time", bond: 15, mods: [0, 0, -1], show: childAge(5, 11) },
-    { id: "sports", title: "Sign Up for Sports", image: R.drawable.vacation_soccer, who: ["child"], section: "time", cost: 100, bond: 20, mods: [0, 3, 0], show: childAge(6, 11) },
-    { id: "talkFuture", title: "Talk About the Future", image: R.drawable.education_college_business, who: ["child"], section: "time", bond: 20, mods: [0, 0, 2], show: childAge(12, 17) },
+    // v0.32.0: parenting shapes their grades and who they grow up to be (Youth.kid)
+    { id: "homework", title: "Help with Homework", image: R.drawable.education_elementaryschool, who: ["child"], section: "time", bond: 15, mods: [0, 0, -1], show: childAge(5, 17),
+        note: (t) => `Their grades: ${Youth.letter(Youth.kid(t).grades)}. +2 grades, and a little more Bookworm.\n`,
+        run: (t) => Youth.kidPoints(t, { bookworm: 1.5, golden: 0.5 }, 2) },
+    { id: "sports", title: (t) => (Youth.kid(t).act ? `Practise ${Youth.act(Youth.kid(t).act!).title} Together` : "Sign Up for an Activity"), image: R.drawable.vacation_soccer, who: ["child"], section: "time",
+        cost: (t) => (Youth.kid(t).act ? 0 : 100), bond: 20, mods: [0, 3, 0], show: childAge(6, 17),
+        note: (t) => (Youth.kid(t).act ? "Practising with you makes them better and closer to you.\n" : "Sports, music, art or a club: whatever they seem to love.\n"),
+        run: (t) => {
+            const kd = Youth.kid(t);
+            if (kd.act == null) {
+                const ok = ACTIVITIES.filter((d) => age(t) >= d.minAge);
+                kd.act = ok[Math.floor(Math.random() * ok.length)].id;
+                Relationships.banner("New Activity", `${t.getFirstName()} picked ${Youth.act(kd.act).title}. They can't stop talking about it.`);
+            }
+            Youth.kidPoints(t, Youth.act(kd.act).points);
+        } },
+    { id: "cheerThem", title: (t) => `Go to ${t.getFirstName()}'s ${Youth.kid(t).act ? Youth.eventName(Youth.act(Youth.kid(t).act!)) : "Big Day"}`, image: "icon_parent_game", who: ["child"], section: "time",
+        bond: 30, mods: [0, 4, 1], show: (t) => childAge(6, 17)(t) && Youth.kid(t).act != null,
+        lock: (t) => ((Youth.kid(t).cheered ?? -99) > Relationships.now() - 8 ? "Their next one is in a few weeks" : null),
+        note: () => "Front row, the loudest one cheering. Every 8 weeks.\n",
+        run: (t) => { const kd = Youth.kid(t); kd.cheered = Relationships.now(); Youth.kidPoints(t, { ...Youth.act(kd.act!).points, golden: 1 }); const won = Math.random() < 0.45; Relationships.banner(won ? "They Won!" : "So Proud", won ? `${t.getFirstName()} won, and looked straight at you in the crowd.` : `${t.getFirstName()} didn't win, but they were so happy you came.`); } },
+    { id: "houseRules", title: (t) => `House Rules: ${Youth.kid(t).style === "strict" ? "Strict" : Youth.kid(t).style === "relaxed" ? "Relaxed" : "Not Set"}`, image: "icon_parent_rules", who: ["child"], section: "time",
+        instant: true, actionTitle: () => "Change", show: childAge(5, 17),
+        note: (t) => (Youth.kid(t).style === "strict" ? "Homework first, early bedtimes: better grades, a Bookworm or a Golden Child (or a Rebel).\n"
+            : Youth.kid(t).style === "relaxed" ? "Freedom to find themselves: a Social Butterfly or a Creative (and grades that slip a little).\n"
+                : "Strict or relaxed: it shapes their grades and who they grow up to be.\n"),
+        run: (t) => { const kd = Youth.kid(t); kd.style = kd.style == null ? "strict" : kd.style === "strict" ? "relaxed" : null; } },
+    { id: "talkFuture", title: "Talk About the Future", image: R.drawable.education_college_business, who: ["child"], section: "time", bond: 20, mods: [0, 0, 2], show: childAge(12, 17),
+        run: (t) => Youth.kidPoints(t, { leader: 1, bookworm: 0.5 }) },
     { id: "teachDrive", title: "Teach to Drive", image: R.drawable.possession_car, who: ["child"], section: "time", bond: 30, mods: [0, 0, -2], show: childAge(16, 17),
-        lock: (_t, p) => (Relationships.ownsCar(p) ? null : "You need a car") },
+        lock: (_t, p) => (Relationships.ownsCar(p) ? null : "You need a car"),
+        run: (t) => Youth.kidPoints(t, { golden: 0.5 }) },
     { id: "birthdayParty", title: (t) => `${t.getFirstName()}'s ${Relationships.ordinal(age(t))} Birthday Party`, image: R.drawable.achievement_happy, who: ["child"], section: "big",
         cost: (t) => (age(t) >= 12 ? 500 : 300), bond: 60, mods: [0, 6, 0],
         show: (t) => childAge(4, 17)(t) && Relationships.isBirthdayWeek(t) && Relationships.meta(t).bdayYear !== age(t),
@@ -160,6 +192,11 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
 
     // ---------------------------------------------------------------- friends
     { id: "friendCall", title: "Call", image: R.drawable.childaction_call, who: ["friend"], section: "time", bond: 20, lifts: true, show: (_t, p) => age(p) >= 8 },
+    // v0.32.0: your best friend (School Life on the Education tab)
+    { id: "bestFriend", title: "Make Them Your Best Friend", image: "icon_youth_bestfriend", who: ["friend"], section: "time", instant: true, actionTitle: () => "Choose",
+        show: (t, p) => alive(t) && age(p) >= 5 && age(p) < 18 && Youth.bestFriend(p) !== t,
+        note: () => "Your best friend shows on the Education tab (School Life): hang out once a week.\n",
+        run: (t, p) => Youth.setBest(t, p) },
     { id: "movies", title: "Go to the Movies", image: R.drawable.love_movie, who: ["friend"], section: "time", cost: 30, bond: 20, mods: [0, 5, 2] },
     { id: "party", title: "Go to a Party", image: R.drawable.love_nightclub, who: ["friend"], section: "time", cost: 50, bond: 25, mods: [-2, 8, 0],
         lock: (_t, p) => (age(p) < 16 ? "Must be 16 or older" : null) },

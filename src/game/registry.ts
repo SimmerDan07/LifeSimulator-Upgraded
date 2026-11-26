@@ -206,6 +206,11 @@ import * as M202 from "./World/Activities";
 import * as M203 from "./World/ActivityData";
 import * as M204 from "./World/World";
 import * as M205 from "./World/WorldData";
+import * as M206 from "./Youth/Youth";
+import * as M207 from "./Youth/YouthData";
+import * as M208 from "./Youth/YouthMoments";
+import * as M209 from "./Youth/YouthScreens";
+import * as M210 from "./Youth/install";
 /** Built on first use (not at import time) so import cycles can't leave entries undefined. */
 export function allClasses(): Record<string, any> {
     return Object.assign({},
@@ -416,5 +421,10 @@ export function allClasses(): Record<string, any> {
         M203,
         M204,
         M205,
+        M206,
+        M207,
+        M208,
+        M209,
+        M210,
     );
 }

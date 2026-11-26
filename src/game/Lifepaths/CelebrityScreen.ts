@@ -16,6 +16,7 @@ import { GenericListType } from "../Fragments/GenericListType";
 import { LifeActions, LifeActionDef, Vampire } from "./Vampire";
 import { Celebrity, CAREERS, TIERS, ACTING, MUSIC, DANCE, FAME, TEAM, WALK_OF_FAME } from "./Celebrity";
 import { World, MILESTONES, KIND_LABEL, ACTING_PLUS, MUSIC_PLUS, DANCE_PLUS, CIRCLE, BUSINESS, LEGACY, YOUNG } from "./CelebrityWorld";
+import { YouthScreens } from "../Youth/YouthScreens";
 
 const text = (s: string) => new TextLabelViewModel(s, null, false, false, null, null);
 const info = (image: any, title: string, body: string) => new ActionCellSingleViewModel(image, title, text(body), ButtonViewModel.INSTANCE.getHidden(), null, null);
@@ -109,6 +110,7 @@ export const CelebrityScreen = {
         // ---------------------------------------------------------------- young talent
         if (p.getAgeInYears() < 18) {
             out.add(new HeaderTitleViewModel("Young Talent"));
+            for (const cell of YouthScreens.childStar(p)) out.add(cell);   // v0.32.0: Child Star (6–13)
             for (const cell of LifeActions.cells(YOUNG, p)) out.add(cell);
         }
 

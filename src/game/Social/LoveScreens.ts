@@ -37,6 +37,7 @@ import { LoveActions, LoveActionCell, loveAction, Section } from "./LoveActions"
 import { SocialPerson, RELATIVE_KINDS } from "./SocialPerson";
 import { ExtendedFamily, RELATIVE_TITLES } from "./ExtendedFamily";
 import { Paging } from "../Models/Paging";
+import { Youth } from "../Youth/Youth";
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();
 const S = (k: string) => Utils.INSTANCE.getString((R.string as any)[k]);
@@ -300,6 +301,16 @@ export const LoveScreens = {
             }
         }
         if (kind === "child" && t.getIsAlive()) { try { rows.push([S("Common_Status"), t.getChildStatus()]); } catch { /* none */ } }
+        // v0.32.0: their school and upbringing (Youth.kid)
+        if (kind === "child" && t.getIsAlive() && t.getAgeInYears() >= 5) {
+            try {
+                const kd = Youth.kid(t, p);
+                if (t.getAgeInYears() < 18) rows.push(["Grades", Youth.letter(kd.grades)]);
+                if (kd.act) rows.push(["Loves", Youth.act(kd.act).title]);
+                const tr = (kd.traits ?? Youth.kidTraits(kd)).map((k: any) => Youth.trait(k).title);
+                if (tr.length) rows.push([t.getAgeInYears() >= 18 ? "Grew up to be" : "Growing up to be", tr.join(", ")]);
+            } catch { /* none */ }
+        }
         if ((kind === "sibling" || RELATIVE_KINDS.includes(kind)) && t.getIsAlive()) { const o = Relationships.occupationOf(t); if (o) rows.push(["Occupation", o]); }
         if (t.getPetType?.() == null) rows.push(["Look", Appearance.describe(t)]);   // v0.18.0
         // v0.17.0: where they sit in the family

@@ -5,6 +5,7 @@ import { ACTIVITY_DEFS, ACTIVITY_CATEGORIES } from "../World/ActivityData";
 import { CRIMES, FRONTS } from "../Crime/CrimeData";
 import { ILLNESS_DEFS } from "../Health/IllnessData";
 import { HEIRLOOMS } from "../Legacy/LegacyData";
+import { ACTIVITIES, CROWDS, UPBRINGING, SUBJECTS, PART_JOBS, YOUTH_ICONS } from "../Youth/YouthData";
 export interface ArtSlot { name: string; fallback: string; where: string; row: string }
 
 export const ART_SLOTS: ArtSlot[] = [
@@ -130,5 +131,12 @@ export const ART_SLOTS: ArtSlot[] = [
     // v0.28.0 illnesses and family heirlooms
     ...ILLNESS_DEFS.map((d) => ({ name: d.image, fallback: d.fallback, where: "Health › Conditions", row: d.title })),
     ...HEIRLOOMS.map((h) => ({ name: "icon_heirloom_" + h.id.toLowerCase(), fallback: h.fallback, where: "Profile › Legacy › Heirlooms", row: h.title })),
+    // v0.32.0 Childhood & Teen Years
+    ...ACTIVITIES.map((a) => ({ name: a.image, fallback: a.fallback, where: "Education › After-School Activities", row: a.title })),
+    ...CROWDS.map((c) => ({ name: c.image, fallback: c.fallback, where: "Education › School Life › Your Crowd", row: c.title })),
+    ...UPBRINGING.map((t) => ({ name: t.image, fallback: t.fallback, where: "Profile › Yearbook › Upbringing", row: t.title })),
+    ...SUBJECTS.map((x) => ({ name: x.image, fallback: x.fallback, where: "Education › Favourite Subject", row: x.title })),
+    ...PART_JOBS.map((j) => ({ name: j.image, fallback: j.fallback, where: "Work › Part-Time Jobs", row: j.title })),
+    ...YOUTH_ICONS,
 ];
 export const ART_FALLBACK: Record<string, string> = Object.fromEntries(ART_SLOTS.map((s) => [s.name, s.fallback]));

@@ -145,6 +145,7 @@ export class AlertManager {
     static mustShow(vm: AlertViewModel): boolean {
         const v: any = vm;
         if (v.holiday) return AlertManager.holidaysOn();
+        if (v.milestone) return true;   // v0.32.0: graduation, turning 18 (once in a life)
         if (vm.getEditableTextFieldViewModel?.() != null) return true;   // naming a baby
         const t = vm.getTitle?.();
         return t === Utils.INSTANCE.getString(R.string.Alert_DeathTitle);

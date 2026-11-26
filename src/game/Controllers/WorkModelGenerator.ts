@@ -32,12 +32,14 @@ import { Careers } from "../Careers/Careers";
 import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { CrimeScreen } from "../Crime/CrimeScreen";
+import { YouthScreens } from "../Youth/YouthScreens";
 
 export class WorkModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
         let arrayList2: ArrayList = new ArrayList();
         arrayList.addAll(this.getWorkViewModels());
+        for (const c of YouthScreens.work()) arrayList.add(c);   // v0.32.0: Part-Time Jobs (12–17)
         // v0.27.0: no work buttons or side hustles from a cell
         if (GameStateManager.INSTANCE.getPersonState().getCrimeState().getIsInJail()) return new GenericListFragmentViewModel(arrayList, null, arrayList2);
         arrayList2.add(this.getWorkButtonsViewModel());

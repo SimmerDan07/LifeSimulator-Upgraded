@@ -126,7 +126,9 @@ LifeMoments.enabled = false;   // turned on where tested
     };
     let built = 0, ran = 0;
     const broken: string[] = [];
-    for (const m of MOMENTS) {
+    // v0.32.0: the school and home moments (y_…) are tested in test/youth.ts; the old Driving Test moment is retired
+    const LIST = MOMENTS.filter((m) => !m.id.startsWith("y_") && m.id !== "drivingTest");
+    for (const m of LIST) {
         const age = Math.min(m.max, Math.max(m.min, m.min >= 60 ? 66 : m.min < 13 ? m.min + 1 : m.min + 6));
         for (let opt = 0; opt < 3; opt++) {
             const p = setups.any(age);
@@ -153,7 +155,7 @@ LifeMoments.enabled = false;   // turned on where tested
             clear();
         }
     }
-    check(`all ${MOMENTS.length} life moments show, and every choice gives a result (${ran} choices)`, broken.length === 0 && ran >= MOMENTS.length * 2, broken.slice(0, 6).join(" | "));
+    check(`all ${LIST.length} life moments show, and every choice gives a result (${ran} choices)`, broken.length === 0 && ran >= LIST.length * 2, broken.slice(0, 6).join(" | "));
     check("at least 40 moments across childhood, teens, adults and later life",
         MOMENTS.length >= 40 && MOMENTS.some((m) => m.max <= 13) && MOMENTS.some((m) => m.min >= 13 && m.max <= 18) && MOMENTS.some((m) => m.min >= 45));
 

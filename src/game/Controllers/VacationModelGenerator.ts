@@ -15,6 +15,7 @@ import { Hobbies } from "../Managers/Hobbies";
 import { Seasons } from "../Managers/Seasons";
 import { Activities } from "../World/Activities";
 import { World } from "../World/World";
+import { YouthScreens } from "../Youth/YouthScreens";
 
 export class VacationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
@@ -28,6 +29,7 @@ export class VacationModelGenerator implements IViewModelGenerator {
             return new GenericListFragmentViewModel(arrayList);
         }
         arrayList.addAll(this.getPlaytimeViewModels());
+        for (const c of YouthScreens.leisure(p)) arrayList.add(c);   // v0.32.0: Growing Up
         arrayList.addAll(this.getLeisureViewModels());
         for (const c of Activities.localCells(p)) arrayList.add(c);   // v0.27.0
         if (p.getAgeInYears() >= 4) for (const c of Activities.categoryCells(p)) arrayList.add(c);

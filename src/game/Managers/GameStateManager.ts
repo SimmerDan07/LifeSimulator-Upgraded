@@ -19,6 +19,7 @@ import type { LifeScenario } from "../Enums/LifeScenario";
 import { Constants } from "../Utils/Constants";
 import { Utils } from "../Utils/Utils";
 import { SaveCodec } from "../save/SaveCodec";
+import { installYouth } from "../Youth/install";
 
 export class GameStateManager {
     static INSTANCE: GameStateManager;
@@ -32,6 +33,7 @@ export class GameStateManager {
     init(): void {
         Crossover.install();   // v0.25.0: Celebrity Life × Vampire cross content (hooks and extra actions)
         installCrime();        // v0.27.0: the Crime update's hooks into careers, moving, heirs, vampires…
+        installYouth();        // v0.32.0: Childhood & Teen Years (moments, heirs)
         this.globalStateManager = this.loadData();
         const slot = this.globalStateManager.getSaveState().currentSlot();
         if (slot.getPersonState() == null) {

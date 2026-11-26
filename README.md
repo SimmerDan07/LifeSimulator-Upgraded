@@ -293,6 +293,17 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `updateViaCache: "none"`, calls `reg.update()` on becoming visible and every 20 min; on `controllerchange`
     (not the first install) it waits until no modal/list screen is open, saves (`__lifesimSave`), waits for
     `__lifesimFlush` (IndexedDB), reloads, and shows "Updated to vX" once (`localStorage lifesim:appVersion`).
+  - **v0.32.0 Childhood & Teen Years** (`src/game/Youth/`): `Youth.ts` (state `Player.youth`, rules, weekly tick after
+    `Vampire.tickCures`, report cards, graduation and turning-18 milestones (`vm.milestone` → `AlertManager.mustShow`),
+    traits, the kids you raise in `meta.kid`, `Youth.heir`), `YouthData.ts` (25 activities, 5 crowds, 13 upbringing
+    traits → game traits (lazy), 9 subjects, 8 part-time jobs, art slots), `YouthScreens.ts` (Education › School Life /
+    After-School Activities / Your Future, Leisure › Growing Up / Trouble, Work › Part-Time Jobs, Profile › Growing Up,
+    Lifepaths screens `youth-activities` / `youth-yearbook`, Child Star inside Celebrity Life › Young Talent),
+    `YouthMoments.ts` (school/home Life Moments), `install.ts` (moments, extra effects on the older child/teen moments,
+    the old Driving Test moment retired, heirs, Crime respect, `YoungHooks` for the TV Commercial Audition).
+    Hooks: `CompletableActionState.tickCompletionProgress` → `Youth.onSchoolWeek`; `JobState.switchJob` →
+    `Youth.onFirstJob`; LoveActions (homework, activity, cheer, House Rules, best friend, chores); LoveScreens rows;
+    SocialMedia (12 with a phone). `test/youth.ts` (78).
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

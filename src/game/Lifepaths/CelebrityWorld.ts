@@ -488,6 +488,8 @@ export const LEGACY: LifeActionDef[] = [
         note: () => "Join the greats.\n",
         run: (p) => { const s = Celebrity.state(p); s.hallOfFame = true; s.awards.push(`Hall of Fame (age ${p.getAgeInYears()})`); Celebrity.rep(p, 10); Celebrity.grow(p, 0.03, 0); World.news(p, `${p.getFullName()} inducted into the Hall of Fame`); Celebrity.alert("Hall of Fame", "Your name joins the greats.", R.drawable.icon_celeb_halloffame); } },
 ];
+/** v0.32.0: set by Youth (Child Star): a kid's pay goes into a trust fund, burnout builds, an agent helps. */
+export const YoungHooks = { gig: null as ((p: any, pay: number) => void) | null, bonus: null as ((p: any) => number) | null };
 export const YOUNG: LifeActionDef[] = [
     go({ id: "talentShow", title: "Enter a Talent Show", image: R.drawable.icon_celeb_talent, mods: [0, 2, 0], lock: age(6, 17),
         note: () => "Sing, dance or act. Win and the whole town knows your name.\n",
@@ -504,11 +506,12 @@ export const YOUNG: LifeActionDef[] = [
             Celebrity.active(p); s.yearWork++;
         } }),
     go({ id: "commercial", title: "TV Commercial Audition", image: R.drawable.icon_celeb_commercial, lock: age(6, 13),
-        note: () => "Child actors start somewhere. Pays well and gets your face out there.\n",
+        note: () => `Child actors start somewhere. Pays well and gets your face out there${YoungHooks.gig ? " (85% waits in your trust fund until 18)" : ""}.\n`,
         run: (p) => {
-            if (roll(clamp(0.35 + Celebrity.skill(p, "acting") / 150, 0.1, 0.9))) {
+            if (roll(clamp(0.35 + Celebrity.skill(p, "acting") / 150 + (YoungHooks.bonus?.(p) ?? 0), 0.1, 0.9))) {
                 const pay = Math.round(rnd(1000, 3000));
                 earn(p, pay, "Commercial");
+                YoungHooks.gig?.(p, pay);
                 const brand = CelebNames.pick(["cereal", "toy store", "juice box", "sneaker", "theme park", "pizza"]);
                 const g = Celebrity.grow(p, 0.04, 500);
                 Celebrity.train(p, "acting", 2);

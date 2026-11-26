@@ -93,6 +93,7 @@ import { CelebrityState } from "../Lifepaths/CelebrityState";
 import { Babies } from "../Social/Babies";
 import { VampireState } from "../Lifepaths/VampireState";
 import { Relationships } from "../Social/Relationships";
+import { Youth } from "../Youth/Youth";
 
 export class Player {
     static INSTANCE: any;
@@ -908,6 +909,7 @@ export class Player {
             Illness.afterWeek(this);       // v0.28.0: catching and getting over illnesses
             OneNight.afterWeek(this);      // v0.30.0: a one-night stand's baby (when you're the father)
             Vampire.tickCures(this);       // v0.30.2: the Vampiric Cure you bought someone
+            Youth.afterWeek(this);         // v0.32.0: school, pocket money, part-time jobs, growing up; the kids you raise
             if (Vampire.isInTorpor(this) === false && mainGameFragment != null) MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
         }
     }

@@ -32,6 +32,7 @@ import { Retirement } from "./Retirement";
 import { Vampire } from "../Lifepaths/Vampire";
 import { Celebrity } from "../Lifepaths/Celebrity";
 import { Subscriptions } from "./Subscriptions";
+import { Youth } from "../Youth/Youth";
 
 export class JobState {
     static INSTANCE: any;
@@ -158,6 +159,8 @@ export class JobState {
         // v0.27.0: nobody hires you while you're in prison (whatever path tries: coaching, moments, heirs…)
         try { const me = GameStateManager.INSTANCE.getPersonState(); if (me?.getJobState() === this && me.getCrimeState().getIsInJail()) return; } catch { /* no game */ }
         this.currentJob = job;
+        // v0.32.0: part-time work as a teen counts at your first real job
+        try { const me = GameStateManager.INSTANCE.getPersonState(); if (me?.getJobState() === this) Youth.onFirstJob(me); } catch { /* no game */ }
         GameStateManager.INSTANCE.getPersonState().getSideHustleState().deactivateProject();
         GameStateManager.INSTANCE.getPersonState().getMiscState().setHasShownDegreeMissingAlert(false);
     }

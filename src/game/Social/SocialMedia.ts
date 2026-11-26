@@ -121,7 +121,8 @@ export const SocialMedia = {
     // ------------------------------------------------------------------ rules
     /** Why you can't use social media right now (null = you can). */
     blocked(p: any = player()): string | null {
-        if (p.getAgeInYears() < MIN_AGE) return `From age ${MIN_AGE}`;
+        // v0.32.0: a phone of your own (Leisure › Growing Up) opens it a year early
+        if (p.getAgeInYears() < (p.youth?.phone ? MIN_AGE - 1 : MIN_AGE)) return p.getAgeInYears() >= MIN_AGE - 1 ? `From age ${MIN_AGE} (or ${MIN_AGE - 1} with a phone of your own)` : `From age ${MIN_AGE}`;
         try { if (p.getCrimeState().getIsInJail()) return "Phones are contraband in jail"; } catch { /* ignore */ }
         if (Vampire.isInTorpor(p)) return "You're lying collapsed somewhere";
         return null;
@@ -437,7 +438,7 @@ export const POSTS: LifeActionDef[] = [
 export const ACCOUNT_START: LifeActionDef[] = [
     { id: "create", title: "Create an Account", image: R.drawable.icon_social_account, instant: true, actionTitle: () => "Sign Up",
         lock: (p) => SocialMedia.blocked(p),
-        note: () => `Free. From age ${MIN_AGE}.\n`, run: (p) => SocialMedia.createAccount(p) },
+        note: () => `Free. From age ${MIN_AGE} (${MIN_AGE - 1} with a phone of your own).\n`, run: (p) => SocialMedia.createAccount(p) },
 ];
 export const ACCOUNT: LifeActionDef[] = [
     { id: "detox", title: () => (SocialMedia.state(player()).detox ? "End Your Digital Detox" : "Digital Detox"), image: R.drawable.icon_social_detox, instant: true,

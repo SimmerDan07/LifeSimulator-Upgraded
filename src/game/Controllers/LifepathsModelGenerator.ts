@@ -29,6 +29,7 @@ import { Activities } from "../World/Activities";
 import { World } from "../World/World";
 import { Crime } from "../Crime/Crime";
 import { CrimeScreen } from "../Crime/CrimeScreen";
+import { YouthScreens } from "../Youth/YouthScreens";
 
 const text = (s: string) => new TextLabelViewModel(s, null, false, false, null, null);
 const thirstTrend = (n: number) => (n > 0 ? `On your diet the bar fills in ${Vampire.fillText(n)}. When it's full you collapse, and 10 to 40 years can pass before someone finds you.` : `Falls ${-n} a week on your diet.`);
@@ -100,6 +101,11 @@ export class LifepathsModelGenerator {
         if (key === "crime-murder") {
             header.add(new NavigationBarViewModel("Murder", false, 2, null));
             for (const c of CrimeScreen.murderCells(p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
+        }
+        if (key === "youth-activities" || key === "youth-yearbook") {   // v0.32.0
+            header.add(new NavigationBarViewModel(key === "youth-yearbook" ? "Yearbook" : "After-School Activities", false, 2, null));
+            for (const c of key === "youth-yearbook" ? YouthScreens.yearbook(p) : YouthScreens.activitiesScreen(p)) out.add(c);
             return new GenericListFragmentViewModel(out, header, null);
         }
         if (key === "news") {   // v0.28.1: what happened while the weeks went by (instead of pop-ups)

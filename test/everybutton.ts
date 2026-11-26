@@ -46,6 +46,7 @@ import { RomanticRelationshipStatus } from "../src/game/Enums/RomanticRelationsh
 import { LoverPersonality } from "../src/game/Enums/LoverPersonality";
 import { Sex } from "../src/game/Enums/Sex";
 import { Job } from "../src/game/Enums/Job";
+import { Youth } from "../src/game/Youth/Youth";
 
 
 let seed = 777;
@@ -121,7 +122,7 @@ let answerLast = false;
 function allScreens(): { name: string; models: any }[] {
     const out: { name: string; models: any }[] = [];
     for (const [name, g] of Object.entries(gens)) out.push({ name, models: g.generateViewModels() });
-    const keys = ["vampire", "celebrity", "celebrity-news", "celebrity-works", "celebrity-milestones", "crime", "crime-murder", "news", "health-history", "legacy", "languages",
+    const keys = ["youth-activities", "youth-yearbook", "vampire", "celebrity", "celebrity-news", "celebrity-works", "celebrity-milestones", "crime", "crime-murder", "news", "health-history", "legacy", "languages",
         ...["outdoors", "sports", "culture", "nightlife", "wellness", "fun", "food", "giving"].map((a) => "activities:" + a),
         ...["americas", "europe", "asia", "africa"].map((r) => "world:" + r),
         ...CAREER_CATEGORIES.map((c) => "careers:" + c.id)];
@@ -237,6 +238,10 @@ const SCENARIOS: Record<string, () => void> = {
     // v0.28.0
     patriarch: () => start(66, (p) => { rich(p, 3_000_000); lover(p, "Rose"); for (const [n, a] of [["Ava", 38], ["Ben", 35], ["Cal", 16]] as [string, number][]) { const k = new Person(Relationship.child, Sex.female, p.getLastName(), a * W); k.setFirstName(n); k.setRelationshipProgress(700); p.getFamilyState().getFamilyMembers().add(k); } Legacy.addHeirloom(p, "pocketWatch", "Grandpa"); Legacy.writeWill(p, "equal", 10); }),
     sickly: () => start(68, (p) => { rich(p, 400000); Illness.catch(p, "heartDisease", "fuzz"); const c = Illness.catch(p, "cancer", "fuzz")!; c.stage = 2; c.detected = true; Illness.catch(p, "flu", "fuzz"); }),
+    // v0.32.0 Childhood & Teen Years
+    kid: () => start(9, (p) => { Youth.join("soccer", p); Youth.join("piano", p); Youth.state(p).acts.soccer.xp = 30; Relationships.makeFriend("school", p); }),
+    childstar: () => start(10, (p) => { Youth.join("drama", p); Youth.state(p).acts.drama.xp = 50; Youth.state(p).star = { gigs: 3, trust: 5000, agent: false, burnout: 75, tv: 0, lastGig: 0 }; }),
+    senior: () => start(17, (p) => { rich(p, 3000); const y = Youth.state(p); y.phone = true; y.permit = true; y.grades = 91; y.rep = 60; y.crowd = "popular"; Youth.join("debate", p); y.acts.debate.xp = 75; Youth.takeJob("retail", p); y.grounded = 2; }),
     hobbyist: () => start(40, (p) => { rich(p, 100000); for (const id of ["painting", "running", "writing"]) Hobbies.state(id, p).skill = 85; }),
 };
 function start(age: number, tweak: (p: any) => void) {

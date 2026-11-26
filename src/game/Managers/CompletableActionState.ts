@@ -13,6 +13,7 @@ import { GameStateManager } from "./GameStateManager";
 import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
 import { Schooling, AgeLimits } from "./Schooling";
+import { Youth } from "../Youth/Youth";
 
 export class CompletableActionState {
     static INSTANCE: any;
@@ -90,6 +91,7 @@ export class CompletableActionState {
             return;
         }
         let timeRequiredInWeeks: number = type.getTimeRequiredInWeeks(GameStateManager.INSTANCE.getPersonState());
+        if (Schooling.isSchool(type)) { try { Youth.onSchoolWeek(GameStateManager.INSTANCE.getPersonState(), type); } catch { /* ignore */ } }   // v0.32.0 grades
         state.setProgress(Math.min(state.getProgress() + 1 + Vampire.studyBonus(GameStateManager.INSTANCE.getPersonState()), timeRequiredInWeeks));
         if (state.getProgress() >= timeRequiredInWeeks) {
             state.setCompleted(true);
