@@ -99,6 +99,9 @@ export const WORK_ICONS: { name: string; fallback: string; where: string; row: s
     { name: "icon_work_quit", fallback: "vacation_take_week_off", where: "Work › Your Job", row: "Quit Your Job" },
     { name: "icon_work_review", fallback: "work_lawyer", where: "Work › Reviews; Love › Work", row: "Performance Review, Feedback" },
     { name: "icon_work_fired", fallback: "health_low", where: "Work", row: "Fired / Laid Off" },
+    { name: "icon_work_fork", fallback: "lifepath_celebrity", where: "Work › Career Path", row: "Your Career Path (the fork)" },
+    { name: "icon_work_course", fallback: "education_masters", where: "Work › Career Path", row: "Take a Course" },
+    { name: "icon_work_cert", fallback: "education_college_business", where: "Work › Certifications", row: "Certifications" },
 ];
 
 // ------------------------------------------------------------------ hiring (stage 2)
@@ -145,3 +148,55 @@ export const ANSWER_TITLES: Record<AnswerStyle, string> = { confident: "Confiden
 export const ANSWER_TRAITS: Record<AnswerStyle, string[]> = {
     confident: ["confident", "persuasive"], honest: ["evenTempered", "logical"], funny: ["charismatic", "entertainer"], humble: ["humble", "articulate"],
 };
+
+// ------------------------------------------------------------------ career paths (stage 4)
+/** One career skill per group (0–100). */
+export const SKILLS: Record<string, { title: string; image: string }> = {
+    health: { title: "Medicine", image: "health_doctorvisit" }, trades: { title: "Craft", image: "work_constructionworker" },
+    public: { title: "Service", image: "work_police" }, tech: { title: "Code", image: "possession_computer_2" },
+    creative: { title: "Creativity", image: "work_artist" }, hospitality: { title: "Hospitality", image: "work_pastrychef" },
+    science: { title: "Science", image: "work_research" }, sports: { title: "Fitness", image: "health_workout" },
+    starter: { title: "Hustle", image: "work_retail" }, entertainment: { title: "Performance", image: "lifepath_celebrity" },
+};
+/** v0.32 after-school activities that give a head start in a career skill. */
+export const ACT_GROUP: Record<string, string> = {
+    coding: "tech", esports: "tech", robotics: "science", chess: "science", debate: "public", council: "public", volunteer: "public", scouts: "public",
+    art: "creative", drama: "creative", newspaper: "creative", piano: "creative", guitar: "creative", choir: "creative", band: "creative", cooking: "hospitality",
+};
+export const COURSE_GAIN = 6;
+
+export type BranchKind = "expert" | "lead" | "life" | "fame" | "founder";
+export const BRANCH_KINDS: Record<BranchKind, { pay: number; mods: [number, number, number]; perf: number; blurb: string }> = {
+    expert: { pay: 1.3, mods: [0, -1, -2], perf: 3, blurb: "The best at what you do: top pay, high stress." },
+    lead: { pay: 1.15, mods: [0, 0, -1], perf: 0, blurb: "Run a team: good pay, and your boss's opinion counts for more." },
+    life: { pay: 0.95, mods: [0, 2, 2], perf: 0, blurb: "A job you love: a little less pay, a lot less stress." },
+    fame: { pay: 1.05, mods: [0, 1, 0], perf: 0, blurb: "The public face of your field: fans every week." },
+    founder: { pay: 1.0, mods: [0, 0, -1], perf: 2, blurb: "Learn the business: starting your own company costs 30% less." },
+};
+export interface BranchDef { id: string; title: string; kind: BranchKind }
+export const BRANCHES: Record<string, BranchDef[]> = {
+    health: [{ id: "specialist", title: "Specialist", kind: "expert" }, { id: "head", title: "Department Head", kind: "lead" }, { id: "community", title: "Community Care", kind: "life" }],
+    trades: [{ id: "master", title: "Master Craftsman", kind: "expert" }, { id: "crew", title: "Crew Boss", kind: "lead" }, { id: "contractor", title: "Contractor", kind: "founder" }],
+    public: [{ id: "investigator", title: "Investigator", kind: "expert" }, { id: "chief", title: "Chief", kind: "lead" }, { id: "hero", title: "Community Hero", kind: "life" }],
+    tech: [{ id: "architect", title: "Architect", kind: "expert" }, { id: "manager", title: "Engineering Manager", kind: "lead" }, { id: "founderTrack", title: "Founder Track", kind: "founder" }],
+    creative: [{ id: "star", title: "Star", kind: "fame" }, { id: "editor", title: "Editor-in-Chief", kind: "lead" }, { id: "freeSpirit", title: "Free Spirit", kind: "life" }],
+    hospitality: [{ id: "celebrity", title: "Celebrity", kind: "fame" }, { id: "gm", title: "General Manager", kind: "lead" }, { id: "owner", title: "Owner Track", kind: "founder" }],
+    science: [{ id: "lead", title: "Lead Researcher", kind: "expert" }, { id: "professor", title: "Professor", kind: "life" }, { id: "public", title: "Public Scientist", kind: "fame" }],
+    sports: [{ id: "captain", title: "Captain", kind: "lead" }, { id: "superstar", title: "Superstar", kind: "fame" }, { id: "coach", title: "Coach", kind: "life" }],
+    starter: [{ id: "store", title: "Store Manager", kind: "lead" }, { id: "district", title: "District Manager", kind: "expert" }, { id: "ownWay", title: "Own Way", kind: "founder" }],
+};
+export interface CertDef { id: string; title: string; cost: number; weeks: number; groups: string[]; hire: number; minAge: number; blurb: string }
+export const CERTS: CertDef[] = [
+    { id: "cpr", title: "CPR & First Aid", cost: 150, weeks: 2, groups: ["health", "public", "sports"], hire: 5, minAge: 14, blurb: "Save a life. Lifeguards, coaches and medics love it." },
+    { id: "forklift", title: "Forklift Licence", cost: 300, weeks: 3, groups: ["trades", "starter"], hire: 6, minAge: 18, blurb: "Warehouses and building sites hire you faster." },
+    { id: "realEstate", title: "Real Estate Licence", cost: 1200, weeks: 8, groups: ["starter", "tech"], hire: 4, minAge: 18, blurb: "Sell homes, and start a real estate company for less." },
+    { id: "trainer", title: "Personal Trainer", cost: 900, weeks: 6, groups: ["sports"], hire: 8, minAge: 18, blurb: "Coach people one on one." },
+    { id: "bartending", title: "Bartending", cost: 400, weeks: 4, groups: ["hospitality"], hire: 6, minAge: 18, blurb: "Cocktails, tips and late nights." },
+    { id: "pilot", title: "Private Pilot Licence", cost: 9000, weeks: 12, groups: ["hospitality", "science"], hire: 8, minAge: 17, blurb: "Fly small planes. Airlines notice." },
+    { id: "teaching", title: "Teaching Certificate", cost: 2500, weeks: 10, groups: ["public", "science"], hire: 8, minAge: 21, blurb: "Teach, tutor, or lecture." },
+    { id: "pm", title: "Project Management", cost: 2000, weeks: 8, groups: ["tech", "trades", "public"], hire: 6, minAge: 21, blurb: "Plans, budgets and deadlines. Leaders need it." },
+    { id: "bootcamp", title: "Coding Bootcamp", cost: 8000, weeks: 12, groups: ["tech"], hire: 10, minAge: 16, blurb: "From zero to developer: +15 Code too." },
+    { id: "foodSafety", title: "Food Safety", cost: 120, weeks: 1, groups: ["hospitality", "starter"], hire: 4, minAge: 16, blurb: "Every kitchen wants one." },
+    { id: "cdl", title: "Commercial Driving Licence", cost: 3500, weeks: 6, groups: ["trades", "starter"], hire: 7, minAge: 21, blurb: "Trucks, buses and rideshare without the stress." },
+    { id: "design", title: "UX Design Course", cost: 3000, weeks: 8, groups: ["creative", "tech"], hire: 7, minAge: 16, blurb: "Make things people love to use: +10 Creativity." },
+];

@@ -2,6 +2,7 @@
 import { Work } from "./Work";
 import { Hiring } from "./Hiring";
 import { Workplace } from "./Workplace";
+import { CareerPath } from "./CareerPath";
 import { WORK_LOVE_ACTIONS } from "./WorkLove";
 import { WORK_MOMENTS } from "./WorkMoments";
 import { MOMENTS } from "../Managers/LifeMoments";
@@ -19,6 +20,13 @@ export function installWork() {
     Work.weekHooks.push((p) => Workplace.afterWeek(p));
     for (const m of WORK_MOMENTS) if (!MOMENTS.some((x) => x.id === m.id)) MOMENTS.push(m);
     for (const d of WORK_LOVE_ACTIONS) if (!LOVE_ACTIONS.some((x) => x.id === d.id)) LOVE_ACTIONS.push(d);
+    // stage 4: career paths
+    Work.payHooks.push((p) => CareerPath.payMult(p));
+    Work.modHooks.push((p) => CareerPath.mods(p));
+    Work.perfHooks.push((p) => CareerPath.perfBonus(p));
+    Work.workHooks.push((p, e) => CareerPath.onWork(p, e));
+    Work.weekHooks.push((p) => CareerPath.weekly(p));
+    Hiring.scoreHooks.push((job, p) => CareerPath.hireBonus(job, p));
     // stage 2: hiring
     Work.weekHooks.push((p) => Hiring.afterWeek(p));
     // an heir's life starts on the new system (their own job, if any, gets an employer without the "upgrade" note)

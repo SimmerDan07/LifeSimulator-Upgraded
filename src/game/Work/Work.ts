@@ -158,8 +158,13 @@ export const Work = {
         if (e.id === "grind" && Work.timeManaged(p)) m += 0.15;   // the old Time Management skill still helps
         const emp = Work.employer(p);
         if (emp) m *= emp.pay * (VIBES[emp.vibe]?.pay ?? 1);
+        for (const f of Work.payHooks) m *= f(p);
         return m * Work.state(p).raise;
     },
+    /** Pay multipliers from later stages (your career branch). */
+    payHooks: [] as ((p: any) => number)[],
+    /** Run after each week's work (career skills grow). */
+    workHooks: [] as ((p: any, effort: EffortDef) => void)[],
     timeManaged(p: any): boolean { try { return p.hasSkill(CompletableAction.timeMangement); } catch { return false; } },
     /** The week's work: stats, performance, burnout. Returns the name Illness knows the effort by. */
     onWork(p: any, workAction?: any): string {
@@ -175,6 +180,7 @@ export const Work = {
         let step = (target - w.perf) * 0.12;
         if (step > 0 && w.wfh) step *= 0.75;
         w.perf = clamp(w.perf + step, 0, 100);
+        for (const f of Work.workHooks) { try { f(p, legacy ? effortDef(workAction.name() === "veryHard" ? "grind" : "hard") : e); } catch (err) { console.error(err); } }
         return legacy ? workAction.name() : e.overwork;
     },
     /** What a week at your effort does to health, happiness and sanity (vampires don't lose health to work). */

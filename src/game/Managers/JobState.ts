@@ -35,6 +35,7 @@ import { Subscriptions } from "./Subscriptions";
 import { Youth } from "../Youth/Youth";
 import { Work } from "../Work/Work";
 import { Hiring } from "../Work/Hiring";
+import { CareerPath } from "../Work/CareerPath";
 import { WorkScreens } from "../Work/WorkScreens";
 
 export class JobState {
@@ -260,7 +261,8 @@ export namespace JobState {
         return this.type.getMaxLevels() === this.level;
     }
         getJobTitle(): string {
-        return this.type.getJobTitles()[this.level - 1];
+        // v0.33.0: past the fork, your branch shows in the title ("Senior Nurse (Specialist)")
+        return this.type.getJobTitles()[this.level - 1] + CareerPath.titleSuffix(this.type.name(), this.level);
     }
         getModifiers(): Modifiers {
         return this.type.modifiers(this.level);

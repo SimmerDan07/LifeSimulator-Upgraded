@@ -21,6 +21,8 @@ import { EFFORTS, PROMOTION_PERF, BURNOUT_FULL } from "../src/game/Work/WorkData
 import { LifeActions } from "../src/game/Lifepaths/Vampire";
 import { Hiring } from "../src/game/Work/Hiring";
 import { Workplace } from "../src/game/Work/Workplace";
+import { CareerPath } from "../src/game/Work/CareerPath";
+import { BRANCHES, CERTS } from "../src/game/Work/WorkData";
 import { WORK_MOMENTS } from "../src/game/Work/WorkMoments";
 import { WORK_LOVE_ACTIONS } from "../src/game/Work/WorkLove";
 import { LoveActions } from "../src/game/Social/LoveActions";
@@ -395,6 +397,70 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     gs.noPopups = false;
     check("with pop-ups off, work moments don't pop up", !popped);
     dismissAll();
+}
+
+// ------------------------------------------------------------------ stage 4: career paths
+{
+    const p = start(30);
+    // a career with a fork
+    const forkJob: any = Job.values().find((j: any) => CareerPath.hasFork(j) && Hiring.applyBlock(j, p) == null && j.getMaxLevels() >= 4);
+    check("careers with a fork exist", !!forkJob);
+    hire(p, forkJob);
+    const g = Work.group(forkJob);
+    check("every field (but fame careers) has 3 branches", Object.values(BRANCHES).every((b) => b.length === 3) && Object.keys(BRANCHES).length === 9);
+    // skill grows with work, faster when grinding
+    const s0 = CareerPath.skill(g, p);
+    Work.setEffort("steady", p); week(p, 10);
+    const s1 = CareerPath.skill(g, p);
+    Illness.state(p).overwork = 0;
+    Work.setEffort("grind", p);
+    for (let i = 0; i < 10; i++) { Illness.state(p).overwork = 0; week(p, 1); }
+    const s2 = CareerPath.skill(g, p);
+    check("skill grows when you work", s1 > s0, `${s0} → ${s1}`);
+    check("…faster when you grind", s2 - s1 > s1 - s0, `${s1 - s0} vs ${s2 - s1}`);
+    Work.setEffort("steady", p);
+    // skill lifts performance target and hire score
+    const st = p.getJobState().getCurrentJobState();
+    CareerPath.state(p).skills[g] = 80;
+    check("skill lifts performance", CareerPath.perfBonus(p) >= 8);
+    check("skill counts at hiring", (CareerPath.hireBonus(forkJob, p)?.[1] ?? 0) >= 10);
+    // take a course: a week, money, skill
+    CareerPath.state(p).skills[g] = 20;
+    const course = WorkScreens.PATH_ACTIONS.find((d) => d.id === "course")!;
+    const age = p.getTrueAgeInWeeks(), c0 = cashN(p);
+    check("take a course", LifeActions.perform(course, p) && CareerPath.skill(g, p) > 24);
+    check("a course takes a week and costs money", p.getTrueAgeInWeeks() === age + 1 && cashN(p) < c0);
+    dismissAll();
+    // the fork
+    st.setLevel(CareerPath.forkLevel(forkJob) - 1); st.setProgress(0);
+    check("before the fork: no branch needed", !CareerPath.needsBranch(p));
+    st.setLevel(CareerPath.forkLevel(forkJob));
+    check("at the fork: pick a branch", CareerPath.needsBranch(p));
+    shown.length = 0;
+    week(p, 0); quiet(p); p.getJobState().work(forkJob, WorkAction.normal); keep(p);
+    const fk = findAlert(/^A Fork in Your Career$/);
+    check("the fork pops up (always)", !!fk && fk.milestone === true);
+    fk?.getPositiveButton?.()?.getAction?.()?.invoke?.();
+    dismissAll();
+    const b = CareerPath.activeBranch(p);
+    check("branch chosen", b != null && b.id === BRANCHES[g][0].id);
+    check("the branch shows in the title", st.getJobTitle().endsWith(`(${b!.title})`), st.getJobTitle());
+    // branch pay
+    const pay1 = Work.payModifier(p);
+    CareerPath.state(p).branches[forkJob.name()] = BRANCHES[g].find((x) => x.kind !== b!.kind)!.id;
+    const pay2 = Work.payModifier(p);
+    check("branches change pay", pay1 !== pay2, `${pay1} vs ${pay2}`);
+    // certifications
+    const cpr = CERTS.find((c) => c.id === "cpr")!;
+    const age2 = p.getTrueAgeInWeeks();
+    check("enrol in a certification: no week passes", /signed up/.test(CareerPath.enroll("cpr", p)) && p.getTrueAgeInWeeks() === age2);
+    check("one course at a time", CareerPath.certBlock(CERTS.find((c) => c.id === "pm")!, p) != null);
+    week(p, cpr.weeks);
+    check("finished: on your résumé", CareerPath.hasCert("cpr", p));
+    dismissAll();
+    check("certs screen builds", vmText(new LifepathsModelGenerator().screen("work-certs")).includes("Coding Bootcamp"));
+    check("résumé lists skills", vmText(new LifepathsModelGenerator().screen("work-resume")).includes("Skills"));
+    check("job card shows the career path", WorkScreens.jobCells(p).map(vmText).join(" ").includes("Career Path"));
 }
 
 // ------------------------------------------------------------------ old saves: an employer for the job you have

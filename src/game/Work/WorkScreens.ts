@@ -14,6 +14,8 @@ import { Work, money } from "./Work";
 import { EFFORTS, VIBES, PERKS, PROMOTION_PERF, ratingOf, SKIP_INTERVIEW } from "./WorkData";
 import { Hiring, Application } from "./Hiring";
 import { Workplace, BOSS_TYPES } from "./Workplace";
+import { CareerPath } from "./CareerPath";
+import { SKILLS, BRANCH_KINDS, CERTS } from "./WorkData";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { Utils } from "../Utils/Utils";
 import { GenericListType } from "../Fragments/GenericListType";
@@ -43,6 +45,26 @@ export const JOB_ACTIONS: LifeActionDef[] = [
         note: () => { const n = Workplace.state().notice; return n != null ? `Your last week is in ${n - Work.now()} week${n - Work.now() === 1 ? "" : "s"}.\n` : "Two weeks' notice for a good reference, or walk out today.\n"; },
         run: (p) => Workplace.quitMenu(p) },
 ];
+/** Work tab › Career Path (under your job). */
+export const PATH_ACTIONS: LifeActionDef[] = [
+    { id: "branch", title: () => { const b = CareerPath.activeBranch(); return b ? `Career Path: ${b.title}` : "Choose Your Career Path"; }, image: "icon_work_fork", instant: true,
+        show: (p) => CareerPath.hasFork(Work.job(p)) && (CareerPath.needsBranch(p) || CareerPath.activeBranch(p) != null),
+        actionTitle: () => (CareerPath.activeBranch() ? "Change" : "Choose"),
+        note: () => { const b = CareerPath.activeBranch(); return b ? `${BRANCH_KINDS[b.kind].blurb}\n` : "You've reached the fork: pick the way your career goes.\n"; },
+        run: (p) => CareerPath.forkPrompt(p) },
+    { id: "fork", title: () => `Career Path at ${Hiring.titleAt(Work.job(), CareerPath.forkLevel(Work.job()))}`, image: "icon_work_fork", instant: true,
+        show: (p) => CareerPath.hasFork(Work.job(p)) && !CareerPath.needsBranch(p) && CareerPath.activeBranch(p) == null,
+        lock: () => "Reach the middle of this career first",
+        note: () => `${CareerPath.branches(Work.job()).map((b) => b.title).join(", ")}.\n`,
+        run: () => {} },
+    { id: "course", title: () => `Take a ${CareerPath.skillTitle(Work.group(Work.job()))} Course`, image: "icon_work_course",
+        cost: () => CareerPath.courseCost(), lock: (p) => CareerPath.courseLock(p), mods: [0, -1, -1],
+        note: () => `A week of evening classes: about +${Math.round(6 * (1 - CareerPath.skill(Work.group(Work.job())) / 150))} ${CareerPath.skillTitle(Work.group(Work.job()))}.\n`,
+        run: (p) => Work.say("Course Finished", CareerPath.takeCourse(p), "icon_work_course") },
+    { id: "certs", title: "Certifications", image: "icon_work_cert", instant: true, actionTitle: () => "Open",
+        note: () => { const s = CareerPath.state(); return `${s.certs.length ? `You have ${s.certs.length}. ` : ""}${s.course ? `Studying ${CareerPath.cert(s.course.id)?.title} (${s.course.until - Work.now()} weeks left).` : "Short courses that help you get hired."}\n`; },
+        run: () => navigate("work-certs") },
+];
 
 function openEffortMenu(p: any) {
     const cur = Work.state(p).effort;
@@ -68,6 +90,25 @@ export function jobCells(p: any = player()): any[] {
     const next = t.reviewAt - Work.now(p);
     if (boss) out.push(note("WorkBoss", `Boss: ${boss.getFullName()} (${BOSS_TYPES[t.bossType]?.title ?? "Fair"}). ${Workplace.opinionText(t.opinion)}.${next > 0 ? ` Next review in ${next} week${next === 1 ? "" : "s"}.` : ""}${t.plan != null ? `\nOn a performance plan: reach 50 within ${Math.max(0, t.plan - Work.now(p))} weeks.` : ""}`));
     for (const c of LifeActions.cells(JOB_ACTIONS, p)) out.push(c);
+    // career path
+    const g = Work.group(Work.job(p));
+    out.push(new HeaderTitleViewModel("Career Path"));
+    const sk = CareerPath.skill(g, p);
+    out.push(new MeterViewModel(`${CareerPath.skillTitle(g)} Skill`, Math.floor(sk), 100, sk >= 75 ? "gold" : sk >= 40 ? "green" : "blue", "Grows every week you work (faster when you work harder). Raises your performance and your Hire Score in this field."));
+    for (const c of LifeActions.cells(PATH_ACTIONS, p)) out.push(c);
+    return out;
+}
+function certsScreen(p: any): any[] {
+    const out: any[] = [];
+    const s = CareerPath.state(p);
+    if (s.course) out.push(note("WorkCourse", `Studying ${CareerPath.cert(s.course.id)?.title}: ${s.course.until - Work.now(p)} week${s.course.until - Work.now(p) === 1 ? "" : "s"} to go. One course at a time.`));
+    for (const c of CERTS) {
+        const block = CareerPath.certBlock(c, p);
+        const done = s.certs.includes(c.id);
+        const fields = c.groups.map((x) => SKILLS[x]?.title).filter(Boolean).join(", ");
+        out.push(btn("icon_work_cert", c.title, `${c.blurb}\n${money(c.cost)} · ${c.weeks} week${c.weeks === 1 ? "" : "s"} · helps in: ${fields}\n`,
+            done ? "Done" : block && s.course?.id === c.id ? "Studying" : "Enrol", () => Work.say("Enrolled", CareerPath.enroll(c.id, p), "icon_work_cert"), block == null));
+    }
     return out;
 }
 /** Work tab, no job: unemployment benefits. */
@@ -171,6 +212,11 @@ function resumeScreen(p: any): any[] {
         const ref = Hiring.referenceOf(h.why);
         out.push(info(jobImage(j), h.title, `${h.employer}, age ${ageAt(p, h.from)} to ${ageAt(p, h.to)}. Left: ${h.why}. Reference: ${ref > 0 ? "good" : ref < 0 ? "bad" : "neutral"}.\n`));
     }
+    // skills and certificates
+    const sk = Object.entries(CareerPath.state(p).skills).filter(([, n]) => n >= 1).sort((a, b) => b[1] - a[1]);
+    if (sk.length) { out.push(new HeaderTitleViewModel("Skills")); for (const [g, n] of sk) out.push(new MeterViewModel(CareerPath.skillTitle(g), Math.floor(n), 100, n >= 75 ? "gold" : n >= 40 ? "green" : "blue")); }
+    const certs = CareerPath.state(p).certs.map((id) => CareerPath.cert(id)?.title).filter(Boolean);
+    if (certs.length) { out.push(new HeaderTitleViewModel("Certifications")); out.push(note("WorkResumeCerts", certs.join("\n"))); }
     for (const c of Work.resumeHooks) for (const x of c(p)) out.push(x);
     return out;
 }
@@ -178,12 +224,13 @@ const ageAt = (p: any, week: number) => { try { return Math.floor((p.getAgeInWee
 
 export function screenTitle(key: string): string {
     if (key.startsWith("work-openings:")) { const j = Hiring.jobOf(key.slice(14)); return j ? `${Hiring.careerName(j)} Openings` : "Openings"; }
-    return ({ "work-apps": "Job Applications", "work-resume": "Résumé" } as any)[key] ?? "Work";
+    return ({ "work-apps": "Job Applications", "work-resume": "Résumé", "work-certs": "Certifications" } as any)[key] ?? "Work";
 }
 export function screen(key: string, p: any = player()): any[] {
     if (key.startsWith("work-openings:")) return openingsScreen(key.slice(14), p);
     if (key === "work-apps") return appsScreen(p);
     if (key === "work-resume") return resumeScreen(p);
+    if (key === "work-certs") return certsScreen(p);
     for (const h of Work.screenHooks) { const r = h(key, p); if (r) return r; }
     return [];
 }
@@ -193,4 +240,4 @@ export function profileCells(p: any = player()): any[] {
     return [btn("tab_briefcase", "Résumé", "Your Hire Score, job history and references.\n", "Open", () => navigate("work-resume"))];
 }
 
-export const WorkScreens = { unemployedCells, jobCells, goToWorkButtons, JOB_ACTIONS, appsRow, screen, screenTitle, profileCells, navigate };
+export const WorkScreens = { PATH_ACTIONS, unemployedCells, jobCells, goToWorkButtons, JOB_ACTIONS, appsRow, screen, screenTitle, profileCells, navigate };
