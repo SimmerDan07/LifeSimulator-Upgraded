@@ -1134,14 +1134,15 @@ export class Player {
             MoneyState.updateMoney$default(this.moneyState, this.diet.getCost(), MoneyUpdateType.expense, Utils.Strings.INSTANCE.formatWithDash(Utils.INSTANCE.getString(R.string.Common_Diet), this.diet.getTitle()), null, 8, null);
             this.attributeState.setDeltaValue(this.diet.getModifiers(), Utils.Strings.INSTANCE.formatWithDash(Utils.INSTANCE.getString(R.string.Common_Diet), this.diet.getTitle()));
         }
-        for (const singleSideHustleState of this.sideHustleState.getStates()) {
+        // v0.33.0: side hustles and businesses were rebuilt (Work/Hustles.ts, Work/Company.ts); old ones carried over there
+        if (!Work.enabled) for (const singleSideHustleState of this.sideHustleState.getStates()) {
             if (singleSideHustleState.getWeeklyRevenue() > 0) {
                 let moneyState3: MoneyState = this.moneyState;
                 let valueOf7: BigInteger = BigInteger.valueOf(singleSideHustleState.getWeeklyRevenue());
                 MoneyState.updateMoney$default(moneyState3, valueOf7, MoneyUpdateType.passiveIncome, (StringsKt.capitalize(singleSideHustleState.getType().getProjectName()) + " ") + Utils.INSTANCE.getString(R.string.Common_Revenue), null, 8, null);
             }
         }
-        this.businessState.applyWeeklyValues(this);
+        if (!Work.enabled) this.businessState.applyWeeklyValues(this);
         let moneyState4: MoneyState = this.moneyState;
         let valueOf8: BigInteger = BigInteger.valueOf(this.getCurrentAllowance());
         MoneyState.updateMoney$default(moneyState4, valueOf8, MoneyUpdateType.passiveIncome, Utils.INSTANCE.getString(R.string.Family_AllowanceLabel), null, 8, null);

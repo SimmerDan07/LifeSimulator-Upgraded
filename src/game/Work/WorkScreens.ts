@@ -15,6 +15,8 @@ import { EFFORTS, VIBES, PERKS, PROMOTION_PERF, ratingOf, SKIP_INTERVIEW } from 
 import { Hiring, Application } from "./Hiring";
 import { Workplace, BOSS_TYPES } from "./Workplace";
 import { CareerPath } from "./CareerPath";
+import { Hustles, HUSTLES, HUSTLE_LEVELS } from "./Hustles";
+import { Companies, COMPANY_TYPES, QUALITY, PRICES, MARKETING, Company } from "./Company";
 import { SKILLS, BRANCH_KINDS, CERTS } from "./WorkData";
 import { HeaderTitleViewModel } from "../Models/HeaderTitleViewModel";
 import { Utils } from "../Utils/Utils";
@@ -128,7 +130,6 @@ export function goToWorkButtons(p: any = player()): WorkButtonsViewModel | null 
     if (!Work.enabled) return null;
     const job = Work.job(p);
     const hidden = ButtonViewModel.INSTANCE.getHidden();
-    if (job == null && p.getWorkButtonType().name() === "sideHustle") return null;
     const e = Work.effort(p);
     const sb = new SpannableStringBuilder("");
     ExtensionsKt.appendNewline(ExtensionsKt.appendBold$default(sb, "Go to Work", R.color.flatWhite, 18, null, 8, null));
@@ -222,15 +223,118 @@ function resumeScreen(p: any): any[] {
 }
 const ageAt = (p: any, week: number) => { try { return Math.floor((p.getAgeInWeeks() - (Work.now(p) - week)) / 52); } catch { return "?"; } };
 
+// ================================================================== side hustles
+const levelLine = (xp: number) => { const l = Hustles.level(xp); const next = HUSTLE_LEVELS[l + 1]; return `${HUSTLE_LEVELS[l].name}${next ? ` (${Math.floor(xp)}/${next.min} to ${next.name})` : ""}`; };
+function shiftCell(d: any, p: any) {
+    const s = Hustles.st(d.id, p), lock = Hustles.shiftLock(d, p);
+    return new ActionCellSingleViewModel(d.image, `${d.title}: ${d.action}`, text(`${levelLine(s.xp)}. Earned ${money(s.earned)} so far.${s.catalogue >= 1 ? ` Back catalogue: ${money(s.catalogue)} a week.` : ""}\n`),
+        new ButtonViewModel(lock ?? "Go", null, lock == null, false, lock != null, false, false, { invoke: () => { Work.say(d.title, Hustles.shift(d.id, p), d.image); refresh(); return null; } }), null, null);
+}
+export function hustleCells(p: any = player()): any[] {
+    if (!Work.enabled || p.getAgeInYears() < 12) return [];
+    const out: any[] = [new HeaderTitleViewModel("Side Hustles")];
+    for (const d of Hustles.active(p)) out.push(shiftCell(d, p));
+    const cat = Hustles.catalogueTotal(p);
+    out.push(btn("sidehustle_youtube", Hustles.active(p).length ? "All Side Hustles" : "Start a Side Hustle", `${Hustles.active(p).length}/${Hustles.limit(p)} running. Once a week each, no week used.${cat >= 1 ? ` Back catalogue: ${money(cat)} a week.` : ""}\n`, "Open", () => navigate("work-hustles")));
+    return out;
+}
+function hustlesScreen(p: any): any[] {
+    const out: any[] = [note("WorkHustlesNote", `Run up to ${Hustles.limit(p)} at once${Hustles.limit(p) === 1 ? " (1 while you're Grinding at work)" : ""}. Each has one action a week that pays now and levels you up, Newbie to Pro.`)];
+    for (const d of HUSTLES) {
+        const s = Hustles.st(d.id, p);
+        if (s.active) {
+            out.push(shiftCell(d, p));
+            out.push(btn(d.image, `Stop ${d.title}`, "You keep your level and back catalogue.\n", "Stop", () => Hustles.stop(d.id, p)));
+            continue;
+        }
+        const block = Hustles.startBlock(d, p);
+        out.push(btn(d.image, d.title, `${d.blurb}\n${s.xp > 0 ? `${levelLine(s.xp)}. ` : ""}${d.startCost && !s.started ? `Costs ${money(d.startCost)} to start.` : ""}\n`, block ?? "Start", () => Work.say(d.title, Hustles.start(d.id, p), d.image), block == null));
+    }
+    return out;
+}
+
+// ================================================================== companies
+export function companyCells(p: any = player()): any[] {
+    if (!Work.enabled || p.getAgeInYears() < 16) return [];
+    const out: any[] = [new HeaderTitleViewModel("Your Business")];
+    for (const c of Companies.all(p)) {
+        const t = Companies.type(c.type);
+        out.push(btn(t.image, c.name, `${t.title}${c.locations > 1 ? `, ${c.locations} locations` : ""}${c.public ? " (public)" : ""} · ${c.stars.toFixed(1)} stars\nLast week: ${c.lastProfit >= 0 ? "" : "-"}${money(Math.abs(c.lastProfit))} ${c.lastProfit >= 0 ? "profit" : "loss"}.\n`, "Manage", () => navigate(`work-company:${c.id}`)));
+    }
+    out.push(btn("business_sell", "Start a Company", "Café, restaurant, gym, tech startup and more. You run it; it can make you rich.\n", "Open", () => navigate("work-start-company"), p.getAgeInYears() >= 18));
+    return out;
+}
+function startScreen(p: any): any[] {
+    const out: any[] = [note("WorkStartNote", `Pay from savings, take a business loan (20% down), or bring in investors (they pay half for a quarter of the profits).${Companies.discount(p) > 0 ? ` Your Founder path takes ${Math.round(Companies.discount(p) * 100)}% off.` : ""}`)];
+    for (const t of COMPANY_TYPES) {
+        const cost = Companies.costOf(t, p);
+        const block = Companies.startBlock(t, p, "loan");
+        out.push(btn(t.image, t.title, `${t.blurb}\nCosts ${money(cost)} · ${t.staff} staff to start\n`, block ?? "Start", () => startFlow(t.id, p), block == null));
+    }
+    return out;
+}
+function startFlow(typeId: string, p: any) {
+    const t = Companies.type(typeId), cost = Companies.costOf(t, p);
+    const pickName = (q: number, f: "cash" | "loan" | "investors") => {
+        Work.menu("Name It", "What's it called?", t.image, Companies.nameOptions(typeId, p).map((n) => [n, () => {
+            const c = Companies.found(typeId, n, q, f, p);
+            if (!c) return "You can't afford that way of paying right now.";
+            refresh(); navigate(`work-company:${c.id}`);
+            return `${n} is open for business! Set your prices, staff and marketing on its screen.`;
+        }] as [string, () => string]));
+    };
+    const pickQuality = (f: "cash" | "loan" | "investors") => Work.menu("How Fancy?", QUALITY.map((q) => `${q.title}: ${q.id === 0 ? "cheaper to run, fewer stars" : q.id === 1 ? "the middle road" : "costs more per customer, wins stars and customers"}`).join("\n"), t.image,
+        [...QUALITY.map((q) => [q.title, () => { pickName(q.id, f); return ""; }] as [string, () => string])]);
+    const opt = (f: "cash" | "loan" | "investors", label: string): [string, () => string] => [label, () => { const b = Companies.startBlock(t, p, f); if (b) return b; pickQuality(f); return ""; }];
+    Work.menu(`Start a ${t.title}`, `It costs ${money(cost)} to open. How do you pay?\n\nSavings: all ${money(cost)} now, all the profit is yours.\nBusiness loan: ${money(cost * 0.2)} down, the rest repaid weekly over 2 years (12% interest).\nInvestors: ${money(cost * 0.5)} from you, they take a quarter of the profits.`, t.image,
+        [opt("cash", "Savings"), opt("loan", "Business loan"), opt("investors", "Investors"), ["Never mind", () => ""]]);
+}
+function companyScreen(id: string, p: any): any[] {
+    const c = Companies.get(id, p);
+    if (!c) return [note("WorkCompanyGone", "This company isn't yours any more.")];
+    const t = Companies.type(c.type), out: any[] = [];
+    out.push(new MeterViewModel("Reviews", Math.round(c.stars * 20), 100, c.stars >= 4 ? "gold" : c.stars >= 3 ? "green" : c.stars >= 2 ? "blue" : "red", `${c.stars.toFixed(1)} out of 5 stars`));
+    const need = Companies.staffNeed(c);
+    out.push(info(t.image, c.name, `${t.title} · ${c.locations} location${c.locations === 1 ? "" : "s"} · open ${Math.max(0, Work.now(p) - c.since)} weeks\nLast week: ${c.lastCustomers.toLocaleString()} ${["tech", "construction", "farm", "realEstate"].includes(c.type) ? "clients" : "customers"}, ${c.lastProfit >= 0 ? "profit" : "loss"} ${money(Math.abs(c.lastProfit))}${c.public ? " (you get 30%)" : c.share > 0 ? " (investors take 25%)" : ""}.\nWorth about ${money(Companies.value(c))} to you.${c.loan > 0 ? ` Loan left: ${money(c.loan)}.` : ""}\n`));
+    if (c.rival) out.push(note("WorkRival", `${c.rival.name} is competing with you nearby.`));
+    const offer = (c as any).offer;
+    if (offer && offer.until > Work.now(p)) out.push(btn("business_sell", "A Buyer's Offer", `${money(offer.amount)} for your share. Expires in ${offer.until - Work.now(p)} weeks.\n`, "Accept", () => Work.say("Sold", Companies.sell(c.id, p, offer.amount), t.image)));
+    if (c.public) {
+        out.push(note("WorkPublic", "It's a public company now: the board runs it and you collect dividends."));
+        out.push(btn("business_sell", "Sell Your Shares", `About ${money(Companies.value(c) * 0.85)}.\n`, "Sell", () => Work.menu("Sell Your Shares?", `${money(Companies.value(c) * 0.85)} now, and no more dividends.`, t.image, [["Sell", () => Companies.sell(c.id, p)], ["Keep them", () => ""]])));
+        return out;
+    }
+    out.push(new HeaderTitleViewModel("Running It"));
+    out.push(btn("bank_deposit", `Prices: ${PRICES[c.price].title}`, "Cheaper wins customers and stars; pricier earns more per customer.\n", "Change", () => Work.menu("Prices", "Set your prices.", t.image, PRICES.map((x) => [x.title, () => { Companies.setPrice(c, x.id); refresh(); return ""; }] as [string, () => string]))));
+    out.push(btn(t.image, `Quality: ${QUALITY[c.quality].title}`, "Better goods cost more, but bring stars and customers.\n", "Change", () => Work.menu("Quality", "What are you selling?", t.image, QUALITY.map((x) => [x.title, () => { Companies.setQuality(c, x.id); refresh(); return ""; }] as [string, () => string]))));
+    out.push(btn("work_retail", `Staff: ${c.staff} (needs about ${need})`, `${money(t.wage)} a week each. Too few and reviews drop.\n`, "Change", () => Work.menu("Staff", `You have ${c.staff}; about ${need} keeps things running smoothly.`, t.image, [
+        ["Hire to match", () => { Companies.hire(c, need - c.staff); refresh(); return ""; }], ["Hire 1 more", () => { Companies.hire(c, 1); refresh(); return ""; }],
+        ["Hire 5 more", () => { Companies.hire(c, 5); refresh(); return ""; }], ["Let 1 go", () => { Companies.hire(c, -1); refresh(); return ""; }], ["Never mind", () => ""]])));
+    out.push(btn("sidehustle_youtube", `Marketing: ${c.marketing ? `${money(c.marketing)} a week` : "None"}`, "Ads bring customers.\n", "Change", () => Work.menu("Marketing", "How much a week?", t.image, MARKETING.map((m) => [m ? money(m) : "None", () => { Companies.setMarketing(c, m); refresh(); return ""; }] as [string, () => string]))));
+    out.push(btn("tab_briefcase", c.handsOn ? "You Run It Yourself" : "A Manager Runs It", c.handsOn ? "Customers like seeing the owner. If you have a job too, it's tiring (−1 sanity a week).\n" : `${money(Companies.managerWage)} a week per 3 locations.\n`, c.handsOn ? "Hire a Manager" : "Run It Yourself", () => Companies.setHandsOn(c, !c.handsOn)));
+    out.push(new HeaderTitleViewModel("Growing"));
+    const eb = Companies.expandBlock(c, p);
+    out.push(btn("business_realestate1", "Open Another Location", `${money(Companies.expandCost(c, p))}.\n`, eb ?? "Open", () => Work.say("New Location", Companies.expand(c, p), t.image), eb == null));
+    const ib = Companies.ipoBlock(c);
+    out.push(btn("bank_stocks", "Go Public", "Sell most of your shares on the stock market and keep 30% of the profits.\n", ib ?? "Ring the Bell", () => Work.say("Going Public", Companies.ipo(c.id, p), t.image), ib == null));
+    out.push(btn("business_sell", "Sell the Company", `About ${money(Companies.value(c) * 0.85)} now (buyers sometimes offer more).\n`, "Sell", () => Work.menu("Sell It?", `${money(Companies.value(c) * 0.85)} for ${c.name}.`, t.image, [["Sell", () => { const r = Companies.sell(c.id, p); refresh(); return r; }], ["Keep it", () => ""]])));
+    out.push(btn("health_low", "Close It Down", "Sell the equipment and lock the doors.\n", "Close", () => Work.menu("Close It?", `${c.name} closes for good.`, t.image, [["Close it", () => { const r = Companies.close(c.id, p); refresh(); return r; }], ["Keep going", () => ""]])));
+    return out;
+}
+
 export function screenTitle(key: string): string {
+    if (key.startsWith("work-company:")) { const c = Companies.get(key.slice(13)); return c ? c.name : "Company"; }
     if (key.startsWith("work-openings:")) { const j = Hiring.jobOf(key.slice(14)); return j ? `${Hiring.careerName(j)} Openings` : "Openings"; }
-    return ({ "work-apps": "Job Applications", "work-resume": "Résumé", "work-certs": "Certifications" } as any)[key] ?? "Work";
+    return ({ "work-apps": "Job Applications", "work-resume": "Résumé", "work-certs": "Certifications", "work-hustles": "Side Hustles", "work-start-company": "Start a Company" } as any)[key] ?? "Work";
 }
 export function screen(key: string, p: any = player()): any[] {
     if (key.startsWith("work-openings:")) return openingsScreen(key.slice(14), p);
     if (key === "work-apps") return appsScreen(p);
     if (key === "work-resume") return resumeScreen(p);
     if (key === "work-certs") return certsScreen(p);
+    if (key === "work-hustles") return hustlesScreen(p);
+    if (key === "work-start-company") return startScreen(p);
+    if (key.startsWith("work-company:")) return companyScreen(key.slice(13), p);
     for (const h of Work.screenHooks) { const r = h(key, p); if (r) return r; }
     return [];
 }
@@ -240,4 +344,4 @@ export function profileCells(p: any = player()): any[] {
     return [btn("tab_briefcase", "Résumé", "Your Hire Score, job history and references.\n", "Open", () => navigate("work-resume"))];
 }
 
-export const WorkScreens = { PATH_ACTIONS, unemployedCells, jobCells, goToWorkButtons, JOB_ACTIONS, appsRow, screen, screenTitle, profileCells, navigate };
+export const WorkScreens = { hustleCells, companyCells, PATH_ACTIONS, unemployedCells, jobCells, goToWorkButtons, JOB_ACTIONS, appsRow, screen, screenTitle, profileCells, navigate };

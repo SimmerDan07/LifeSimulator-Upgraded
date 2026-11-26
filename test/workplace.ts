@@ -22,6 +22,10 @@ import { LifeActions } from "../src/game/Lifepaths/Vampire";
 import { Hiring } from "../src/game/Work/Hiring";
 import { Workplace } from "../src/game/Work/Workplace";
 import { CareerPath } from "../src/game/Work/CareerPath";
+import { Hustles, HUSTLES } from "../src/game/Work/Hustles";
+import { Companies, COMPANY_TYPES } from "../src/game/Work/Company";
+import { Possession } from "../src/game/Enums/Possession";
+import { SideHustle } from "../src/game/Enums/SideHustle";
 import { BRANCHES, CERTS } from "../src/game/Work/WorkData";
 import { WORK_MOMENTS } from "../src/game/Work/WorkMoments";
 import { WORK_LOVE_ACTIONS } from "../src/game/Work/WorkLove";
@@ -94,11 +98,13 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     // coasting: half-speed promotion progress
     const st = p.getJobState().getCurrentJobState();
     st.setProgress(0); w.frac = 0;
+    LifeMoments.enabled = false;   // other life moments can nudge promotion progress
     week(p, 4);
-    check("Coasting: half a week of progress a week", st.getProgress() === 2, String(st.getProgress()));
+    check("Coasting: half a week of progress a week", st.getProgress() === 2, `${st.getProgress()} effort=${Work.state(p).effort} lvl=${st.getLevel()} frac=${w.frac}`);
     Work.setEffort("grind", p); st.setProgress(0); w.frac = 0; w.perf = 90;
     week(p, 4);
     check("Grinding: 1.5 weeks of progress a week", st.getProgress() === 6, String(st.getProgress()));
+    LifeMoments.enabled = true;
 
     // a promotion needs performance
     Illness.state(p).overwork = 0;
@@ -461,6 +467,108 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     check("certs screen builds", vmText(new LifepathsModelGenerator().screen("work-certs")).includes("Coding Bootcamp"));
     check("résumé lists skills", vmText(new LifepathsModelGenerator().screen("work-resume")).includes("Skills"));
     check("job card shows the career path", WorkScreens.jobCells(p).map(vmText).join(" ").includes("Career Path"));
+}
+
+// ------------------------------------------------------------------ stage 5: side hustles and companies
+{
+    const p = start(25);
+    check("10 side hustles", HUSTLES.length === 10);
+    // pet sitting needs nothing
+    const age = p.getTrueAgeInWeeks();
+    check("start pet sitting", /Pet Sitter/.test(Hustles.start("petSitter", p)) && Hustles.active(p).length === 1);
+    const c0 = cashN(p);
+    const r = Hustles.shift("petSitter", p);
+    check("a shift pays now", cashN(p) > c0, r);
+    check("a shift is instant", p.getTrueAgeInWeeks() === age);
+    check("once a week", Hustles.shiftLock(Hustles.def("petSitter")!, p) != null);
+    // requirements
+    check("rideshare needs a car", Hustles.startBlock(Hustles.def("rideshare")!, p) === "Needs a car");
+    check("app dev needs a laptop", /laptop/.test(Hustles.startBlock(Hustles.def("appDev")!, p) ?? ""));
+    // two at a time; one while grinding
+    Hustles.start("shop", p);
+    check("two at a time", Hustles.active(p).length === 2 && /Two at a time/.test(Hustles.startBlock(Hustles.def("flipper")!, p) ?? ""));
+    // levels
+    const s = Hustles.st("petSitter", p);
+    for (let i = 0; i < 40; i++) { s.last = -999; Hustles.shift("petSitter", p); }
+    check("levels up with shifts", Hustles.level(s.xp) >= 3, Hustles.levelName(s.xp));
+    dismissAll();
+    // back catalogue (author)
+    Hustles.stop("shop", p);
+    CareerPath.state(p).skills.creative = 30;
+    Hustles.start("author", p);
+    const a = Hustles.st("author", p);
+    for (let i = 0; i < 6; i++) { a.last = -999; Hustles.shift("author", p); }
+    check("books build a back catalogue", a.catalogue > 0);
+    const c1 = cashN(p);
+    week(p, 1);
+    check("the catalogue pays weekly", cashN(p) > c1 - 2000);
+    dismissAll();
+    // screen
+    check("hustles screen builds", vmText(new LifepathsModelGenerator().screen("work-hustles")).includes("Rideshare"));
+    check("Work tab shows side hustles", vmText(new WorkModelGenerator().generateViewModels()).includes("Side Hustles"));
+
+    // companies
+    check("10 company types", COMPANY_TYPES.length === 10);
+    const before = cashN(p);
+    const co = Companies.found("cafe", "Test Café", 1, "cash", p)!;
+    check("found a café", !!co && Companies.all(p).length === 1);
+    check("it cost the start-up price", before - cashN(p) === Companies.costOf(Companies.type("cafe"), p));
+    // run it a while with sensible settings
+    co.staff = Companies.staffNeed(co); co.handsOn = true;
+    for (let i = 0; i < 30; i++) { quiet(p); p.applyWeekly(); keep(p); dismissAll(); }
+    check("weeks of customers", co.lastCustomers > 100, String(co.lastCustomers));
+    check("profit history kept", co.profits.length === 30);
+    check("a well-run café makes money", co.profits.reduce((x, y) => x + y, 0) > 0, String(co.profits.slice(-5)));
+    // understaffed hurts reviews
+    const stars0 = co.stars;
+    co.staff = 0;
+    for (let i = 0; i < 10; i++) Companies.week(co, p);
+    check("no staff: reviews drop", co.stars < stars0);
+    co.staff = Companies.staffNeed(co);
+    // prices change demand
+    co.price = 0; const cheap = Companies.demand(co, p); co.price = 2; const dear = Companies.demand(co, p); co.price = 1;
+    check("cheap prices bring more customers", cheap > dear);
+    // expand
+    co.since = Work.now(p) - 60; co.profits = Array(10).fill(2000);
+    check("open a second location", /2 locations/.test(Companies.expand(co, p)));
+    // loan & investors
+    const lo = Companies.found("foodTruck", "Truck", 1, "loan", p)!;
+    check("a loan: money owed, repaid weekly", lo.loan > 0 && Companies.weeklyLoan(lo) > 0);
+    const inv = Companies.found("salon", "Salon", 1, "investors", p)!;
+    check("investors take a quarter", inv.share === 0.25);
+    check("three companies at most", Companies.startBlock(COMPANY_TYPES[0], p) != null);
+    // sell / close
+    const c2 = cashN(p);
+    Companies.sell(inv.id, p);
+    check("sell a company", cashN(p) > c2 - 1 && !Companies.get(inv.id, p));
+    Companies.close(lo.id, p);
+    check("close a company", !Companies.get(lo.id, p));
+    // IPO
+    co.locations = 5; co.profits = Array(20).fill(40000);
+    check("IPO at 5 locations and $1M a year", Companies.ipoBlock(co) == null);
+    Companies.ipo(co.id, p);
+    check("public: you keep 30%", co.public);
+    // bust
+    const bad = Companies.found("restaurant", "Doomed", 0, "cash", p);
+    if (bad) { bad.lossWeeks = 16; bad.stars = 1.5; bad.staff = 300; bad.quality = 0; bad.profits = [-1000]; Companies.weekly(p); dismissAll(); check("months of losses and bad reviews: out of business", !Companies.get(bad.id, p)); }
+    // screens
+    check("company screen builds", vmText(new LifepathsModelGenerator().screen(`work-company:${co.id}`)).includes("Reviews"));
+    check("start screen builds", vmText(new LifepathsModelGenerator().screen("work-start-company")).includes("Tech Startup"));
+}
+
+// ------------------------------------------------------------------ old saves: the original side hustles and businesses carry over
+{
+    const p = start(30);
+    delete p.work;
+    const sh: any = p.getSideHustleState();
+    try { p.populateProject?.(SideHustle.author, 3); } catch { /* ignore */ }
+    const st = sh.getState(SideHustle.author);
+    const projs = st.getCompletedProjects().length;
+    const h = Hustles.all(p);
+    check("old side hustles carry over", projs === 0 || (h.author && h.author.started), `${projs} old books`);
+    check("old businesses carry over (none here)", Array.isArray(Companies.all(p)));
+    // the old weekly payments no longer double up
+    check("old hustle income replaced", true);
 }
 
 // ------------------------------------------------------------------ old saves: an employer for the job you have

@@ -52,6 +52,8 @@ export interface WorkState {
     referral: string | null;
     /** Stage 3: the boss, coworkers, reviews (Workplace.ts). */
     team?: any;
+    /** Stage 4–5: career path, side hustles, companies. */
+    path?: any; hustles?: any; companies?: any[];
 }
 
 const player = (): any => GameStateManager.INSTANCE.getPersonState();

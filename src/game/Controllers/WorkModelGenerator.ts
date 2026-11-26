@@ -34,6 +34,7 @@ import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { CrimeScreen } from "../Crime/CrimeScreen";
 import { YouthScreens } from "../Youth/YouthScreens";
 import { WorkScreens } from "../Work/WorkScreens";
+import { Work } from "../Work/Work";
 
 export class WorkModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
@@ -44,8 +45,13 @@ export class WorkModelGenerator implements IViewModelGenerator {
         // v0.27.0: no work buttons or side hustles from a cell
         if (GameStateManager.INSTANCE.getPersonState().getCrimeState().getIsInJail()) return new GenericListFragmentViewModel(arrayList, null, arrayList2);
         arrayList2.add(this.getWorkButtonsViewModel());
-        arrayList.addAll(this.getSideHustleViewModels());
-        arrayList.addAll(this.getBusinessViewModels());
+        if (Work.enabled) {   // v0.33.0: rebuilt side hustles and companies
+            for (const c of WorkScreens.hustleCells(GameStateManager.INSTANCE.getPersonState())) arrayList.add(c);
+            for (const c of WorkScreens.companyCells(GameStateManager.INSTANCE.getPersonState())) arrayList.add(c);
+        } else {
+            arrayList.addAll(this.getSideHustleViewModels());
+            arrayList.addAll(this.getBusinessViewModels());
+        }
         return new GenericListFragmentViewModel(arrayList, null, arrayList2);
     }
     getWorkViewModels(): ArrayList<BaseViewModel> {

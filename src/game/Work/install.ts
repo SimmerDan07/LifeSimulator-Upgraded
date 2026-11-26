@@ -3,6 +3,8 @@ import { Work } from "./Work";
 import { Hiring } from "./Hiring";
 import { Workplace } from "./Workplace";
 import { CareerPath } from "./CareerPath";
+import { Hustles } from "./Hustles";
+import { Companies } from "./Company";
 import { WORK_LOVE_ACTIONS } from "./WorkLove";
 import { WORK_MOMENTS } from "./WorkMoments";
 import { MOMENTS } from "../Managers/LifeMoments";
@@ -27,8 +29,16 @@ export function installWork() {
     Work.workHooks.push((p, e) => CareerPath.onWork(p, e));
     Work.weekHooks.push((p) => CareerPath.weekly(p));
     Hiring.scoreHooks.push((job, p) => CareerPath.hireBonus(job, p));
+    // stage 5: side hustles and companies
+    Work.weekHooks.push((p) => Hustles.weekly(p));
+    Work.weekHooks.push((p) => Companies.weekly(p));
     // stage 2: hiring
     Work.weekHooks.push((p) => Hiring.afterWeek(p));
     // an heir's life starts on the new system (their own job, if any, gets an employer without the "upgrade" note)
-    Generations.heirHooks.push((_parent, heir) => { const w = Work.state(heir); w.converted = false; });
+    Generations.heirHooks.push((parent, heir) => {
+        const w = Work.state(heir); w.converted = false;
+        // your heir inherits your companies
+        const pw: any = Work.peek(parent);
+        if (pw?.companies?.length) { w.companies = [...(w.companies ?? []), ...pw.companies]; pw.companies = []; }
+    });
 }
