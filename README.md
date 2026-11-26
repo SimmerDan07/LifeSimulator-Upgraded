@@ -282,6 +282,9 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     localStorage saves still read. Settings › Back Up Your Save / Load a Backup (`SettingsManager.backUpSave /
     loadBackup`, `UIBridge.backUp / pickFile / replaceSave`; share sheet or download; not on Android's WebView).
     Saves on `pagehide` too. Bundle target adds `safari15`.
+  - **v0.31.1 Music stops in the background**: `SoundManager.setAway(bool)` pauses the soundtrack and mutes effects;
+    main.ts calls it on `visibilitychange`, `pagehide`/`pageshow`, and `window.__lifesimAway` from Android's
+    `MainActivity.onPause/onResume`. Resuming retries on the next tap if the phone blocks autoplay.
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

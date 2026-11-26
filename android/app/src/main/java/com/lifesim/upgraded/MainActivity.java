@@ -51,8 +51,16 @@ public class MainActivity extends BridgeActivity {
     public void onPause() {
         // also covers the app being swiped away from Recents: it always pauses first
         WebView web = getBridge() != null ? getBridge().getWebView() : null;
-        if (web != null) web.evaluateJavascript("window.__lifesimSave && window.__lifesimSave()", null);
+        if (web != null) web.evaluateJavascript("window.__lifesimAway && window.__lifesimAway(true); window.__lifesimSave && window.__lifesimSave()", null);
         super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // the music stopped when you left the game; start it again
+        WebView web = getBridge() != null ? getBridge().getWebView() : null;
+        if (web != null) web.evaluateJavascript("window.__lifesimAway && window.__lifesimAway(false)", null);
     }
 
     private void goFullScreen() {

@@ -446,8 +446,14 @@ function boot() {
     });
     window.addEventListener("beforeunload", () => { try { GameStateManager.INSTANCE.saveData(); } catch {} });
     const saveNow = () => { try { if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) GameStateManager.INSTANCE.saveData(); } catch {} };
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveNow(); });
-    window.addEventListener("pagehide", saveNow);   // iPhone: swiping the app away
+    document.addEventListener("visibilitychange", () => {
+        const hidden = document.visibilityState === "hidden";
+        SoundManager.INSTANCE.setAway(hidden);   // v0.31.1: no music while you're out of the game
+        if (hidden) saveNow();
+    });
+    window.addEventListener("pagehide", () => { SoundManager.INSTANCE.setAway(true); saveNow(); });   // iPhone: swiping the app away
+    window.addEventListener("pageshow", () => SoundManager.INSTANCE.setAway(document.visibilityState === "hidden"));
+    (window as any).__lifesimAway = (isAway: boolean) => SoundManager.INSTANCE.setAway(!!isAway);   // Android: MainActivity pause/resume
     // Android app (android/): the system back button calls __lifesimBack (true = handled here, false = leave the
     // app), and the app calls __lifesimSave when it goes to the background.
     (window as any).__lifesimSave = saveNow;
