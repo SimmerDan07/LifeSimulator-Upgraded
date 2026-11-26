@@ -109,6 +109,18 @@ export const Obituary = {
         if (vs != null && (vs.isVampire || vs.cured) && vs.vampireWeeks > 0) {
             const y = Math.floor(vs.vampireWeeks / WPY());
             t += vs.cured ? ` ${he} lived ${plural(y, "year")} as a vampire before taking the Vampiric Cure.` : ` ${he} walked the night as a vampire for ${plural(y, "year")}.`;
+            // v0.35.0: the vampire story (bloodline, rank, sire, childer, legend)
+            const rb: any = (vs as any).rb;
+            if (rb?.line) {
+                const lines: any = { nosferim: "Nosferim", velvet: "Velvet Court", ironblood: "Ironblood", moonborn: "Moonborn", ashen: "Ashen" };
+                const ranks = [[1000, "an Ancient"], [300, "an Elder"], [100, "an Ancilla"], [25, "a Neonate"], [0, "a Fledgling"]] as [number, string][];
+                const by = Math.floor((rb.bloodAgeWeeks ?? vs.vampireWeeks) / WPY());
+                const rank = ranks.find(([n]) => by >= n)![1];
+                let childer = 0; try { childer = Object.values((p.getSocial?.()?.meta ?? {}) as any).filter((m: any) => m?.childe).length; } catch { /* */ }
+                t += ` ${he} was ${rank} of the ${lines[rb.line] ?? rb.line} bloodline${rb.sireName ? `, sired by ${rb.sireName}` : ""}${childer ? `, and sired ${plural(childer, "childe")} of ${he.toLowerCase() === "he" ? "his" : he.toLowerCase() === "she" ? "her" : "their"} own` : ""}.`;
+                if (rb.golconda) t += ` ${he} found Golconda: peace with the Beast.`;
+                if ((rb.legend ?? 0) > 0) t += ` Mortals still tell stories about "a figure in the night".`;
+            }
         }
         // v0.19.0 Celebrity Life
         const famous = Celebrity.describe(p);

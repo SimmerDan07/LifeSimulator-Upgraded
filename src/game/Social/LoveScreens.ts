@@ -221,6 +221,14 @@ export const LoveScreens = {
             for (const x of [...team].sort((a: any, b: any) => (a.workRole === "boss" ? -1 : b.workRole === "boss" ? 1 : 0))) out.add(LoveScreens.card(x));
         }
 
+        // v0.35.0: the night (your sire, your city's court, your herd)
+        const night = Relationships.circle(p).list("night").filter((x: any) => x.getIsAlive());
+        if (night.length) {
+            out.add(new HeaderTitleViewModel("Night"));
+            const order: any = { sire: 0, prince: 1, court: 2, herd: 3 };
+            for (const x of [...night].sort((a: any, b: any) => (order[a.nightRole] ?? 9) - (order[b.nightRole] ?? 9))) out.add(LoveScreens.card(x));
+        }
+
         // Pets (living)
         out.add(new HeaderTitleViewModel(S("Common_Pets")));
         for (const pet of Relationships.byAge(Relationships.family(Relationship.pet, p).filter((x) => x.getIsAlive()))) out.add(LoveScreens.card(pet));
@@ -335,6 +343,13 @@ export const LoveScreens = {
             rows.push(["At work", role]);
             if (t.workRole === "boss") { const bt = ({ fair: "Fair", strict: "Strict", lazy: "Laid-back", micro: "Micromanager", mentor: "Mentor" } as any)[t.bossType] ?? "Fair"; rows.push(["Style", bt]); const o = (p as any).work?.team?.opinion; if (o != null) rows.push(["Thinks of your work", o >= 80 ? "One of the best" : o >= 60 ? "Likes it" : o >= 40 ? "Fine" : o >= 20 ? "Has doubts" : "Wants you gone"]); }
             rows.push(["Worked together", span(Relationships.now() - t.sinceWeek)]);
+        }
+        if (kind === "night") {   // v0.35.0
+            const role = t.nightRole === "sire" ? "Your sire" : t.nightRole === "herd" ? "Your herd (a mortal who lets you feed)" : t.courtTitle ?? "Court vampire";
+            rows.push(["In the night", role]);
+            if (t.bloodline) rows.push(["Bloodline", ({ nosferim: "Nosferim", velvet: "Velvet Court", ironblood: "Ironblood", moonborn: "Moonborn", ashen: "Ashen" } as any)[t.bloodline] ?? t.bloodline]);
+            if (t.nightRole !== "herd") rows.push(["Undead for", span(Math.max(0, (t.trueAgeInWeeks ?? 0) - t.getAgeInWeeks()))]);
+            rows.push(["Known for", span(Relationships.now() - t.sinceWeek)]);
         }
         if (kind === "ex") {
             rows.push(["You were", t.exStatus === "married" ? "Married" : t.exStatus === "engaged" ? "Engaged" : "Dating"]);

@@ -54,6 +54,7 @@ body.nl.nh-min .nh-row2 { opacity: 0; pointer-events: none; }
 .nh-week { display: inline-flex; gap: 3px; margin-left: 4px; }
 .nh-week .dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
 .nh-week .dot.on { background: #fff; }
+.nh-wx { margin-left: 6px; font-size: 11px; color: #ffd27a; }
 #nh-stats { flex: 1; min-width: 0; display: flex; gap: 8px; padding: 4px 0 !important; }
 .nh-stat { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
 .nh-stat .fa { font-size: 10px; }

@@ -164,7 +164,7 @@ export const Vampire = {
         }
     },
     /** Chance of beating the hunters (better with your bonded partner at your side). */
-    fightWinChance(p: any = player()): number { return (Vampire.bonded(p) ? 0.7 : 0.5) + (Vampire.has("batForm", p) ? 0.2 : 0); },
+    fightWinChance(p: any = player()): number { return Math.min(0.95, (Vampire.bonded(p) ? 0.7 : 0.5) + (Vampire.has("batForm", p) ? 0.2 : 0) + (Vampire.hooks.fight?.(p) ?? 0)); },
     /** v0.26.0 Ancient Scholar: every third week of study counts twice (25% less time). */
     studyBonus(p: any = player()): number {
         if (!Vampire.isVampire(p) || !Vampire.has("ancientScholar", p)) return 0;
@@ -223,6 +223,7 @@ export const Vampire = {
         s.thirst = 0; s.suspicion = 0; s.weeksAtMaxThirst = 0; s.cureWeeks = 0;
         try { Vampire.hooks.rise?.(p); } catch { /* ignore */ }
         s.bloodPower = Math.max(s.bloodPower, 1);
+        if (Vampire.hooks.risen) { Vampire.hooks.risen(p); return; }   // v0.35.0: the first hunger
         Vampire.alert("You Rise a Vampire", `You wake up hungry and ageless. You'll stay ${p.getAgeInYears()} forever, but you need blood every week and the sun is no longer your friend. Your Lifepaths tab is your home now.`, Vampire.image);
     },
 
@@ -233,28 +234,34 @@ export const Vampire = {
         p.addTrueAgeWeeks(1);   // v0.29.2: exact, however old
         s.calendarOffset++;
         s.vampireWeeks++;
+        Vampire.hooks.tick?.(p);   // v0.35.0: blood age (torpor counts half)
     },
     /** Weekly attribute effects (also used for the weekly previews; no side effects). */
     collectWeeklyValues(p: any) {
         const s = Vampire.peek(p);
         if (!s?.isVampire || s.cureWeeks > 0 || s.inTorpor) return;
         // v0.22.0: gentler (it now takes two years to fill the bar; at 100 you collapse instead of dying)
-        if (s.thirst >= 80) p.getAttributeState().setDeltaValue(new Modifiers(0, -2, -3), "Thirst");
-        else if (s.thirst >= 60) p.getAttributeState().setDeltaValue(new Modifiers(0, -2, 0), "Thirst");
+        // v0.35.0: Hunger stages (Hungry 60+: −1 happiness; Starving 80+: −2 happiness, −3 sanity)
+        if (s.thirst >= 80) p.getAttributeState().setDeltaValue(new Modifiers(0, -2, -3), "Hunger: Starving");
+        else if (s.thirst >= 60) p.getAttributeState().setDeltaValue(new Modifiers(0, -1, 0), "Hunger: Hungry");
+        const sunburn = (s as any).rb?.sunburnWeeks ?? 0;
+        if (sunburn > 0) p.getAttributeState().setDeltaValue(new Modifiers(0, -2, 0), "Sunburned");
         if (s.weeksAtMaxThirst >= 4) p.getAttributeState().setDeltaValue(new Modifiers(-25, 0, 0), STARVING);
         // the blood diet: weekly cost and how it makes you feel
         const d = Vampire.diet(p);
         const two = Vampire.bonded(p);
-        const label = "Blood Diet - " + d.title + (two && d.cost > 0 ? " (for two)" : "");
+        const label = "Blood Supply - " + d.title + (two && d.cost > 0 ? " (for two)" : "");
         if (d.cost > 0) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(d.cost * (two ? 2 : 1)), MoneyUpdateType.expense, label, null, 8, null);
         const dm = Vampire.dietMods(p, d);
         p.getAttributeState().setDeltaValue(new Modifiers(dm[0], dm[1], dm[2]), label);
         // v0.21.1: undead bodies mend themselves while fed
         // v0.22.0: after a collapse your body is Withered for two years: no healing, health capped at 50
         if ((s.witheredWeeks ?? 0) > 0) p.getAttributeState().setDeltaValue(new Modifiers(0, -1, 0), "Withered body");
-        else if (s.thirst < 60 && s.weeksAtMaxThirst === 0 && p.getAttributeState().getHealth() < 100)
-            p.getAttributeState().setDeltaValue(new Modifiers(Vampire.healPerWeek + (Vampire.has("regeneration", p) ? 2 : 0), 0, 0), "Vampire healing");
+        else if (s.thirst < (Vampire.hooks.week ? 30 : 60) && s.weeksAtMaxThirst === 0 && p.getAttributeState().getHealth() < Vampire.healthCap(p))
+            p.getAttributeState().setDeltaValue(new Modifiers(Vampire.healPerWeek + (Vampire.has("regeneration", p) ? 2 : 0) + ((s as any).rb?.line === "ironblood" ? 2 : 0), 0, 0), "Vampire healing");
     },
+    /** v0.35.0: burns from the sun cap your health at 60 until they heal. */
+    healthCap(p: any): number { return ((p?.vampire?.rb?.burnWeeks ?? 0) > 0) ? 60 : 100; },
     /** A vampire's health never decays: only vampire dangers (starving, hunters) can lower it. */
     protectHealth(p: any) {
         if (!Vampire.isVampire(p)) return;
@@ -281,7 +288,11 @@ export const Vampire = {
     /** Thirst change per week on your current diet (Feed by Hand: +15). */
     thirstPerWeekFor(p: any = player()): number { return Vampire.thirstRate(p, Vampire.diet(p)); },
     /** v0.26.0: Blood Alchemy slows a rising thirst by 25%. */
-    thirstRate(p: any, d: BloodDiet): number { return d.thirst > 0 && Vampire.has("bloodAlchemy", p) ? d.thirst * 0.75 : d.thirst; },
+    thirstRate(p: any, d: BloodDiet): number {
+        let t = d.thirst > 0 && Vampire.has("bloodAlchemy", p) ? d.thirst * 0.75 : d.thirst;
+        if (Vampire.hooks.rate) t = Vampire.hooks.rate(p, d, t);   // v0.35.0: bloodline, Ancient Blood, Golconda, the Velvet Court
+        return t;
+    },
     dietMods(p: any, d: BloodDiet): [number, number, number] { return d.id === "rats" && Vampire.has("beastTongue", p) ? [d.mods[0], 0, d.mods[2]] : d.mods; },
     dietSuspicion(p: any, d: BloodDiet): number { return d.suspicion && d.id === "hunting" && Vampire.has("batForm", p) ? Math.ceil(d.suspicion / 2) : d.suspicion ?? 0; },
     chooseDiet(p: any, id: string) { Vampire.state(p).diet = id; },
@@ -300,6 +311,7 @@ export const Vampire = {
         return c;
     },
     afterWeek(p: any) {
+        try { Vampire.hooks.human?.(p); } catch { /* */ }   // v0.35.0: a way out for the dying
         const s = Vampire.peek(p);
         if (s == null) return;
         if (s.turningWeeks > 0) { s.turningWeeks--; if (s.turningWeeks === 0) Vampire.rise(p); return; }
@@ -339,8 +351,9 @@ export const Vampire = {
             const a = p.getAttributeState();
             if (a.getHealth() > WITHERED_CAP) a.setHealth(WITHERED_CAP);
         }
+        if (Vampire.hooks.week) { try { Vampire.hooks.week(p); } catch (e) { console.error(e); } }   // v0.35.0 Vampires Reborn
         if (s.thirst >= 100) s.collapsePending = true;   // v0.22.0: collapse (runs after this week ends)
-        else if (s.suspicion >= 80 && roll(0.2)) Vampire.hunters(p);
+        else if (!Vampire.hooks.week && s.suspicion >= 80 && roll(0.2)) Vampire.hunters(p);
     },
     // ------------------------------------------------------------------ collapse (v0.22.0)
     /** "2 years" — how long a diet takes to fill the thirst bar from empty. */
@@ -354,7 +367,9 @@ export const Vampire = {
         const s = Vampire.peek(p);
         if (s == null || !s.collapsePending || s.inTorpor) return;
         s.collapsePending = false;
-        Vampire.collapse(p);
+        if (Vampire.hooks.torpor) Vampire.hooks.torpor(p, (s as any).torporKind ?? "starving");
+        else Vampire.collapse(p);
+        delete (s as any).torporKind;
     },
     /** Weak with thirst, you collapse somewhere hidden and lie there for 10–40 years (your body doesn't age, the world
      *  does) until a passer-by finds you and gives you some blood. Depriving your body has a price:
@@ -362,11 +377,13 @@ export const Vampire = {
      *  - a mortal partner gave you up for dead and moved on; everyone else drifts as the years go by
      *  - half your blood power withers away
      *  - you wake Withered: 20 health, and for two years health can't go above 50 and doesn't heal (−1 happiness a week) */
-    collapse(p: any, years: number = 10 + Math.floor(Math.random() * 31)) {
+    collapse(p: any, years: number = 10 + Math.floor(Math.random() * 31), kind: "starving" | "chosen" | "beast" | "staked" | "old" = "old") {
         const s = Vampire.state(p);
+        const reborn = kind !== "old";   // v0.35.0: torpor (gentler: you keep your blood power, a shorter Withered spell)
         const weeks = years * WPY() + Math.floor(Math.random() * (WPY() / 2));
-        const where = pick(["in a storm drain", "behind a dumpster in an alley", "in the basement of an abandoned building", "under a bridge", "in a forgotten crypt", "in the woods outside town"]);
+        const where = kind === "chosen" ? "in your coffin" : kind === "staked" ? "in a shallow grave the hunters dug" : pick(["in a storm drain", "behind a dumpster in an alley", "in the basement of an abandoned building", "under a bridge", "in a forgotten crypt", "in the woods outside town"]);
         const jobBefore = p.getJobState().getCurrentJob();
+        Vampire.hooks.torporStart?.(p, kind);
         if (jobBefore != null) p.getJobState().setCurrentJob(null);
         const partnerBefore = p.getFamilyState().getPartner();
         Vampire.hooks.collapseStart?.(p);
@@ -391,7 +408,7 @@ export const Vampire = {
         if (jobBefore != null) lost.push("your job");
         // declared missing: half your cash is gone by the time you sort it out
         const c = Number(cash(p).toString());
-        const gone = c > 0 ? Math.floor(c / 2) : 0;
+        const gone = c > 0 && kind !== "chosen" ? Math.floor(c / 2) : 0;
         if (gone > 0) { pay(p, gone); lost.push(`${money(gone)} (half your cash: you were declared missing)`); }
         // a mortal partner gave up waiting
         const partner = p.getFamilyState().getPartner();
@@ -401,30 +418,37 @@ export const Vampire = {
         if (partnerBefore != null && partnerWaited == null) partnerLeft = partnerBefore.getFirstName();
         // the body pays for it
         const bp = s.bloodPower;
-        s.bloodPower = Math.floor(bp / 2);
+        if (!reborn) s.bloodPower = Math.floor(bp / 2);
         if (bp - s.bloodPower > 0) lost.push(`${bp - s.bloodPower} blood power`);
-        s.thirst = 40; s.weeksAtMaxThirst = 0;
+        s.thirst = kind === "chosen" ? 60 : 40; s.weeksAtMaxThirst = 0;
         s.suspicion = Math.max(0, s.suspicion - 30);   // the world forgot about you
         s.collapses = (s.collapses ?? 0) + 1;
-        s.witheredWeeks = WITHERED_WEEKS;
+        s.witheredWeeks = kind === "chosen" ? 0 : reborn ? WITHERED_WEEKS / 2 : WITHERED_WEEKS;
         const a = p.getAttributeState();
-        a.setHealth(20); a.setHappiness(Math.max(Math.min(a.getHappiness(), 25), 15)); a.setSanity(Math.max(Math.min(a.getSanity(), 25), 15));
+        if (kind === "chosen") { a.setHealth(Math.max(a.getHealth(), 70)); a.setHappiness(Math.max(a.getHappiness(), 50)); a.setSanity(Math.max(a.getSanity(), 50)); }
+        else { a.setHealth(20); a.setHappiness(Math.max(Math.min(a.getHappiness(), 25), 15)); a.setSanity(Math.max(Math.min(a.getSanity(), 25), 15)); }
         a.setLowAttributeCountdown_health(0); a.setLowAttributeCountdown_happiness(0); a.setLowAttributeCountdown_sanity(0);
-        const saviour = Relationships.makeFriend("out", p);
+        const saviour = kind === "chosen" ? null : Relationships.makeFriend("out", p);
         if (saviour != null) saviour.setRelationshipProgress(650);
         const who = saviour ? `${saviour.getFullName()}, a passer-by,` : pick(["a jogger", "a homeless man", "a nurse walking home", "a kid exploring"]);
+        const waking = Vampire.hooks.waking?.(p, kind, Math.floor(passed / WPY())) ?? "";
         const span = (() => { const y = Math.floor(passed / WPY()), m = Math.floor((passed % WPY()) / 4); return [y ? `${y} year${y === 1 ? "" : "s"}` : null, m ? `${m} month${m === 1 ? "" : "s"}` : null].filter(Boolean).join(" and ") || `${passed} weeks`; })();
         const events = Vampire.missedSummary(missed);
         const famous = Vampire.hooks.collapseEnd ? Vampire.hooks.collapseEnd(p, Math.floor(passed / WPY())) : "";
-        Vampire.alert("You Collapsed",
-            `You starved your body too long. Weak and shaking, you collapsed ${where} and lay there like a corpse for ${span}.\n\n` +
-            `Then ${who} found you, thought you'd been hurt, and let you drink a little of their blood. You came back to yourself.` +
+        const opening = kind === "chosen" ? `You closed the lid of your coffin and slept ${where} for ${span}. You rise rested, and hungry.`
+            : kind === "beast" ? `The Beast took you. For ${span} you were a wild thing in the dark, feeding on whatever crossed your path, until you came back to yourself ${where}. Your Humanity is 1.`
+            : kind === "staked" ? `The hunters drove a stake through your heart, dragged you into the sun and left you ${where}. You lay there for ${span}, burned and still, until the stake rotted loose.`
+            : `You starved your body too long. Weak and shaking, you collapsed ${where} and lay there like a corpse for ${span}.\n\n` +
+            `Then ${who} found you, thought you'd been hurt, and let you drink a little of their blood. You came back to yourself.`;
+        Vampire.alert(kind === "chosen" ? "You Wake" : kind === "beast" ? "Lost to the Beast" : kind === "staked" ? "Staked" : reborn ? "Torpor" : "You Collapsed",
+            opening +
             (saviour ? ` ${saviour.getFirstName()} is your friend now.` : "") +
             (partnerLeft ? `\n\n${partnerLeft} waited for years, then had you declared dead and moved on. You're single.` : "") +
             (partnerWaited ? `\n\n${partnerWaited}, your eternal partner, never stopped looking for you.` : "") +
             (lost.length ? `\n\nYou lost ${lost.join(", ")}.` : "") +
             famous +
-            `\n\nYour body is Withered: you woke at 20 health, and for the next 2 years it can't go above ${WITHERED_CAP} or heal (−1 happiness a week).` +
+            (s.witheredWeeks > 0 ? `\n\nYour body is Withered: you woke at 20 health, and for the next ${s.witheredWeeks === WITHERED_WEEKS ? "2 years" : "year"} it can't go above ${WITHERED_CAP} or heal (−1 happiness a week).` : "") +
+            waking +
             (events ? `\n\nWhile you were gone: ${events}` : ""), Vampire.image);
         return passed;
     },
@@ -521,11 +545,13 @@ export const Vampire = {
     /** v0.21.1: sunlight drains a vampire's happiness (it no longer touches health). */
     onLeisure(p: any, action: any) {
         if (!Vampire.isVampire(p) || !Vampire.isDaytime(action)) return;
+        if (Vampire.hooks.exposed) { Vampire.hooks.exposed(p, false, false); return; }   // v0.35.0: weather, Vitality
         attr(p, 0, -Vampire.sunDamage(p), 0);
     },
     leisureNote(action: any): string | null {
         const p = player();
         if (!p || !Vampire.isVampire(p) || !Vampire.isDaytime(action)) return null;
+        if (Vampire.hooks.sunNote) return Vampire.hooks.sunNote(p);
         return `Daytime: −${Vampire.sunDamage(p)} happiness for a vampire (sunlight)\n`;
     },
     /** Working a week: day shifts burn (Night Owl works nights and earns 20% more). Returns the pay multiplier. */
@@ -534,13 +560,20 @@ export const Vampire = {
         const d = job?.def?.();
         if (d?.night) return Vampire.has("nightOwl", p) ? 1.2 : 1;   // v0.26.0: a night job never sees the sun
         // v0.26.0: outdoor day jobs (lifeguard, park ranger…) can't move to nights, and burn twice as much
+        if (Vampire.hooks.exposed) {   // v0.35.0: the week's weather; night mode moves day jobs to nights
+            if (d?.outdoor) { Vampire.hooks.exposed(p, true, true); return 1; }
+            if (Vampire.has("nightOwl", p)) return 1.2;
+            if ((p.vampire as any)?.rb?.nightMode) return 0.95;
+            Vampire.hooks.exposed(p, false, true);
+            return 1;
+        }
         if (d?.outdoor) { attr(p, 0, -2 * Math.ceil(Vampire.sunDamage(p) / 5), 0); return 1; }
         if (Vampire.has("nightOwl", p)) return 1.2;
         attr(p, 0, -Math.ceil(Vampire.sunDamage(p) / 5), 0);   // v0.21.1: day shifts are tiring (−2 happiness), not deadly
         return 1;
     },
     /** Charm: +25% relationship gains. */
-    gainMultiplier(): number { try { return Vampire.has("charm") ? 1.25 : 1; } catch { return 1; } },
+    gainMultiplier(): number { try { return (Vampire.has("charm") ? 1.25 : 1) * (Vampire.hooks.gain?.() ?? 1); } catch { return 1; } },
     datingMultiplier(): number { try { return Vampire.has("charm") ? 1.5 : 1; } catch { return 1; } },
 
     // ------------------------------------------------------------------ feeding & hiding
@@ -574,6 +607,19 @@ export const Vampire = {
         police: null as ((p: any) => void) | null,
         /** v0.28.0: rising cures every illness (Illness). */
         rise: null as ((p: any) => void) | null,
+        // v0.35.0 Vampires Reborn (src/game/Vampires)
+        tick: null as ((p: any) => void) | null,
+        week: null as ((p: any) => void) | null,
+        rate: null as ((p: any, d: BloodDiet, t: number) => number) | null,
+        fight: null as ((p: any) => number) | null,
+        gain: null as (() => number) | null,
+        exposed: null as ((p: any, outdoorJob: boolean, shift: boolean) => void) | null,
+        sunNote: null as ((p: any) => string) | null,
+        torpor: null as ((p: any, kind: any) => void) | null,
+        torporStart: null as ((p: any, kind: string) => void) | null,
+        waking: null as ((p: any, kind: string, years: number) => string) | null,
+        risen: null as ((p: any) => void) | null,
+        human: null as ((p: any) => void) | null,
     },
     /** Set by Crossover: a celebrity power couple ends when you fake your death. */
     forgetCelebPartner: null as ((p: any) => void) | null,
@@ -839,7 +885,7 @@ export const BECOMING: LifeActionDef[] = [
 ];
 
 export const FEEDING: LifeActionDef[] = [
-    { id: "diet", title: () => `Blood Diet: ${Vampire.chosenDiet(player()).title}`, image: () => Vampire.chosenDiet(player()).image, instant: true,
+    { id: "diet", title: () => `Blood Supply: ${Vampire.chosenDiet(player()).title}`, image: () => Vampire.chosenDiet(player()).image, instant: true,
         actionTitle: () => "Change",
         note: () => new BloodDietCell(Vampire.chosenDiet(player())).getAdditionalDescription(),
         run: () => Vampire.openDietMenu() },

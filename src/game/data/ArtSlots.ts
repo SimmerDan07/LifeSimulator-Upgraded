@@ -7,6 +7,7 @@ import { ILLNESS_DEFS } from "../Health/IllnessData";
 import { HEIRLOOMS } from "../Legacy/LegacyData";
 import { ACTIVITIES, CROWDS, UPBRINGING, SUBJECTS, PART_JOBS, YOUTH_ICONS } from "../Youth/YouthData";
 import { WORK_ICONS } from "../Work/WorkData";
+import { VAMP_ICONS } from "../Vampires/VData";
 export interface ArtSlot { name: string; fallback: string; where: string; row: string }
 
 export const ART_SLOTS: ArtSlot[] = [
@@ -140,5 +141,6 @@ export const ART_SLOTS: ArtSlot[] = [
     ...PART_JOBS.map((j) => ({ name: j.image, fallback: j.fallback, where: "Work › Part-Time Jobs", row: j.title })),
     ...YOUTH_ICONS,
     ...WORK_ICONS,
+    ...VAMP_ICONS,
 ];
 export const ART_FALLBACK: Record<string, string> = Object.fromEntries(ART_SLOTS.map((s) => [s.name, s.fallback]));

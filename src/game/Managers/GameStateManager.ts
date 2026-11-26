@@ -21,6 +21,7 @@ import { Utils } from "../Utils/Utils";
 import { SaveCodec } from "../save/SaveCodec";
 import { Work } from "../Work/Work";
 import { installWork } from "../Work/install";
+import { installVampires } from "../Vampires/install";
 import { installYouth } from "../Youth/install";
 
 export class GameStateManager {
@@ -37,6 +38,7 @@ export class GameStateManager {
         installCrime();        // v0.27.0: the Crime update's hooks into careers, moving, heirs, vampires…
         installYouth();        // v0.32.0: Childhood & Teen Years (moments, heirs)
         installWork();         // v0.33.0: The Career Overhaul (hiring, workplace, hustles, companies, benefits)
+        installVampires();     // v0.35.0: Vampires Reborn
         this.globalStateManager = this.loadData();
         const slot = this.globalStateManager.getSaveState().currentSlot();
         if (slot.getPersonState() == null) {

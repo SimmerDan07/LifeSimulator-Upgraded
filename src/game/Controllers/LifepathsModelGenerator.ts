@@ -31,6 +31,7 @@ import { World } from "../World/World";
 import { Crime } from "../Crime/Crime";
 import { CrimeScreen } from "../Crime/CrimeScreen";
 import { YouthScreens } from "../Youth/YouthScreens";
+import { VScreens } from "../Vampires/VScreens";
 
 const text = (s: string) => new TextLabelViewModel(s, null, false, false, null, null);
 const thirstTrend = (n: number) => (n > 0 ? `On your diet the bar fills in ${Vampire.fillText(n)}. When it's full you collapse, and 10 to 40 years can pass before someone finds you.` : `Falls ${-n} a week on your diet.`);
@@ -55,7 +56,7 @@ export class LifepathsModelGenerator {
             out.add(new ActionCellSingleViewModel(R.drawable.locked, "Vampire", text("A path for adults. Come back when you're 18."),
                 new ButtonViewModel("Locked", null, false, false, true, false, false, { invoke: () => null }), null, null));
         } else {
-            out.add(row(Vampire.image, "Vampire", this.vampireStatus(p), () => open("vampire")));
+            out.add(row(Vampire.image, "Vampire", VScreens.status(p), () => open("vampire")));
         }
         // v0.27.0: the Underworld (crime, gangs, crime families)
         if (p.getAgeInYears() < 13 && !Crime.inJail(p)) {
@@ -157,9 +158,9 @@ export class LifepathsModelGenerator {
             if (p.getJobState().getCurrentJob() != null) { footer = new ArrayList<BaseViewModel>(); footer.add(new WorkModelGenerator().getWorkButtonsViewModel()); }
             return new GenericListFragmentViewModel(out, header, footer);
         }
-        if (key === "vampire") {
-            header.add(new NavigationBarViewModel("Vampire", false, 2, null));
-            this.vampireContent(p, out);
+        if (key === "vampire" || (key != null && key.startsWith("vampire-"))) {   // v0.35.0 Vampires Reborn
+            header.add(new NavigationBarViewModel(VScreens.title(key), false, 2, null));
+            for (const c of VScreens.screen(key, p)) out.add(c);
             return new GenericListFragmentViewModel(out, header, null);
         }
         if (key === "celebrity-news" || key === "celebrity-works" || key === "celebrity-milestones") {

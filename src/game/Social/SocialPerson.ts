@@ -15,7 +15,9 @@ export type SocialKind = "sibling" | "friend" | "ex"
     // v0.17.0 extended family
     | "grandparent" | "auntUncle" | "cousin" | "nibling" | "grandchild" | "greatGrandchild"
     // v0.33.0: your boss and coworkers (workRole says which)
-    | "coworker";
+    | "coworker"
+    // v0.35.0: the night: your sire, your city's court, your herd (nightRole says which)
+    | "night";
 /** The extended family kinds (v0.17.0). */
 export const RELATIVE_KINDS = ["grandparent", "auntUncle", "cousin", "nibling", "grandchild", "greatGrandchild"];
 
@@ -55,6 +57,10 @@ export class SocialPerson {
     /** v0.33.0 coworkers: "boss", "rival", "friend", "gossip", "slacker" or "star"; a boss's style. */
     workRole: string = undefined;
     bossType: string = undefined;
+    /** v0.35.0 the night: "sire", "prince", "court", "herd"; a vampire's bloodline and court title. */
+    nightRole: string = undefined;
+    bloodline: string = undefined;
+    courtTitle: string = undefined;
 
     static make(kind: SocialKind, sex: Sex, lastName: string | null, ageInWeeks: number): SocialPerson {
         const p = new SocialPerson();
@@ -101,6 +107,7 @@ export class SocialPerson {
         const male = this.getSex() === Sex.male;
         if (this.kind === "sibling") return male ? "Brother" : "Sister";
         if (this.kind === "coworker") return this.workRole === "boss" ? "Boss" : "Coworker";
+        if (this.kind === "night") return this.nightRole === "sire" ? "Sire" : this.nightRole === "herd" ? "Herd" : this.nightRole === "prince" ? "Prince" : (this.courtTitle ?? "Court Vampire");
         if (this.kind === "grandparent") return male ? "Grandfather" : "Grandmother";
         if (this.kind === "auntUncle") return male ? "Uncle" : "Aunt";
         if (this.kind === "cousin") return "Cousin";

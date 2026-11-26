@@ -34,6 +34,7 @@ import { HeaderTitleViewModel } from "../game/Models/HeaderTitleViewModel";
 import { CustomizeTextFieldViewModel } from "../game/Models/CustomizeTextFieldViewModel";
 import { CustomizeOptionsViewModel } from "../game/Models/CustomizeOptionsViewModel";
 import { CustomizeSliderViewModel } from "../game/Models/CustomizeSliderViewModel";
+import { WEATHER } from "../game/Vampires/VData";
 import { drawCell, markCutRows, setSheetHost, NL_ICONS, type Drawn, type SheetOpts } from "./rows";
 
 declare global {
@@ -433,7 +434,10 @@ class MainScreen extends MainGameFragment {
         $("#nh-name").textContent = first;
         $("#nh-name").title = p.getFullName();
         $("#nh-vamp").hidden = !vamp;
-        $("#nh-date").innerHTML = `${textToHtml(String(m.getAgeInYears()))} · ${textToHtml(m.getMonthString())} <span class="nh-season">· ${textToHtml(Seasons.label(p))}</span> <span class="nh-week">${[0, 1, 2, 3].map((i) => `<span class="dot${i <= w ? " on" : ""}"></span>`).join("")}</span>`;
+        // v0.35.0: a vampire sees the week's weather (the sun matters now)
+        const wx = vamp ? (p as any).vampire?.rb?.weather : null;
+        const wxIcon = wx && WEATHER[wx as keyof typeof WEATHER] ? ` <span class="fa nh-wx" title="${WEATHER[wx as keyof typeof WEATHER].title}">${WEATHER[wx as keyof typeof WEATHER].fa}</span>` : "";
+        $("#nh-date").innerHTML = `${textToHtml(String(m.getAgeInYears()))} · ${textToHtml(m.getMonthString())} <span class="nh-season">· ${textToHtml(Seasons.label(p))}</span> <span class="nh-week">${[0, 1, 2, 3].map((i) => `<span class="dot${i <= w ? " on" : ""}"></span>`).join("")}</span>${wxIcon}`;
         setBar("#nh-health", m.getAttr_health_progress());
         setBar("#nh-happiness", m.getAttr_happiness_progress());
         setBar("#nh-sanity", m.getAttr_sanity_progress());

@@ -144,6 +144,7 @@ export const Relationships = {
         if (rate >= 0) return 0;
         const kind = Relationships.kindOf(person);
         if (kind === "coworker") return 0;   // v0.33.0: you see them every week at work
+        if (kind === "night") return 0;   // v0.35.0: the night remembers you for centuries
         if (kind === "partner" && Vampire.bonded(p)) return 0;   // v0.17.0 Eternal Bond: you never drift apart
         if (kind === "parent" || kind === "sibling" || RELATIVE_KINDS.includes(kind)) {
             if (p.getAgeInYears() < 18) return 0;
@@ -185,7 +186,14 @@ export const Relationships = {
         const out: string[] = [];
         if (!person.getIsAlive()) return out;
         if (Relationships.kindOf(person) === "partner" && Vampire.bonded()) out.push("Eternal Bond");
-        else if (Relationships.circle().metaFor(person.getId()).vampire) out.push("Vampire");
+        else if (Relationships.circle().metaFor(person.getId()).vampire) out.push(Relationships.circle().metaFor(person.getId()).childe ? "Childe" : "Vampire");
+        {   // v0.35.0 the night
+            const m: any = Relationships.circle().metaFor(person.getId());
+            if (m.thrall) out.push("Thrall");
+            const rb = (Relationships.circle() as any) && (GameStateManager.INSTANCE.getPersonState() as any)?.vampire?.rb;
+            if (rb?.rivalId === person.getId()) out.push("Rival");
+            else if (rb?.allyIds?.includes(person.getId())) out.push("Ally");
+        }
         if (Relationships.circle().metaFor(person.getId()).celeb) out.push("Celebrity");
         if (ExtendedFamily.isNewborn(person)) out.push("Newborn");
         if (Relationships.isBirthdayWeek(person)) out.push("Birthday this week");

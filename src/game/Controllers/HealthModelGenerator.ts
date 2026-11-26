@@ -5,6 +5,7 @@ import { ArrayList, Integer, R, SpannableStringBuilder } from "../runtime";
 import { Illness } from "../Health/Illness";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
 import { Vampire } from "../Lifepaths/Vampire";
+import { MeterViewModel } from "../Models/PersonCardViewModel";
 import { BaseViewModel } from "../Models/BaseViewModel";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { GameStateManager } from "../Managers/GameStateManager";
@@ -53,10 +54,11 @@ export class HealthModelGenerator implements IViewModelGenerator {
         let personState: Player = GameStateManager.INSTANCE.getPersonState();
         let arrayList: ArrayList = new ArrayList();
         if (Vampire.isVampire(personState)) {
-            // v0.16.0: vampires live on blood diets
-            arrayList.add(new HeaderTitleViewModel("Blood Diet"));
-            arrayList.add(Vampire.currentDietCell(personState));
-            arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, HealthEvent.chooseMenu, null, 2, null));
+            // v0.35.0: a vampire's Health tab shows Hunger and Vitality; the blood supply is chosen on Lifepaths › Vampire (one place)
+            const vs: any = Vampire.state(personState);
+            arrayList.add(new HeaderTitleViewModel("Blood"));
+            arrayList.add(new MeterViewModel("Hunger", vs.thirst, 100, "red", `${vs.thirst >= 95 ? "Torpor is near" : vs.thirst >= 80 ? "Starving" : vs.thirst >= 60 ? "Hungry" : vs.thirst >= 30 ? "Peckish" : "Sated"}. Your blood supply: ${Vampire.chosenDiet(personState).title} (change it on Lifepaths › Vampire).`, `${Math.round(vs.thirst)}`));
+            if (vs.rb) arrayList.add(new MeterViewModel("Vitality", vs.rb.vitality ?? 100, 100, "blue", "Daylight drains it; it refills at night.", `${Math.round(vs.rb.vitality ?? 100)}`));
             return arrayList;
         }
         arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.Common_Diet)));
