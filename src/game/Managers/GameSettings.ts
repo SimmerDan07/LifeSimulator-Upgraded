@@ -14,6 +14,10 @@ export class GameSettings {
     noPopups: boolean = false;
     /** v0.29.1: with noPopups, what you tap still gets a small corner notice. */
     popupNotices: boolean = true;
+    /** v0.34.0: "auto" (match the phone), "light" or "dark". */
+    theme: string = "auto";
+    /** v0.34.0: the old look (big cards, side tabs). */
+    classicLook: boolean = false;
     constructor() {
         this.hapticsEnabled = true;
         this.musicEnabled = true;

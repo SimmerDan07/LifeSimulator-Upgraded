@@ -16,7 +16,7 @@ npm run test:features  # checks unlocks, generational play, the property system,
 npm run test:sensible  # same, but plays like a careful player (longer lives)
 ```
 
-Keys: `1`–`7` switch tabs, `Esc` goes back, `Enter` confirms a pop-up,
+Keys: `1`–`5` switch tabs (`1`–`9` in the classic look), `Esc` goes back, `Enter` confirms a pop-up,
 `F11` fullscreen, `F12` dev tools, `Ctrl+R` reload.
 Saves: `%APPDATA%\lifesim-upgraded\saves\saveFile.txt` (a `.bak` of the previous save sits next to it).
 
@@ -33,7 +33,7 @@ Saves: `%APPDATA%\lifesim-upgraded\saves\saveFile.txt` (a `.bak` of the previous
 | `src/game/runtime/` | Small stand-ins for the Java/Kotlin library calls the original code used. |
 | `src/game/save/SaveCodec.ts` | Save-file format. |
 | `src/game/ui/bridge.ts` | The seam between game logic and the desktop UI. |
-| `src/ui/` | Desktop UI: HUD, tabs, list screens, dialogs, styles. |
+| `src/ui/` | The UI: `main.ts` (top bar, tabs, list screens, sheets, layout), `rows.ts` (the new look's rows), `cells.ts` (the classic cards), `nl.css` (the new look), `style.css` (the classic look). |
 | `assets/` | Images (SVG, converted from the APK), sounds, fonts. |
 | `electron/` | Window + save-file plumbing. |
 | `porting/` | The tooling that translated the decompiled Android code. Kept for reference only — `src/game` is now the source of truth; edit it directly. |
@@ -293,6 +293,19 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `updateViaCache: "none"`, calls `reg.update()` on becoming visible and every 20 min; on `controllerchange`
     (not the first install) it waits until no modal/list screen is open, saves (`__lifesimSave`), waits for
     `__lifesimFlush` (IndexedDB), reloads, and shows "Updated to vX" once (`localStorage lifesim:appVersion`).
+  - **v0.34.0 The New Look** (`src/ui/`): `body.nl` unless Settings › Game Settings › Classic look (`GameSettings.classicLook`);
+    Appearance (`GameSettings.theme` auto/light/dark → `body.dark`). Five tabs (`GROUPS` in `main.ts`: Me = Profile/Health/
+    Lifepaths, Work = Work/Education, People = Love/Social, Money = Bank + the Profile sections Housing/Subscriptions/Items,
+    Fun = Leisure) in `#tabbar` (a sidebar from 700px wide or sideways), the switch in `#subtabs`, the compact top bar
+    `#nhud` (tucks its stat bars away on scroll: `body.nh-min`; money and stats open sheets). `layout()` splits a screen's
+    cells at each `HeaderTitleViewModel` into collapsible sections (state in `localStorage lifesim:nl:sections`; the first
+    and short ones open), adds Search (15+ rows) and the "Can do now" filter (`lifesim:nl:cando`; hides rows whose
+    buttons are all 🔒) except on forms; a tab with a footer (Go to Work) pins its first cell + the footer on top.
+    `rows.ts` `drawCell()` draws each view model as a row (pill = the same button; 2+ choices or cut-off text open a
+    detail sheet), `hostSheet()` shows sheets one at a time (`.modal-backdrop`, `data-dismiss`, `__close`), game pop-ups
+    become bottom sheets (a one-button message also closes with a tap outside / swipe down). `rich.ts cssColor()` maps the
+    game's dark and white text colours to theme variables. The source `index.html` now has the viewport meta (phone
+    screenshots used to render at 980px). Checks: `/tmp/nl/check.py`.
   - **v0.33.0 The Career Overhaul** (`src/game/Work/`): `Work.ts` (state `Player.work`: Effort, performance, employer,
     raises, job history, burnout via `Illness.state.overwork`; hook arrays the later stages fill), `WorkData.ts` (efforts,
     ratings, vibes, perks, employer names, interview questions, career skills, 27 branches, 12 certifications, art slots),

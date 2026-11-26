@@ -47,7 +47,7 @@ export function imageUrl(id: any): string | null {
     return f ? "assets/images/" + f : null;
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: string): HTMLElementTagNameMap[K] {
+export function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: string): HTMLElementTagNameMap[K] {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
     if (html != null) e.innerHTML = html;
@@ -75,7 +75,7 @@ function treeRowPages(groups: any[]): any[][] {
     flush();
     return pages.length ? pages : [[]];
 }
-function runAction(fn: () => void) {
+export function runAction(fn: () => void) {
     try {
         fn();
     } catch (e) {
@@ -130,7 +130,7 @@ export function button(vm: ButtonViewModel | null | undefined, cls = "btn"): HTM
     return b;
 }
 
-function image(id: any, cls = "cell-img"): HTMLElement | null {
+export function image(id: any, cls = "cell-img"): HTMLElement | null {
     const url = imageUrl(id);
     if (!url && cls === "cell-img") return null;
     const d = el("div", cls);
@@ -144,7 +144,7 @@ function image(id: any, cls = "cell-img"): HTMLElement | null {
     return d;
 }
 
-function progressBar(vm: ProgressBarViewModel | null | undefined): HTMLElement | null {
+export function progressBar(vm: ProgressBarViewModel | null | undefined): HTMLElement | null {
     if (!vm || vm.getHidden()) return null;
     const outer = el("div", "progress");
     const inner = el("div", "progress-fill");
@@ -181,7 +181,7 @@ function titleBlock(title: string, subtitle: TextLabelViewModel | null, decorato
     return t;
 }
 
-function imageButton(vm: ImageButtonViewModel | null | undefined): HTMLElement | null {
+export function imageButton(vm: ImageButtonViewModel | null | undefined): HTMLElement | null {
     if (!vm || vm.getHidden()) return null;
     const b = el("button", "img-btn");
     const url = imageUrl(vm.getImageId());
@@ -455,7 +455,7 @@ export function renderCell(vm: any): HTMLElement | null {
     return null;
 }
 
-function switchControl(vm: SwitchViewModel | null | undefined): HTMLElement | null {
+export function switchControl(vm: SwitchViewModel | null | undefined): HTMLElement | null {
     if (!vm || vm.getHidden()) return null;
     const lab = el("label", "switch");
     const input = el("input");
@@ -466,7 +466,7 @@ function switchControl(vm: SwitchViewModel | null | undefined): HTMLElement | nu
     return lab;
 }
 
-function textField(vm: EditableTextFieldViewModel | null | undefined): HTMLElement | null {
+export function textField(vm: EditableTextFieldViewModel | null | undefined): HTMLElement | null {
     if (!vm || vm.getHidden()) return null;
     const i = el("input", "text-input");
     i.type = "text";
@@ -479,7 +479,7 @@ function textField(vm: EditableTextFieldViewModel | null | undefined): HTMLEleme
     return i;
 }
 
-function slider(vm: SliderViewModel): HTMLElement {
+export function slider(vm: SliderViewModel): HTMLElement {
     const wrap = el("div", "slider-wrap");
     const input = el("input", "range");
     input.type = "range";

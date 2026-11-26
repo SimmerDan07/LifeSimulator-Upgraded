@@ -15,7 +15,7 @@ fs.cpSync(dist, web, { recursive: true, filter: (src) => !/(main\.cjs|preload\.c
 // Touch screens: size to the device, no pinch zoom. Capacitor injects a small inline script, so allow it.
 const indexPath = path.join(web, "index.html");
 let html = fs.readFileSync(indexPath, "utf8");
-html = html.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">');
+html = html.replace('<meta charset="utf-8">', '<meta charset="utf-8">');
 html = html.replace("default-src 'self';", "default-src 'self'; script-src 'self' 'unsafe-inline';");
 html = html.replace("<body", '<body class="android"');
 fs.writeFileSync(indexPath, html);

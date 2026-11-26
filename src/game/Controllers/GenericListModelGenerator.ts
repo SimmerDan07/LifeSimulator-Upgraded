@@ -584,6 +584,17 @@ export class GenericListModelGenerator {
                 arrayList.add(customizeSwitchViewModel2);
                 arrayList.add(customizeSwitchViewModel3);
                 {
+                    // v0.34.0: the new look — light / dark, and the old look for anyone who prefers it
+                    {
+                        const look: any = GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings();
+                        const relistLook = () => { try { Utils.INSTANCE.reloadGenericList(GenericListType.gameSettings); } catch { /* no UI */ } };
+                        const THEMES: [string, string][] = [["auto", "Match Phone"], ["light", "Light"], ["dark", "Dark"]];
+                        const cur = THEMES.find((t) => t[0] === (look.theme ?? "auto")) ?? THEMES[0];
+                        arrayList.add(new CustomizeOptionsViewModel("Appearance", cur[1], THEMES.map(([k, t]) => new CustomizeSingleOptionViewModel(t, null as any, { invoke: () => { look.theme = k; relistLook(); } }))));
+                        arrayList.add(new CustomizeSwitchViewModel("Classic look (the old big cards and side tabs)", new SwitchViewModel(!!look.classicLook, false, {
+                            invoke: (z3: boolean) => { look.classicLook = z3; relistLook(); },
+                        })));
+                    }
                     // v0.29.1: one switch turns off every pop-up in the game; the finer switches only matter while it's off
                     const gs: any = GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings();
                     const relist = () => { try { Utils.INSTANCE.reloadGenericList(GenericListType.gameSettings); } catch { /* no UI */ } };

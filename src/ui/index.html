@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="theme-color" content="#2c2c2e">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'">
 <title>Life Simulator</title>
 <link rel="stylesheet" href="renderer.css">
@@ -28,8 +30,28 @@
         <button id="hud-settings" title="Settings"><img alt=""></button>
     </div>
 </header>
+<header id="nhud">
+    <div class="nh-row1">
+        <div class="nh-who"><span id="nh-name"></span><span id="nh-vamp" class="fa" title="Vampire" hidden>&#xf043;</span></div>
+        <button id="nh-fame" title="Celebrity Life" hidden></button>
+        <button id="nh-money" title="Money (cash + bank)"><span id="nh-total"></span></button>
+        <button id="nh-news" class="nh-icon" title="News"><span class="fa">&#xf0f3;</span><span id="nh-news-count" hidden></span></button>
+        <button id="nh-settings" class="nh-icon" title="Settings"><span class="fa">&#xf013;</span></button>
+    </div>
+    <div class="nh-row2">
+        <div id="nh-date"></div>
+        <button id="nh-stats" title="Health, happiness and sanity">
+            <span class="nh-stat"><span class="fa" style="color:#d65645">&#xf004;</span><span class="bar"><span id="nh-health"></span></span></span>
+            <span class="nh-stat"><span class="fa" style="color:#f1c40f">&#xf118;</span><span class="bar"><span id="nh-happiness"></span></span></span>
+            <span class="nh-stat"><span class="fa" style="color:#e685c1">&#xf5dc;</span><span class="bar"><span id="nh-sanity"></span></span></span>
+            <span class="nh-stat thirst"><span class="fa" style="color:#b3262e">&#xf043;</span><span class="bar"><span id="nh-thirst"></span></span></span>
+        </button>
+    </div>
+</header>
 <nav id="tabs"></nav>
+<nav id="tabbar"></nav>
 <main id="main">
+    <div id="subtabs"></div>
     <div id="content"></div>
     <div id="footer" class="empty"></div>
 </main>
