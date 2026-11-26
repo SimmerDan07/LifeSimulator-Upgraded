@@ -289,6 +289,10 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `--left` = rail + sl used by #hud/#tabs/#main/#overlay/#toasts; content, list body/foot, footer and the rail pad
     by `--sb`; modals capped at `100dvh`; landscape stats 2 × 2; narrow `--hud` 108px; text-size-adjust 100%,
     inputs ≥16px, `overscroll-behavior: contain`. All 0 where there are no insets (Windows, Android full screen).
+  - **v0.31.3 iPhone auto-update**: `web/pwa.js` (version stamped by build-web) registers `sw.js` with
+    `updateViaCache: "none"`, calls `reg.update()` on becoming visible and every 20 min; on `controllerchange`
+    (not the first install) it waits until no modal/list screen is open, saves (`__lifesimSave`), waits for
+    `__lifesimFlush` (IndexedDB), reloads, and shows "Updated to vX" once (`localStorage lifesim:appVersion`).
   - **Text fixes**: 25 typos in the original game text (Panhandler, Disease Eradication, necessary, available,
     therapeutic, Software Company, team names…).
 - **Generational play** (`src/game/Managers/Generations.ts`): when you die, "Continue as your child" lets you

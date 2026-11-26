@@ -457,6 +457,7 @@ function boot() {
     // Android app (android/): the system back button calls __lifesimBack (true = handled here, false = leave the
     // app), and the app calls __lifesimSave when it goes to the background.
     (window as any).__lifesimSave = saveNow;
+    (window as any).__lifesimFlush = () => storage.flush();   // v0.31.3: the iPhone app waits for this before updating itself
     (window as any).__lifesimBack = (): boolean => {
         const modal = document.querySelector(".modal-backdrop");
         if (modal) {   // a pop-up: OK closes a message, "no" closes a yes/no question; a real choice waits for a tap

@@ -10,7 +10,8 @@ const dist = path.join(root, "dist"), web = path.join(root, "dist-web"), src = p
 const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"))).version;
 fs.rmSync(web, { recursive: true, force: true });
 fs.cpSync(dist, web, { recursive: true, filter: (f) => !/(main\.cjs|preload\.cjs|package\.json|\.map)$/.test(f) });
-for (const f of ["pwa.js", "icon-180.png", "icon-192.png", "icon-512.png"]) fs.copyFileSync(path.join(src, f), path.join(web, f));
+for (const f of ["icon-180.png", "icon-192.png", "icon-512.png"]) fs.copyFileSync(path.join(src, f), path.join(web, f));
+fs.writeFileSync(path.join(web, "pwa.js"), fs.readFileSync(path.join(src, "pwa.js"), "utf8").replaceAll("__VERSION__", version));
 fs.writeFileSync(path.join(web, "manifest.webmanifest"), JSON.stringify({
     name: "Life Simulator", short_name: "Life Sim", start_url: "./", scope: "./", display: "standalone",
     orientation: "any", background_color: "#3a3a3a", theme_color: "#3a3a3a",
