@@ -319,7 +319,7 @@ function companyScreen(id: string, p: any): any[] {
     const eb = Companies.expandBlock(c, p);
     out.push(btn("business_realestate1", "Open Another Location", `${money(Companies.expandCost(c, p))}.\n`, eb ?? "Open", () => Work.say("New Location", Companies.expand(c, p), t.image), eb == null));
     const ib = Companies.ipoBlock(c);
-    out.push(btn("bank_stocks", "Go Public", "Sell most of your shares on the stock market and keep 30% of the profits.\n", ib ?? "Ring the Bell", () => Work.say("Going Public", Companies.ipo(c.id, p), t.image), ib == null));
+    out.push(btn("skill_investment", "Go Public", "Sell most of your shares on the stock market and keep 30% of the profits.\n", ib ?? "Ring the Bell", () => Work.say("Going Public", Companies.ipo(c.id, p), t.image), ib == null));
     out.push(btn("business_sell", "Sell the Company", `About ${money(Companies.value(c) * 0.85)} now (buyers sometimes offer more).\n`, "Sell", () => Work.menu("Sell It?", `${money(Companies.value(c) * 0.85)} for ${c.name}.`, t.image, [["Sell", () => { const r = Companies.sell(c.id, p); refresh(); return r; }], ["Keep it", () => ""]])));
     out.push(btn("health_low", "Close It Down", "Sell the equipment and lock the doors.\n", "Close", () => Work.menu("Close It?", `${c.name} closes for good.`, t.image, [["Close it", () => { const r = Companies.close(c.id, p); refresh(); return r; }], ["Keep going", () => ""]])));
     return out;
@@ -352,8 +352,8 @@ function retirementScreen(p: any): any[] {
     }
     out.push(new HeaderTitleViewModel("401(k)"));
     const match = Benefits.matchPct(p);
-    out.push(btn("bank_stocks", `401(k): ${money(b.balance)}`, `You put in ${b.pct}% of every paycheck${match ? `, and your employer adds ${match}%` : Work.hasPerk("match", p) ? " (your employer matches half, up to 6%)" : ""}. This year's return: ${Math.round(b.ret * 100)}%.\nLocked until ${Retirement.minAge} (taking it out early costs 10%).\n`, "Change %", () =>
-        Work.menu("401(k) Contributions", "How much of every paycheck goes into your 401(k)?", "bank_stocks", K401_OPTIONS.map((n) => [`${n}%${n === b.pct ? " (now)" : ""}`, () => { Benefits.setPct(n, p); refresh(); return ""; }] as [string, () => string]))));
+    out.push(btn("skill_investment", `401(k): ${money(b.balance)}`, `You put in ${b.pct}% of every paycheck${match ? `, and your employer adds ${match}%` : Work.hasPerk("match", p) ? " (your employer matches half, up to 6%)" : ""}. This year's return: ${Math.round(b.ret * 100)}%.\nLocked until ${Retirement.minAge} (taking it out early costs 10%).\n`, "Change %", () =>
+        Work.menu("401(k) Contributions", "How much of every paycheck goes into your 401(k)?", "skill_investment", K401_OPTIONS.map((n) => [`${n}%${n === b.pct ? " (now)" : ""}`, () => { Benefits.setPct(n, p); refresh(); return ""; }] as [string, () => string]))));
     if (b.balance >= 1) out.push(btn("bank_withdrawal", "Cash Out Your 401(k)", `${Benefits.locked(p) ? `Before ${Retirement.minAge}: a 10% penalty. ` : ""}You'd get ${money(b.balance * (Benefits.locked(p) ? 0.9 : 1))}.\n`, "Cash Out", () =>
         Work.menu("Cash Out?", "All of it, now.", "bank_withdrawal", [["Cash out", () => { const r = Benefits.withdraw(p); refresh(); return r; }], ["Keep it growing", () => ""]])));
     out.push(new HeaderTitleViewModel("When You Retire"));

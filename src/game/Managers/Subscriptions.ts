@@ -200,8 +200,10 @@ export const Subscriptions = {
         // v0.33.0: grouped, with the weekly total; ones that don't apply to you are hidden
         const p = player();
         const out: any[] = [];
-        const total = Subscriptions.weeklyTotal(p);
-        if (Subscriptions.active(p).length) out.push(new ActionCellSingleViewModel(R.drawable.hud_bank, `${Subscriptions.active(p).length} active: ${money(total)} a week`, new TextLabelViewModel("Cancel any time. A week in debt cancels them all.", null, false, false, null, null), ButtonViewModel.INSTANCE.getHidden(), null, null));
+        const paid = Subscriptions.active(p).map((id) => Subscriptions.def(id)).filter((d) => d && !Subscriptions.covered(d.id, p)) as SubscriptionDef[];
+        const total = paid.reduce((t, d) => t + Subscriptions.price(d, p), 0);
+        const trial = paid.some((d) => Subscriptions.charge(d, p) === 0);
+        if (Subscriptions.active(p).length) out.push(new ActionCellSingleViewModel(R.drawable.hud_bank, `${Subscriptions.active(p).length} active: ${money(total)} a week`, new TextLabelViewModel(`${trial ? "Some are in their free first week. " : ""}Cancel any time. A week in debt cancels them all.`, null, false, false, null, null), ButtonViewModel.INSTANCE.getHidden(), null, null));
         const groups: string[] = [];
         for (const d of SUBSCRIPTIONS) { const g = d.group ?? "Health & Self-Care"; if (!groups.includes(g)) groups.push(g); }
         for (const g of groups) {

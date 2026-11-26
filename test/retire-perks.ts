@@ -82,6 +82,7 @@ check("keep working: still employed, not retired", p.getJobState().getCurrentJob
 for (let w = 0; w < WPY; w++) { keepAlive(); p.applyWeekly(); clear(); }
 check("pop-up only once", !alerts.some((a) => /You Can Retire/.test(a.getTitle?.() ?? "")));
 check("60+: Retire row on the Work tab", workTab().some((vm) => vm.title === "Retire"));
+if ((p as any).work?.employer) (p as any).work.employer.perks = [];   // v0.33.0: a pension employer adds to it (tested in workplace.ts)
 const years = Retirement.yearsIn(st);
 const expected = Math.max(100, Math.round(1500 * Math.min(0.7, 0.02 * years)));
 check("pension = 2% of pay per career year (min $100)", Retirement.pensionIfRetiredNow(p) === expected, `${Retirement.pensionIfRetiredNow(p)} vs ${expected}, ${years} yrs`);

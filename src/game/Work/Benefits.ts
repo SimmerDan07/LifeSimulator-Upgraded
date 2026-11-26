@@ -121,7 +121,7 @@ export const Benefits = {
             b.stockYear = Benefits.yearAtJob(p);
             const bonus = Workplace.weeklyPay(p) * rnd(2, 5);
             add(p, bonus);
-            Work.say("Stock Grant", `Your shares at ${e.name} vested: ${money(bonus)}.`, "bank_stocks");
+            Work.say("Stock Grant", `Your shares at ${e.name} vested: ${money(bonus)}.`, "skill_investment");
         }
     },
 

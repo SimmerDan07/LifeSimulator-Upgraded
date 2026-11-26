@@ -122,7 +122,7 @@ let answerLast = false;
 function allScreens(): { name: string; models: any }[] {
     const out: { name: string; models: any }[] = [];
     for (const [name, g] of Object.entries(gens)) out.push({ name, models: g.generateViewModels() });
-    const keys = ["youth-activities", "youth-yearbook", "vampire", "celebrity", "celebrity-news", "celebrity-works", "celebrity-milestones", "crime", "crime-murder", "news", "health-history", "legacy", "languages",
+    const keys = ["youth-activities", "youth-yearbook", "work-apps", "work-resume", "work-certs", "work-hustles", "work-start-company", "work-retirement", "vampire", "celebrity", "celebrity-news", "celebrity-works", "celebrity-milestones", "crime", "crime-murder", "news", "health-history", "legacy", "languages",
         ...["outdoors", "sports", "culture", "nightlife", "wellness", "fun", "food", "giving"].map((a) => "activities:" + a),
         ...["americas", "europe", "asia", "africa"].map((r) => "world:" + r),
         ...CAREER_CATEGORIES.map((c) => "careers:" + c.id)];

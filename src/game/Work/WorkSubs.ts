@@ -59,7 +59,7 @@ export const NEW_SUBSCRIPTIONS: SubscriptionDef[] = [
     { id: "jobBoard", group: "Career & Learning", title: "Job Board Premium", image: img("tab_briefcase"), weekly: 10, mods: [0, 0, 0], minAge: 16, blurb: "+5 Hire Score, and fresh job openings every 2 weeks instead of 4." },
     { id: "onlineCourses", group: "Career & Learning", title: "Online Courses", image: img("education_masters"), weekly: 12, mods: [0, 0, 0], minAge: 14, covered: "courses", blurb: "+1 career skill a week in your job's field, and Take a Course costs half." },
     { id: "coworking", group: "Career & Learning", title: "Coworking Space", image: img("possession_computer_2"), weekly: 60, mods: [0, 1, 0], minAge: 18, blurb: "Working from home climbs as fast as the office. Sometimes you network." },
-    { id: "languageApp", group: "Career & Learning", title: "Language App", image: img("education_college_languages"), weekly: 3, mods: [0, 0, 0], minAge: 8, blurb: "A little progress every week on a language you've started learning." },
+    { id: "languageApp", group: "Career & Learning", title: "Language App", image: img("education_literature"), weekly: 3, mods: [0, 0, 0], minAge: 8, blurb: "A little progress every week on a language you've started learning." },
     // family
     { id: "babysitter", group: "Family", title: "Babysitter", image: img("love_baby"), weekly: 150, mods: [0, 2, 2], minAge: 18, show: (p) => kids(p).some((k) => age(k) < 13), blurb: "Date nights and a breather. Your kids and partner feel closer." },
     { id: "kidTutor", group: "Family", title: "Tutor for Your Kid", image: img("work_teacher"), weekly: 80, mods: [0, 0, 0], minAge: 18, show: (p) => kids(p).some((k) => age(k) >= 5 && age(k) < 18), blurb: "Your school-age kids' grades go up faster." },
@@ -72,7 +72,7 @@ export const NEW_SUBSCRIPTIONS: SubscriptionDef[] = [
     { id: "fanClub", group: "Lifepaths", title: "Fan Club Platform", image: img("lifepath_celebrity"), weekly: 20, mods: [0, 1, 0], minAge: 13, show: (p) => Celebrity.fans(p) >= 10_000, blurb: "Your fans grow every week, and the merch pays a little." },
     { id: "security", group: "Lifepaths", title: "Private Security", image: img("police_badge"), weekly: 500, mods: [0, 0, 2], minAge: 18, show: (p) => Celebrity.fans(p) >= 100_000 || Number(p.getMoneyState().getCash().toString()) >= 5_000_000, blurb: "Nobody gets near you that you don't want near you." },
     { id: "lawyer", group: "Lifepaths", title: "Lawyer on Retainer", image: img("work_lawyer"), weekly: 300, mods: [0, 0, 1], minAge: 18, blurb: "If you're ever sentenced, it's 30% shorter." },
-    { id: "accounting", group: "Business", title: "Accounting Software", image: img("bank_stocks"), weekly: 25, mods: [0, 0, 0], minAge: 18, show: (p) => Companies.all(p).some((c) => !c.public), blurb: "Fewer money troubles at your companies: theft and supplier problems happen half as often." },
+    { id: "accounting", group: "Business", title: "Accounting Software", image: img("skill_investment"), weekly: 25, mods: [0, 0, 0], minAge: 18, show: (p) => Companies.all(p).some((c) => !c.public), blurb: "Fewer money troubles at your companies: theft and supplier problems happen half as often." },
 ];
 
 export const WorkSubs = {

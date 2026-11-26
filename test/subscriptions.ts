@@ -26,7 +26,10 @@ let failures = 0;
 const check = (n: string, ok: boolean, x = "") => { if (!ok) failures++; console.log((ok ? "PASS " : "FAIL ") + n + (x ? "  (" + x + ")" : "")); };
 const clear = () => { while (alerts.length) AlertManager.INSTANCE.alertDismissed(alerts.shift()); };
 const profile = () => Array.from(new ProfileModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
-const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); return i < 0 ? [] : r.slice(i + 1, i + 4); };
+// v0.33.0: subscriptions are grouped (and there are many more); these tests follow the original three
+const subRows = () => { const r = profile(); const i = r.findIndex((x) => x instanceof HeaderTitleViewModel && x.title === "Subscriptions"); if (i < 0) return []; const want = ["Gym Membership", "Gym Coach", "Therapist"]; return want.map((t) => r.slice(i + 1).find((x) => x.title === t)).filter(Boolean); };
+/** v0.33.0: the first week of each subscription is free; these tests check the weekly prices, so the trials are used up. */
+const trialsUsed = (p: any) => { p.subTrial = { gym: -1, coach: -1, therapist: -1, healthInsurance: -1 }; };
 const billsRow = () => bankRows().find((r) => /^Pay Bills from Savings/.test(r.title ?? ""));
 const bankRows = () => Array.from(new BankModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
 const autoRow = () => bankRows().find((r) => /^Automatic Savings/.test(r.title ?? ""));
@@ -44,6 +47,7 @@ const start = (sc: any, tweak?: (np: any) => void) => {
 GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(new M());
 {
     const p: any = GameStateManager.INSTANCE.getPersonState();
+    trialsUsed(p);
     check("old save: no subscriptions", Subscriptions.active(p).length === 0);
     const rows = subRows();
     check("Profile tab: a Subscriptions section with Gym Membership, Gym Coach, Therapist", rows.map((r) => r.title).join(",") === "Gym Membership,Gym Coach,Therapist", rows.map((r) => r.title).join(","));
@@ -56,6 +60,7 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
 fixture = null;
 GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(new M());
 let p = start(LifeScenario.educatedAndInDebt);
+trialsUsed(p);
 MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), MoneyUpdateType.workIncome, null, null, 12, null);
 {
     check("Gym Coach needs a Gym Membership", Subscriptions.blocked(Subscriptions.def("coach"), p) === "Needs a Gym Membership" && !Subscriptions.subscribe("coach", p));
@@ -75,7 +80,7 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), Mo
     p.applyWeekly(); clear();
     check("still active after a week", Subscriptions.active(p).length === 3);
     const rows = subRows();
-    check("active rows say Active and offer Cancel", rows.every((r) => /Cancel/.test(JSON.stringify(r)) && /Active/.test(JSON.stringify(r))));
+    check("active rows say Active and offer Cancel (Manage for ones with a family plan)", rows.every((r) => /Cancel|Manage/.test(JSON.stringify(r)) && /Active/.test(JSON.stringify(r))));
     const gone = Subscriptions.cancel("gym", p);
     check("cancelling the gym also cancels the coach", gone.join(",") === "gym,coach" && !Subscriptions.has("coach", p) && Subscriptions.has("therapist", p));
     p.setBirthMonth(3 - Math.floor((p.calendarWeeks() % 48) / 4));   // v0.26.0: spring (no heating or AC bill to muddy the numbers)
@@ -149,6 +154,7 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), Mo
     check("Turn On", Subscriptions.billsFromSavings(p) && billsRow().title === "Pay Bills from Savings: On" && billsRow().actionButton.title === "Turn Off");
     // put money in savings, then a week of bills
     MoneyState.updateMoney$default(ms(), BigInteger.valueOf(10_000_000), MoneyUpdateType.workIncome, null, MoneyDestination.savings, 4, null);
+    if ((p as any).work?.employer) (p as any).work.employer.perks = [];   // v0.33.0: a gym perk would cover it
     Subscriptions.subscribe("gym", p);
     p.collectWeeklyValues();
     const sDelta = Array.from((ms() as any).savingsDeltaThisWeek as any).map((x: any) => [x.getFirst(), num(x.getSecond())]) as any[];
@@ -176,6 +182,7 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), Mo
 
 // ---------------------------------------------------------------- a child
 p = start(LifeScenario.youngChild);
+trialsUsed(p);
 MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), MoneyUpdateType.workIncome, null, null, 12, null);
 check("a young child can't subscribe (gym 14+, therapist 12+)", Subscriptions.blocked(Subscriptions.def("gym"), p) === "Must be at least 14 years old" && Subscriptions.blocked(Subscriptions.def("therapist"), p) === "Must be at least 12 years old" && !Subscriptions.subscribe("gym", p));
 

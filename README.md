@@ -293,6 +293,20 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `updateViaCache: "none"`, calls `reg.update()` on becoming visible and every 20 min; on `controllerchange`
     (not the first install) it waits until no modal/list screen is open, saves (`__lifesimSave`), waits for
     `__lifesimFlush` (IndexedDB), reloads, and shows "Updated to vX" once (`localStorage lifesim:appVersion`).
+  - **v0.33.0 The Career Overhaul** (`src/game/Work/`): `Work.ts` (state `Player.work`: Effort, performance, employer,
+    raises, job history, burnout via `Illness.state.overwork`; hook arrays the later stages fill), `WorkData.ts` (efforts,
+    ratings, vibes, perks, employer names, interview questions, career skills, 27 branches, 12 certifications, art slots),
+    `Hiring.ts` (openings, Hire Score, applications, interviews, offers, negotiation, headhunters), `Workplace.ts` (boss and
+    3 coworkers as `SocialPerson` kind `coworker`, opinion, yearly reviews, performance plans, notice/counter-offers,
+    firing, layoffs, unemployment), `WorkLove.ts` (Love tab actions; referrals), `WorkMoments.ts` (37 `w_*` moments),
+    `CareerPath.ts` (forks, skills, courses, certifications; the branch shows in `JobStateSingle.getJobTitle`),
+    `Hustles.ts` (10 side hustles; the old ones convert once), `Company.ts` (found and run a company; old businesses
+    convert once; old weekly payouts are skipped in `Player.collectWeeklyValues`), `Benefits.ts` (paid/parental leave,
+    401(k) via `JobState` → `Benefits.payroll`, pension employers, stock grants, retirement screen, retiree actions),
+    `WorkSubs.ts` (32 new subscriptions; `Subscriptions` gained groups, `show`, job cover, family plans, free first
+    weeks, price rises), `SelfCare.ts` (Health › Self-Care: sleep, 14 quick actions, care, 8 goals, 10 `sc_*` moments),
+    `WorkScreens.ts` (Work tab rows, one Go to Work footer button, Lifepaths screens `work-*`), `install.ts`.
+    `test/workplace.ts` (183).
   - **v0.32.0 Childhood & Teen Years** (`src/game/Youth/`): `Youth.ts` (state `Player.youth`, rules, weekly tick after
     `Vampire.tickCures`, report cards, graduation and turning-18 milestones (`vm.milestone` → `AlertManager.mustShow`),
     traits, the kids you raise in `meta.kid`, `Youth.heir`), `YouthData.ts` (25 activities, 5 crowds, 13 upbringing
