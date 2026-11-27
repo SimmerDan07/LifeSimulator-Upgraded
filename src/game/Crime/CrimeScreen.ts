@@ -205,7 +205,7 @@ const PRISON: LifeActionDef[] = [
             show("Appeal Denied", "The court upheld your sentence.");
         } },
     { id: "feedCellmate", title: "Feed on a Cellmate", image: R.drawable.icon_vamp_bite, jail: true, show: (p) => Vampire.isVampire(p),
-        note: () => "Thirst −40, suspicion +8. 15% the guards find out (+24 weeks).\n",
+        note: () => "Hunger −40, Rumours +8. 15% the guards find out (+24 weeks).\n",
         run: (p) => {
             const v = Vampire.state(p); v.thirst = Math.max(0, v.thirst - 40); v.suspicion = Math.min(100, v.suspicion + 8);
             if (roll(0.15)) { Crime.addJailWeeks(p, 24); show("Caught", "A guard found your cellmate pale and dizzy. (+24 weeks)", R.drawable.jail); }

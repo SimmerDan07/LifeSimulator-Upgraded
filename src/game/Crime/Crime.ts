@@ -381,7 +381,7 @@ export const Crime = {
         if (Vampire.isVampire(p) && Vampire.state(p).thirst > 80 && roll(0.2)) {
             const v = Vampire.state(p); v.thirst -= 40; v.suspicion = Math.min(100, v.suspicion + 10);
             Crime.addJailWeeks(p, 24);
-            Crime.alert("Lights Out", "The thirst won. Your cellmate is in the infirmary with two small holes in his neck. (+24 weeks, +10 suspicion)", R.drawable.icon_vamp_bite);
+            Crime.alert("Lights Out", "The hunger won. Your cellmate is in the infirmary with two small holes in his neck. (+24 weeks, +10 Rumours)", R.drawable.icon_vamp_bite);
         }
     },
     recapture(p: any) {

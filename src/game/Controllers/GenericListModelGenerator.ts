@@ -654,8 +654,8 @@ export class GenericListModelGenerator {
                     Utils.INSTANCE.triggerNewGameStart();
                 }
                 }, 126, null));
-                if (Intrinsics.areEqual(key, Constants.ViewModel.INSTANCE.getTombstoneModeDeath()) && Generations.eligibleHeirs(personState).length > 0) {
-                    arrayList3.add(new SingleButtonViewModel(new ButtonViewModel("Continue as your child", null, false, false, false, false, false, {
+                if (Intrinsics.areEqual(key, Constants.ViewModel.INSTANCE.getTombstoneModeDeath()) && Generations.anyHeirs(personState)) {
+                    arrayList3.add(new SingleButtonViewModel(new ButtonViewModel(Generations.heirButtonTitle(personState), null, false, false, false, false, false, {
                         invoke: () => Generations.openHeirScreen(),
                     }, 126, null)));
                 }

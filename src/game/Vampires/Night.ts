@@ -9,6 +9,7 @@ import { Modifiers } from "../Managers/Modifiers";
 import { NameGenerator } from "../Managers/NameGenerator";
 import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Relationships } from "../Social/Relationships";
+import { COUNTRY_BY_ID } from "../World/WorldData";
 import { Vampire, BLOOD_DIETS, type LifeActionDef } from "../Lifepaths/Vampire";
 import { Reborn, player, WPY, roll, pick, clamp, img, now } from "./Reborn";
 import { Becoming } from "./Becoming";
@@ -17,7 +18,7 @@ import { GROUNDS, PREY, AMOUNTS, COURT_TITLES, TASKS, ERAS, LAIR, TREE, lineOf, 
 const money = (n: number) => ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(n)), true);
 const cashNum = (p: any) => { try { return Number(p.getMoneyState().getCash().toString()); } catch { return 0; } };
 const pay = (p: any, n: number) => MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(Math.round(n)), MoneyUpdateType.directSpend, null, null, 12, null);
-const earn = (p: any, n: number) => MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(-Math.round(n)), MoneyUpdateType.directSpend, null, null, 12, null);
+const earn = (p: any, n: number) => MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(Math.round(n)), MoneyUpdateType.misc, null, null, 12, null);
 const attr = (p: any, h: number, hap: number, san: number) => p.getAttributeState().setDeltaValueImmediate(new Modifiers(h, hap, san));
 const rumours = (p: any, n: number) => { const s = Vampire.state(p); s.suspicion = clamp(s.suspicion + n, 0, Vampire.has("nightEternal", p) ? 50 : 100); };
 const huntUp = (p: any, n: number) => { const r = Reborn.st(p); r.hunt = clamp(r.hunt + n, 0, Vampire.has("puppetMaster", p) ? 60 : 100); };
@@ -328,7 +329,11 @@ export const Court = {
     prince(p: any = player()): any { const id = Reborn.peek(p)?.princeId; return id ? Relationships.circle(p).get(id) : null; },
     rival(p: any = player()): any { const id = Reborn.peek(p)?.rivalId; return id ? Relationships.circle(p).get(id) : null; },
     allies(p: any = player()): any[] { const r = Reborn.peek(p); return (r?.allyIds ?? []).map((id) => Relationships.circle(p).get(id)).filter(Boolean); },
-    cityName(p: any = player()): string { try { return p.getCountry().def()?.name ?? "your city"; } catch { return "your city"; } },
+    /** The court sits in the country's first big city. */
+    cityName(p: any = player()): string {
+        const BIG: Record<string, string> = { unitedStates: "New York", canada: "Toronto", japan: "Tokyo", france: "Paris", spain: "Madrid", uk: "London", china: "Shanghai" };
+        try { const c = Reborn.country(p); return BIG[c] ?? COUNTRY_BY_ID[c]?.cities?.[0] ?? COUNTRY_BY_ID[c]?.name ?? "your city"; } catch { return "your city"; }
+    },
     /** Each country's capital has its own court (made once). */
     ensure(p: any) {
         const r = Reborn.st(p);

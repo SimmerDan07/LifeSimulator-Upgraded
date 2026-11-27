@@ -83,7 +83,7 @@ export class LifepathsModelGenerator {
         if (s?.isVampire) {
             if (s.cureWeeks > 0) return `The Vampiric Cure is working: ${s.cureWeeks} week${s.cureWeeks === 1 ? "" : "s"} to go.`;
             const years = Vampire.years(p);
-            return `${years > 0 ? `Vampire for ${years} year${years === 1 ? "" : "s"}` : "A newly risen vampire"} · Thirst ${Math.round(s.thirst)} · Suspicion ${s.suspicion}`;
+            return `${years > 0 ? `Vampire for ${years} year${years === 1 ? "" : "s"}` : "A newly risen vampire"} · Hunger ${Math.round(s.thirst)} · Rumours ${s.suspicion}`;
         }
         if (s != null && s.turningWeeks > 0) return "The Turning: you'll rise a vampire at the end of this week.";
         if (s?.cured) return "Human again. You get one vampire life: this path is closed to you now.";
@@ -208,13 +208,13 @@ export class LifepathsModelGenerator {
         out.add(info(Vampire.image, years > 0 ? `Vampire for ${years} year${years === 1 ? "" : "s"}` : "A newly risen vampire",
             `Turned at ${turnedAt}, true age ${trueAge}. Blood power: ${s.bloodPower}.${powers ? ` Powers: ${powers}.` : ""}`));
         if (s.cureWeeks > 0) {
-            out.add(info(R.drawable.health_youthelixir, "The Vampiric Cure is working", `${s.cureWeeks} week${s.cureWeeks === 1 ? "" : "s"} until you're human again. Your thirst has stopped.`));
+            out.add(info(R.drawable.health_youthelixir, "The Vampiric Cure is working", `${s.cureWeeks} week${s.cureWeeks === 1 ? "" : "s"} until you're human again. Your hunger has stopped.`));
         } else {
-            out.add(new MeterViewModel("Thirst", s.thirst, 100, "red",
+            out.add(new MeterViewModel("Hunger", s.thirst, 100, "red",
                 s.thirst >= 100 ? "Empty: you're about to collapse." : s.thirst >= 80 ? "Desperate: −2 happiness, −3 sanity a week. Feed soon or you'll collapse." : s.thirst >= 60 ? "Hungry: −2 happiness a week." : thirstTrend(Vampire.thirstPerWeekFor(p))));
             if ((s.witheredWeeks ?? 0) > 0) out.add(info(Vampire.image, "Withered",
                 `Your body is still recovering from the collapse: health can't go above ${WITHERED_CAP} and doesn't heal, −1 happiness a week. ${s.witheredWeeks} week${s.witheredWeeks === 1 ? "" : "s"} left.`));
-            out.add(new MeterViewModel("Suspicion", s.suspicion, 100, "purple",
+            out.add(new MeterViewModel("Rumours", s.suspicion, 100, "purple",
                 (s.suspicion >= 80 ? "Vampire hunters may come for you." : "At 80, vampire hunters start looking for you.") +
                 (Celebrity.tier(p) >= 3 ? " You're famous: cameras everywhere make people wonder why you never age." : "")));
             out.add(new HeaderTitleViewModel("Feeding"));
@@ -232,7 +232,7 @@ export class LifepathsModelGenerator {
             const since = bond.marriedSinceWeek ?? bond.togetherSinceWeek;
             const yrs = since != null ? Math.floor(Math.max(0, p.getTrueAgeInWeeks() - since) / 48) : null;
             out.add(info(R.drawable.icon_bond, `Eternal Bond with ${bond.getFirstName()}`,
-                (yrs != null ? `${married ? "Married" : "Together"} ${yrs} year${yrs === 1 ? "" : "s"}. ` : "") + "You never drift apart, fight hunters side by side (70% to win) and share your blood diet (it costs double; with no diet, they hunt alone: +2 suspicion a week). Hunt Together, Dance Through the Night and Eternal Vows are on their Love tab screen."));
+                (yrs != null ? `${married ? "Married" : "Together"} ${yrs} year${yrs === 1 ? "" : "s"}. ` : "") + "You never drift apart, fight hunters side by side (70% to win) and share your blood diet (it costs double; with no diet, they hunt alone: +2 Rumours a week). Hunt Together, Dance Through the Night and Eternal Vows are on their Love tab screen."));
         }
         out.add(new HeaderTitleViewModel("Coven"));
         const coven = Vampire.coven(p);

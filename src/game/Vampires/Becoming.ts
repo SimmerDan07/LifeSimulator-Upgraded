@@ -16,7 +16,7 @@ export const Becoming = {
     // ------------------------------------------------------------------ vampires as people
     /** A vampire in your world (your sire, a court member). They don't age and remember you for centuries. */
     makeVampire(p: any, role: string, line: LineId | null = null, years = 80 + Math.floor(Math.random() * 400)): SocialPerson {
-        const looks = (19 + Math.floor(Math.random() * 30)) * WPY();
+        const looks = (19 + Math.floor(Math.random() * 30)) * WPY() + 1 + Math.floor(Math.random() * (WPY() - 1));   // not a birthday week (they never age)
         const x = SocialPerson.make("night" as any, Sex.INSTANCE.getRandomSex(), null, looks);
         x.nightRole = role;
         x.bloodline = line ?? pick(BLOODLINES).id;
@@ -179,6 +179,24 @@ export const Becoming = {
         ]);
     },
 
+    /** Old saves: the bloodline was picked from your powers; you may choose another, once. */
+    lineChoiceLock(p: any): string | null { const r = Reborn.st(p); return r.way !== "old" ? "Your bloodline came from your sire" : (r as any).lineChosen ? "You've already chosen" : null; },
+    changeLine(p: any, line: LineId): string {
+        const r = Reborn.st(p) as any;
+        r.lineChosen = true;
+        if (line === r.line) return `You stay with the ${lineOf(line).title}.`;
+        r.line = line; r.sireLine = line;
+        const x = Becoming.sire(p); if (x) x.bloodline = line;
+        return `You've always been ${lineOf(line).title}, really. ${lineOf(line).gift}`;
+    },
+    lineMenu(p: any) {
+        const cur = Reborn.st(p).line as LineId;
+        Reborn.menu("Your Bloodline", `The vampires guessed the ${lineOf(cur).title} from your powers. You can choose your bloodline, once: it shapes which powers come cheap and your weakness.`, img(lineOf(cur).image), [
+            [`Stay ${lineOf(cur).title}`, () => Becoming.changeLine(p, cur)],
+            ...BLOODLINES.filter((b) => b.id !== cur).map((b): [string, () => string] => [b.title, () => Becoming.changeLine(p, b.id)]),
+        ]);
+    },
+
     // ------------------------------------------------------------------ old saves
     /** Vampires from before v0.35 keep everything and gain the new layers, once. */
     convert(p: any) {
@@ -199,7 +217,7 @@ export const Becoming = {
         r.hunt = Math.round(s.suspicion / 3);
         r.cityWeek = now(p); r.identityWeek = now(p);
         // the ones you turned become your childer
-        for (const x of Vampire.turnedLovedOnes(p)) Relationships.meta(x, p).childe = true;
+        for (const x of Vampire.turnedLovedOnes(p)) if ((x as any).kind !== "night" && x.getId?.() !== r.sireId) Relationships.meta(x, p).childe = true;
         const partner = Vampire.bondedPartner(p);
         if (partner) Relationships.meta(partner, p).childe = true;
         // the Blood Bank Delivery subscription moves into your blood supply (one place for it)
@@ -208,7 +226,7 @@ export const Becoming = {
         const hadCoven = Vampire.coven(p).some((x: any) => x.metAt === "coven");
         r.standing = hadCoven ? 25 : 20;
         try { (require_court()).ensure(p); } catch { /* */ }
-        Reborn.milestone("You've Been Reborn", `Being a vampire has changed. You belong to the ${lineOf(r.line).title} bloodline, through ${sire.getFullName()}, the stranger who turned you. You're a ${Reborn.rank(p).title} (${Reborn.bloodYears(p)} years of blood age) with Humanity ${Math.round(r.humanity)}. Your thirst is now Hunger, suspicion is Rumours, and real hunters keep their own score (the Hunt). The sun follows the weather, and your city has a vampire court.${moved} Everything is on Lifepaths › Vampire.`, Vampire.image);
+        Reborn.milestone("You've Been Reborn", `Being a vampire has changed. You belong to the ${lineOf(r.line).title} bloodline, through ${sire.getFullName()}, the stranger who turned you. You're a ${Reborn.rank(p).title} (${Reborn.bloodYears(p)} years of blood age) with Humanity ${Math.round(r.humanity)}. Your thirst is now Hunger, suspicion is Rumours, and real hunters keep their own score (the Hunt). The sun follows the weather, and your city has a vampire court.${moved} Everything is on Lifepaths › Vampire (you can pick a different bloodline once, on its Bloodline screen).`, Vampire.image);
     },
 };
 // the court is wired at install time (avoids an import loop)

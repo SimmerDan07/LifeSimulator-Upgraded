@@ -47,6 +47,8 @@ import { LoverPersonality } from "../src/game/Enums/LoverPersonality";
 import { Sex } from "../src/game/Enums/Sex";
 import { Job } from "../src/game/Enums/Job";
 import { Youth } from "../src/game/Youth/Youth";
+import { Reborn } from "../src/game/Vampires/Reborn";
+import { Night } from "../src/game/Vampires/Night";
 
 
 let seed = 777;
@@ -122,7 +124,7 @@ let answerLast = false;
 function allScreens(): { name: string; models: any }[] {
     const out: { name: string; models: any }[] = [];
     for (const [name, g] of Object.entries(gens)) out.push({ name, models: g.generateViewModels() });
-    const keys = ["youth-activities", "youth-yearbook", "work-apps", "work-resume", "work-certs", "work-hustles", "work-start-company", "work-retirement", "vampire", "celebrity", "celebrity-news", "celebrity-works", "celebrity-milestones", "crime", "crime-murder", "news", "health-history", "legacy", "languages",
+    const keys = ["youth-activities", "youth-yearbook", "work-apps", "work-resume", "work-certs", "work-hustles", "work-start-company", "work-retirement", "vampire", "vampire-powers", "vampire-masquerade", "vampire-court", "vampire-lair", "vampire-bloodline", "celebrity", "celebrity-news", "celebrity-works", "celebrity-milestones", "crime", "crime-murder", "news", "health-history", "legacy", "languages",
         ...["outdoors", "sports", "culture", "nightlife", "wellness", "fun", "food", "giving"].map((a) => "activities:" + a),
         ...["americas", "europe", "asia", "africa"].map((r) => "world:" + r),
         ...CAREER_CATEGORIES.map((c) => "careers:" + c.id)];
@@ -235,6 +237,10 @@ const SCENARIOS: Record<string, () => void> = {
     worker: () => start(23, (p) => { rich(p, 60000); for (const n of ["highSchool", "college_biology", "nursing", "emtTraining", "electricalTrade", "cdl", "fireAcademy", "culinarySchool", "gameDesign"]) p.getCompletableActionState().completeAction((CompletableAction as any)[n]); }),
     influencer: () => start(19, (p) => { rich(p, 20000); SocialMedia.createAccount(p); SocialMedia.addFollowers(p, 40000, "cliptok"); p.getJobState().switchJob((Job as any).contentCreator); }),
     vampcreator: () => start(26, (p) => { rich(p, 200000); Vampire.rise(p); Vampire.state(p).bloodPower = 20; SocialMedia.createAccount(p); SocialMedia.addFollowers(p, 15000, "snapgram"); }),
+    // v0.35.0 Vampires Reborn
+    elder: () => start(40, (p) => { rich(p, 5_000_000); Vampire.rise(p); const s = Vampire.state(p); s.bloodPower = 30; s.suspicion = 60; s.powers = ["mistStep", "shadowStep", "charm", "glamour", "hypnoticGaze", "sunWard"]; const r = Reborn.st(p); r.bloodAgeWeeks = 320 * W; r.standing = 65; r.owed = 2; r.hunt = 70; r.lair = ["blackout", "crypt"]; r.vault = 50000; Night.gatherHerd(p); }),
+    hunted: () => start(28, (p) => { rich(p, 100000); Vampire.rise(p); const r = Reborn.st(p); r.hunt = 88; r.humanity = 2; Vampire.state(p).suspicion = 96; Vampire.state(p).thirst = 85; }),
+    seeker: () => start(25, (p) => { rich(p, 100000); Vampire.state(p).discovered = true; Reborn.st(p).way = "seeking"; }),
     // v0.28.0
     patriarch: () => start(66, (p) => { rich(p, 3_000_000); lover(p, "Rose"); for (const [n, a] of [["Ava", 38], ["Ben", 35], ["Cal", 16]] as [string, number][]) { const k = new Person(Relationship.child, Sex.female, p.getLastName(), a * W); k.setFirstName(n); k.setRelationshipProgress(700); p.getFamilyState().getFamilyMembers().add(k); } Legacy.addHeirloom(p, "pocketWatch", "Grandpa"); Legacy.writeWill(p, "equal", 10); }),
     sickly: () => start(68, (p) => { rich(p, 400000); Illness.catch(p, "heartDisease", "fuzz"); const c = Illness.catch(p, "cancer", "fuzz")!; c.stage = 2; c.detected = true; Illness.catch(p, "flu", "fuzz"); }),

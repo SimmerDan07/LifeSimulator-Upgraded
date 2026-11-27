@@ -275,7 +275,7 @@ const CelebrityBase = {
         Celebrity.addFans(p, s.fans * 0.03);
         World.news(p, pick([`Fans spot something strange in new photos of ${p.getFullName()}: no reflection in the mirror behind them`,
             `Viral: why do ${p.getFullName()}'s eyes glow in every flash photo?`, `${p.getFullName()} photographed at 3am, "looking younger than ever"`]));
-        return Celebrity.banner("Strange Photos", `The paparazzi caught something odd about you on camera. The internet is obsessed (+3% fans), and so is someone else (+${add} suspicion).`);
+        return Celebrity.banner("Strange Photos", `The paparazzi caught something odd about you on camera. The internet is obsessed (+3% fans), and so is someone else (+${add} Rumours).`);
     },
     scandal(p: any) {
         const s = Celebrity.state(p);

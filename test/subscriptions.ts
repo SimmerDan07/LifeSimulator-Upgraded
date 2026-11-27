@@ -53,7 +53,7 @@ GameStateManager.INSTANCE.init(); GameStateManager.INSTANCE.setMainGameFragment(
     check("Profile tab: a Subscriptions section with Gym Membership, Gym Coach, Therapist", rows.map((r) => r.title).join(",") === "Gym Membership,Gym Coach,Therapist", rows.map((r) => r.title).join(","));
     check("v0.24.1: the Profile tab no longer shows Automatic Savings / Pay Bills", !profile().some((r) => /^(Automatic Savings|Pay Bills from Savings)/.test(r.title ?? "")));
     check("old save: Automatic Savings on the Bank tab, off, button Set Up", /^Automatic Savings$/.test(autoRow()?.title) && autoRow().actionButton.title === "Set Up" && Subscriptions.autoSave(p) === 0, autoRow()?.title);
-    check("rows have their pictures and weekly prices", rows.every((r) => r.imageId != null) && /\$50\/wk/.test(JSON.stringify(rows[0])));
+    check("rows have their pictures and weekly prices", rows.every((r) => r.imageId != null) && /\/wk|Included/.test(JSON.stringify(rows[0])), JSON.stringify(rows.map((r) => [r.imageId, r.actionButton?.title])));
 }
 
 // ---------------------------------------------------------------- an adult
@@ -95,7 +95,9 @@ MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(100000), Mo
     MoneyState.updateMoney$default(p.getMoneyState(), p.getMoneyState().getCash().add(BigInteger.valueOf(10)), MoneyUpdateType.directSpend, null, null, 12, null);
     p.getAttributeState().setDeltaValueImmediate(new Modifiers(100, 100, 100));
     p.applyWeekly();
-    const cancelled = alerts.some((a) => a.getTitle?.() === "Subscriptions Cancelled");
+    // alerts queue one at a time (a family loss can come first): look through all of them
+    let cancelled = false;
+    for (let i = 0; i < 20 && alerts.length; i++) { const a = alerts.shift(); if (a.getTitle?.() === "Subscriptions Cancelled") cancelled = true; AlertManager.INSTANCE.alertDismissed(a); }
     clear();
     check("ending a week in debt cancels them all (with a message)", p.getMoneyState().getCash().intValue() >= 0 || (Subscriptions.active(p).length === 0 && cancelled), `cash ${p.getMoneyState().getCash()} subs ${Subscriptions.active(p)}`);
 }

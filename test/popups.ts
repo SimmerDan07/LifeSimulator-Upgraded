@@ -68,6 +68,7 @@ check("pop-ups for every event are off by default", !AlertManager.allPopups());
     const popped: string[] = [];
     for (let w = 0; w < 96; w++) {
         keep(p);
+        if (p.getJobState().getCurrentJob() == null) p.getJobState().switchJob(Job.retail);   // a layoff can happen
         if (w % 2) p.getJobState().work(p.getJobState().getCurrentJob(), WorkAction.normal); else p.applyWeekly();
         for (const a of shown) if (a.getType?.() !== AlertType.Banner) popped.push(a.getTitle());
         dismissAll();

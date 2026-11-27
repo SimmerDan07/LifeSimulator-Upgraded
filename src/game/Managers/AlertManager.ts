@@ -332,8 +332,8 @@ export class AlertManager {
         Obituary.record(GameStateManager.INSTANCE.getPersonState(), reason);
         if (GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted()) {
             const heirButtons = new ArrayList<AlertActionViewModel>();
-            if (Generations.eligibleHeirs(GameStateManager.INSTANCE.getPersonState()).length > 0) {
-                heirButtons.add(new AlertActionViewModel("Continue as your child", { invoke: () => Generations.openHeirScreen() }));
+            if (Generations.anyHeirs(GameStateManager.INSTANCE.getPersonState())) {
+                heirButtons.add(new AlertActionViewModel(Generations.heirButtonTitle(GameStateManager.INSTANCE.getPersonState()), { invoke: () => Generations.openHeirScreen() }));
             }
             let alertViewModel: AlertViewModel = new AlertViewModel(Utils.INSTANCE.getString(R.string.Alert_DeathTitle), message, image, null, null, new AlertActionViewModel(Utils.INSTANCE.getString(R.string.DeathTombstoneLifeSummary), {
                 invoke: () => {

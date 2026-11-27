@@ -254,7 +254,7 @@ export const SocialMedia = {
             ["Apologise", () => { SocialMedia.lose(p, 0.01); attr(p, 0, -2, 0); return "A sincere apology. Most people moved on."; }],
             ["Ignore it", () => { if (roll(0.5)) return "It blew over in a day."; const l = SocialMedia.lose(p, 0.06); attr(p, 0, -4, -3); return `It didn't blow over. (−${SocialMedia.num(l)} followers)`; }],
         ]));
-        if (Vampire.isVampire(p) && !Vampire.photogenic(p)) list.push(() => { susp(p, 4); LifeMoments.result("Conspiracy Thread", `A viral thread asks why ${SocialMedia.peek(p)!.handle} never appears in a single tagged photo. (+4 suspicion)`, R.drawable.icon_social_chirper); });
+        if (Vampire.isVampire(p) && !Vampire.photogenic(p)) list.push(() => { susp(p, 4); LifeMoments.result("Conspiracy Thread", `A viral thread asks why ${SocialMedia.peek(p)!.handle} never appears in a single tagged photo. (+4 Rumours)`, R.drawable.icon_social_chirper); });
         pick(list)();
     },
 
@@ -338,7 +338,7 @@ export const POSTS: LifeActionDef[] = [
             if (SocialMedia.invisible(p)) {
                 const s = SocialMedia.state(p); s.posts++; s.total++; s.lastPostWeek = weeks(p); susp(p, 5);
                 SocialMedia.log(p, "Posted a selfie of… an empty room");
-                return done("Post a Selfie", R.drawable.icon_post_selfie)("The photo shows an empty room. The comments are all \"where are you??\" (+5 suspicion)");
+                return done("Post a Selfie", R.drawable.icon_post_selfie)("The photo shows an empty room. The comments are all \"where are you??\" (+5 Rumours)");
             }
             done("Post a Selfie", R.drawable.icon_post_selfie)(SocialMedia.post(p, "snapgram", 1, pick(["New selfie", "Golden hour selfie", "Mirror selfie", "No-filter selfie"])));
         } },
@@ -358,7 +358,7 @@ export const POSTS: LifeActionDef[] = [
             if (SocialMedia.invisible(p)) susp(p, 3);
             attr(p, 0, 2, 0);
             done("Join a Trend", R.drawable.icon_post_trend)(SocialMedia.post(p, "cliptok", q, pick(["Did the new dance trend", "Tried the viral recipe", "Lip-synced the sound of the week"]), { viral: 0.12 }) +
-                (SocialMedia.invisible(p) ? " Viewers say the video glitches whenever you're in frame. (+3 suspicion)" : ""));
+                (SocialMedia.invisible(p) ? " Viewers say the video glitches whenever you're in frame. (+3 Rumours)" : ""));
         } },
     { id: "hobby", title: () => { const b = best(player()); return b ? `Show Off Your ${b.title}` : "Show Off a Hobby"; }, image: R.drawable.icon_post_hobby, instant: true, actionTitle: () => "Post",
         lock: postLock((p) => (best(p) ? null : "Get a hobby to skill 10 first (Leisure tab)")),
@@ -393,7 +393,7 @@ export const POSTS: LifeActionDef[] = [
             const ghost = SocialMedia.invisible(p) || (Vampire.isTurned(x) && !Vampire.has("glamour", p));
             if (ghost) susp(p, 3);
             done("Couple Photo", R.drawable.icon_post_couple)(SocialMedia.post(p, "snapgram", ghost ? 0.6 : 1.2, `Me and ${x.getFirstName()} ❤️`) +
-                (ghost ? " The comments ask why only one of you is in the picture. (+3 suspicion)" : ` ${x.getFirstName()} loved it.`));
+                (ghost ? " The comments ask why only one of you is in the picture. (+3 Rumours)" : ` ${x.getFirstName()} loved it.`));
         } },
     { id: "kid", title: "Proud Parent Post", image: R.drawable.icon_post_kid, instant: true, actionTitle: () => "Post",
         lock: postLock((p) => (kidsOf(p).length ? null : "You don't have children")),
@@ -419,7 +419,7 @@ export const POSTS: LifeActionDef[] = [
             earn(p, tips); SocialMedia.state(p).earned += tips;
             if (inv) susp(p, 4);
             const msg = SocialMedia.post(p, "vidtube", 2 * (inv ? 0.4 : 1), "Went live", { viral: 0.05 });
-            done("Go Live", R.drawable.icon_post_live)(`${msg} Viewers donated ${money(tips)}.` + (inv ? " Chat kept asking why the camera shows an empty chair. (+4 suspicion)" : ""));
+            done("Go Live", R.drawable.icon_post_live)(`${msg} Viewers donated ${money(tips)}.` + (inv ? " Chat kept asking why the camera shows an empty chair. (+4 Rumours)" : ""));
         } },
     { id: "sponsored", title: "Sponsored Post", image: R.drawable.icon_post_sponsored, instant: true, actionTitle: () => "Post",
         lock: postLock((p) => (SocialMedia.followers(p) < SPONSOR_AT ? `Needs ${SocialMedia.num(SPONSOR_AT)} followers` : SocialMedia.state(p).sponsoredThisWeek ? "One sponsored post a week" : null)),

@@ -54,14 +54,14 @@ export const POWERS: PowerDef[] = [
     { id: "bloodBank", title: "Blood Bank Contact", cost: 2, image: R.drawable.icon_power_bloodbank, blurb: "Unlocks Buy from a Blood Bank." },
     { id: "mistStep", title: "Mist Step", cost: 2, image: R.drawable.icon_power_miststep, blurb: "Hunting no longer risks police trouble." },
     { id: "sunWard", title: "Sun Ward", cost: 3, image: R.drawable.icon_power_sunward, blurb: "Sunlight drains you half as much." },
-    { id: "mindFog", title: "Mind Fog", cost: 3, image: R.drawable.icon_power_mindfog, blurb: "Suspicion drops by 5 by itself every week." },
+    { id: "mindFog", title: "Mind Fog", cost: 3, image: R.drawable.icon_power_mindfog, blurb: "Rumours drop by 5 by itself every week." },
     // v0.26.0: eight more powers
     { id: "beastTongue", title: "Beast Tongue", cost: 1, image: R.drawable.icon_power_beast, blurb: "Animals adore you: Rats & Strays costs no happiness, and vets, zookeepers and marine biologists get +2 happiness a week at work." },
     { id: "glamour", title: "Glamour", cost: 2, image: R.drawable.icon_power_glamour, blurb: "You show up in mirrors and photos: selfies are safe and the paparazzi never catch anything strange." },
-    { id: "batForm", title: "Bat Form", cost: 2, image: R.drawable.icon_power_batform, blurb: "Fly off into the night: hunting raises suspicion half as much, and +20% to beat vampire hunters." },
-    { id: "shadowStep", title: "Shadow Step", cost: 2, image: R.drawable.icon_power_shadowstep, blurb: "Vanish into the shadows: Lay Low takes 25 suspicion off and costs no happiness, and fleeing vampire hunters no longer costs you your job." },
+    { id: "batForm", title: "Bat Form", cost: 2, image: R.drawable.icon_power_batform, blurb: "Fly off into the night: hunting raises Rumours half as much, and +20% to beat vampire hunters." },
+    { id: "shadowStep", title: "Shadow Step", cost: 2, image: R.drawable.icon_power_shadowstep, blurb: "Vanish into the shadows: Lay Low takes 25 Rumours off and costs no happiness, and fleeing vampire hunters no longer costs you your job." },
     { id: "ancientScholar", title: "Ancient Scholar", cost: 2, image: R.drawable.icon_power_scholar, blurb: "Centuries of reading: degrees, trainings, skills and languages take 25% less time." },
-    { id: "bloodAlchemy", title: "Blood Alchemy", cost: 3, image: R.drawable.icon_power_alchemy, blurb: "Your body wastes nothing: thirst rises 25% slower on any diet." },
+    { id: "bloodAlchemy", title: "Blood Alchemy", cost: 3, image: R.drawable.icon_power_alchemy, blurb: "Your body wastes nothing: hunger rises 25% slower on any blood supply." },
     { id: "regeneration", title: "Regeneration", cost: 3, image: R.drawable.icon_power_regen, blurb: "Wounds close as you watch: +2 more healing a week, and a Withered body recovers twice as fast." },
     { id: "hypnoticGaze", title: "Hypnotic Gaze", cost: 4, image: R.drawable.icon_power_gaze, blurb: "Your boss can't say no: promotions come twice as fast (you still need the degree)." },
 ];
@@ -160,7 +160,7 @@ export const Vampire = {
         if (!Vampire.has("mistStep", p) && roll(0.1)) {
             pay(p, 2000);
             s.suspicion = Math.min(100, s.suspicion + 10);
-            Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw the two of you. You paid ${money(2000)} in "fines" (suspicion +10).`, R.drawable.police_badge);
+            Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw the two of you. You paid ${money(2000)} in "fines" (Rumours +10).`, R.drawable.police_badge);
         }
     },
     /** Chance of beating the hunters (better with your bonded partner at your side). */
@@ -183,7 +183,7 @@ export const Vampire = {
     coven(p: any = player()): any[] {
         const out: any[] = [];
         for (const x of Array.from(p.getFamilyState().getFamilyMembers() as any) as any[]) if (x.getIsAlive() && Vampire.isTurned(x)) out.push(x);
-        for (const s of Relationships.circle(p).list()) if (s.getIsAlive() && s.kind !== "ex" && Vampire.isTurned(s)) out.push(s);
+        for (const s of Relationships.circle(p).list()) if (s.getIsAlive() && s.kind !== "ex" && s.kind !== "night" && Vampire.isTurned(s)) out.push(s);   // v0.35: court, sire and herd aren't your coven
         return out;
     },
 
@@ -333,7 +333,7 @@ export const Vampire = {
         if (d.id === "hunting" && !Vampire.has("mistStep", p) && roll(0.05)) {
             pay(p, 2000);
             s.suspicion = Math.min(100, s.suspicion + 10);
-            Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw you on one of your nightly hunts. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
+            Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw you on one of your nightly hunts. You paid ${money(2000)} in "fines" and the police are watching (Rumours +10).`, R.drawable.police_badge);
         }
         // Eternal Bond: with no blood diet, your partner hunts on their own and people notice
         if (Vampire.bonded(p) && d.id === "hand") s.suspicion = Math.min(100, s.suspicion + 2);
@@ -469,7 +469,7 @@ export const Vampire = {
         if (pick < 0.4 || (!job && !fam.length)) {
             s.suspicion = Math.min(100, s.suspicion + 25);
             pay(p, 5000);
-            Vampire.alert("Frenzy", `Starving, you attacked a stranger in an alley. The police are asking questions (suspicion +25) and you paid ${money(5000)} to make it go away.`);
+            Vampire.alert("Frenzy", `Starving, you attacked a stranger in an alley. The police are asking questions (Rumours +25) and you paid ${money(5000)} to make it go away.`);
         } else if ((pick < 0.7 && job) || !fam.length) {
             p.getJobState().setCurrentJob(null);
             Vampire.alert("Frenzy", "You lost control at work and bit a coworker. You've been fired.");
@@ -705,7 +705,7 @@ export const Vampire = {
         m.knows = true;
         person.setRelationshipProgress(person.getRelationshipProgress() - 150);
         Vampire.state(p).suspicion = Math.min(100, Vampire.state(p).suspicion + 15);
-        Vampire.alert("Your Secret", `${name} is scared of you now (−150 relationship), and might talk (suspicion +15).`, R.drawable.angry);
+        Vampire.alert("Your Secret", `${name} is scared of you now (−150 relationship), and might talk (Rumours +15).`, R.drawable.angry);
     },
     turn(p: any, person: any) {
         const s = Vampire.state(p);
@@ -808,8 +808,8 @@ export class BloodDietCell {
     getActionTitle(): string { return "Drink"; }
     getAdditionalDescription(): string {
         const t = Vampire.thirstRate(player(), this.d);
-        const thirst = t > 0 ? `Thirst bar fills in ${Vampire.fillText(t)}` : `Thirst −${-t} a week`;
-        const sus = this.d.suspicion ? `, suspicion +${Vampire.dietSuspicion(player(), this.d)} a week` : "";
+        const thirst = t > 0 ? `Hunger bar fills in ${Vampire.fillText(t)}` : `Hunger −${-t} a week`;
+        const sus = this.d.suspicion ? `, Rumours +${Vampire.dietSuspicion(player(), this.d)} a week` : "";
         return `${money(this.d.cost)} a week · ${thirst}${sus}\n${this.d.blurb}\n`;
     }
     getAgeRange(): any { return null; }
@@ -872,7 +872,7 @@ export const LifeActions = {
 };
 
 const vs = () => Vampire.state();
-const thirstNote = (n: number, s = 0) => `−${n} thirst${s > 0 ? `, +${s} suspicion` : s < 0 ? `, ${s} suspicion` : ""}\n`;
+const thirstNote = (n: number, s = 0) => `−${n} hunger${s > 0 ? `, Rumours +${s}` : s < 0 ? `, Rumours ${s}` : ""}\n`;
 
 export const BECOMING: LifeActionDef[] = [
     { id: "seek", title: "Seek the Ancient", image: R.drawable.icon_vamp_seek, cost: 5000, show: (p) => !Vampire.state(p).discovered,
@@ -900,7 +900,7 @@ export const FEEDING: LifeActionDef[] = [
             if (!Vampire.has("mistStep", p) && roll(0.1)) {
                 pay(p, 2000);
                 Vampire.state(p).suspicion = Math.min(100, Vampire.state(p).suspicion + 10);
-                Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw you. You paid ${money(2000)} in "fines" and the police are watching (suspicion +10).`, R.drawable.police_badge);
+                Vampire.hooks.police?.(p); Vampire.alert("Police Trouble", `Someone saw you. You paid ${money(2000)} in "fines" and the police are watching (Rumours +10).`, R.drawable.police_badge);
             }
         } },
     { id: "partner", title: () => `Feed on ${Vampire.willingPartner(player())?.getFirstName() ?? "a Willing Partner"}`, image: R.drawable.icon_vamp_feedpartner,
@@ -911,11 +911,11 @@ export const FEEDING: LifeActionDef[] = [
 
 export const HIDING: LifeActionDef[] = [
     { id: "layLow", title: "Lay Low", image: R.drawable.icon_vamp_laylow, mods: () => (Vampire.has("shadowStep") ? [0, 0, 0] : [0, -3, 0]),
-        note: () => (Vampire.has("shadowStep") ? "−25 suspicion (Shadow Step)\n" : "−15 suspicion\n"),
+        note: () => (Vampire.has("shadowStep") ? "−25 Rumours (Shadow Step)\n" : "−15 Rumours\n"),
         run: (p) => { const s = Vampire.state(p); s.suspicion = Math.max(0, s.suspicion - (Vampire.has("shadowStep", p) ? 25 : 15)); } },
-    { id: "fakeDeath", title: "Fake Your Death", image: R.drawable.icon_vamp_fakedeath, cost: 20000, note: () => "Suspicion back to 0 with a new name. You lose your job and all your career progress (every career starts over, years-in-career too), and friends who don't know your secret think you died.\n",
+    { id: "fakeDeath", title: "Fake Your Death", image: R.drawable.icon_vamp_fakedeath, cost: 20000, note: () => "Rumours back to 0 with a new name. You lose your job and all your career progress (every career starts over, years-in-career too), and friends who don't know your secret think you died.\n",
         confirm: () => "Start over with a new name? You'll lose your job, all your career progress (levels and years in your career) and the friends who don't know your secret.", run: (p) => Vampire.fakeDeath(p) },
-    { id: "moveCity", title: "Move to a New City", image: R.drawable.icon_vamp_movecity, cost: 5000, note: () => "−50 suspicion. You quit your job and friends you leave behind feel distant.\n",
+    { id: "moveCity", title: "Move to a New City", image: R.drawable.icon_vamp_movecity, cost: 5000, note: () => "−50 Rumours. You quit your job and friends you leave behind feel distant.\n",
         confirm: () => "Move away? You'll quit your job.", run: (p) => Vampire.moveCity(p) },
     { id: "coven", title: "Find Your Coven", image: R.drawable.icon_vamp_coven, note: () => "Look for other vampires (about a 1 in 3 chance).\n", run: (p) => Vampire.findCoven(p) },
 ];

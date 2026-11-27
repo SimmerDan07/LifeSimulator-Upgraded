@@ -1,7 +1,8 @@
 // v0.35.0 "Vampires Reborn": love, family and the ones you turn. Telling your secret, partners ageing around you,
 // grief, thralls (the blood bond), childer you sire, your sire, the court as people (favours, alliances, romance),
 // your herd, and heirs who inherit a vampire legacy. Family never drifts from doing nothing: guiding a childe only helps.
-import { R } from "../runtime";
+import { R, BigInteger } from "../runtime";
+import { ExtensionsKt } from "../Utils/ExtensionsKt";
 import { Modifiers } from "../Managers/Modifiers";
 import { Person } from "../Managers/Person";
 import { Relationship } from "../Enums/Relationship";
@@ -56,6 +57,7 @@ export const Bonds = {
         Vampire.turn(p, t);
         const m = meta(t, p);
         m.childe = true; m.guided = 0; delete m.wantsTurn;
+        (m as any).turnedWeek = now(p);
         (m as any).childeLine = Reborn.st(p).line;
         if (unwilling) {
             Reborn.addHumanity(p, -2); Reborn.addStanding(p, -10);
@@ -63,7 +65,7 @@ export const Bonds = {
             Vampire.alert("Against Their Will", `${t.getFirstName()} didn't want this. They rose hating you (−300 relationship), and the court frowns on it (Humanity −2, Standing −10).`, Vampire.image);
         }
     },
-    childer(p: any = player()): any[] { try { return Vampire.coven(p).filter((x: any) => meta(x, p).childe); } catch { return []; } },
+    childer(p: any = player()): any[] { try { const sire = Reborn.peek(p)?.sireId; return Vampire.coven(p).filter((x: any) => meta(x, p).childe && x.kind !== "night" && x.getId?.() !== sire); } catch { return []; } },
     guide(p: any, t: any): string {
         const m = meta(t, p);
         m.guided = (m.guided ?? 0) + 1;
@@ -144,6 +146,61 @@ export const Bonds = {
         m.vampire = true; m.knows = true;
         return `${t.getFirstName()} said yes. Two immortals: this could last a very long time (an Eternal Bond, if you like).`;
     },
+    // ------------------------------------------------------------------ playing on as your childe
+    /** Childer who could carry on when your vampire life ends (adults, alive). */
+    heirs(parent: any): any[] {
+        if (!Vampire.isVampire(parent)) return [];
+        return Bonds.childer(parent).filter((x: any) => alive(x) && age(x) >= 18);
+    },
+    childeYears(parent: any, x: any): number {
+        const m: any = meta(x, parent);
+        let y = m.turnedWeek != null ? Math.max(0, Math.floor((now(parent) - m.turnedWeek) / WPY())) : 0;
+        if (Vampire.has("ancientBlood", parent)) y = Math.max(y, 25);   // Ancient Blood: your childer start as Neonates
+        return y;
+    },
+    /** Your vampire life ended: play on as one of your childer, keeping the bloodline, the court and the Vault. */
+    continueAsChilde(parent: any, x: any) {
+        const r = Reborn.st(parent);
+        const years = Bonds.childeYears(parent, x);
+        const court = Court.members(parent).filter((c: any) => c.id !== x.id);
+        const keep = { line: r.line, city: r.city, princeId: r.princeId, standing: r.standing, vault: r.vault, legend: r.legend,
+            name: parent.getFullName(), first: parent.getFirstName(), rank: Reborn.rank(parent).title, allies: r.allyIds.filter((id) => court.some((c: any) => c.id === id)) };
+        const tmp: any = new Person(Relationship.child, x.getSex(), x.getLastName?.() ?? x.lastName ?? parent.getLastName(), x.getAgeInWeeks());
+        tmp.setFirstName(x.getFirstName());
+        try { TrueAge.copy(x, tmp); } catch { /* */ }
+        try { tmp.appearance = x.appearance; } catch { /* */ }
+        tmp.setRelationshipProgress(x.getRelationshipProgress());
+        r.vault = 0;   // it goes with the bloodline, not the will
+        GenerationsRef.continueAs(tmp, { relation: "childe" });
+        const heir = player();
+        Reborn.st(heir);   // made while still mortal on paper: a childe isn't an old vampire to convert
+        const s = Vampire.state(heir);
+        s.isVampire = true; s.discovered = true; s.turningWeeks = 0; s.cureWeeks = 0;
+        s.turnedAtWeeks = heir.getAgeInWeeks();
+        s.turnedTrueWeek = heir.getTrueAgeInWeeks() - years * WPY();
+        s.vampireWeeks = years * WPY();
+        s.thirst = 20; s.suspicion = 0; s.weeksAtMaxThirst = 0;
+        s.bloodPower = Math.max(2, Math.floor(years / 10) + 2);
+        const n = Reborn.st(heir);
+        n.converted = true; n.way = "childe"; n.line = keep.line; n.sireLine = keep.line; n.sireName = keep.name; n.sireId = null;
+        n.sireAge = Reborn.bloodYears(parent);
+        n.bloodAgeWeeks = years * WPY();
+        n.humanity = 7; n.vault = keep.vault; n.legend = Math.floor(keep.legend / 2);
+        n.cityWeek = now(heir); n.identityWeek = now(heir);
+        // the court remembers your sire: the same faces, and you start halfway to their standing (at least Known)
+        if (court.length && keep.city) {
+            for (const c of court) {
+                Relationships.circle(heir).add(c);
+                const cm = Relationships.circle(heir).metaFor(c.id); cm.vampire = true; cm.knows = true;
+            }
+            n.city = keep.city; n.courtIds = court.map((c: any) => c.id);
+            n.princeId = court.some((c: any) => c.id === keep.princeId) ? keep.princeId : court[0].id;
+            n.allyIds = keep.allies;
+        }
+        n.standing = clamp(Math.round(keep.standing / 2), 20, 60);
+        try { Court.ensure(heir); } catch { /* */ }
+        Reborn.milestone("Your Sire's Legacy", `${keep.first} chose their final sunrise, and the night passed to you. You're ${heir.getFullName()}, a vampire of the ${lineOf(keep.line).title} (${years} year${years === 1 ? "" : "s"} of blood), childe of ${keep.name}, ${keep.rank}. The court of ${Court.cityName(heir)} remembers your sire, and you start out ${Reborn.standingTitle(heir)}.${keep.vault ? ` The Vault is yours now (${ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(keep.vault)), true)}).` : ""}`, Vampire.image);
+    },
     // ------------------------------------------------------------------ heirs
     heir(parent: any, heir: any) {
         const r = Reborn.peek(parent), v = parent?.vampire;
@@ -151,6 +208,9 @@ export const Bonds = {
         heir.vampireLegacy = { name: parent.getFullName(), line: r.line, rank: Reborn.rank(parent).title, childer: Bonds.childer(parent).map((x: any) => x.getFullName()).slice(0, 3) };
     },
 };
+// Generations is wired at install time (avoids an import loop)
+let GenerationsRef: any = null;
+export function setGenerationsRef(g: any) { GenerationsRef = g; }
 const pick3 = (xs: string[]) => xs[Math.floor(Math.random() * xs.length)];
 
 /** Love tab actions for the night (added to LOVE_ACTIONS at install). */

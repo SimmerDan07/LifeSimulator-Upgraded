@@ -293,6 +293,23 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `updateViaCache: "none"`, calls `reg.update()` on becoming visible and every 20 min; on `controllerchange`
     (not the first install) it waits until no modal/list screen is open, saves (`__lifesimSave`), waits for
     `__lifesimFlush` (IndexedDB), reloads, and shows "Updated to vX" once (`localStorage lifesim:appVersion`).
+  - **v0.35.0 Vampires Reborn** (`src/game/Vampires/`, installed by `installVampires()` after `installWork`): new state on
+    `p.vampire.rb` (`RebornState`, made lazily; a vampire with no `rb` is converted once by `Reborn.convertHook` →
+    `Becoming.convert`: bloodline from powers (changeable once on the Bloodline screen), blood age from `vampireWeeks`,
+    the Hunt = suspicion/3, turned loved ones → childer, Blood Bank Delivery → the bags supply, "You've Been Reborn").
+    `thirst` is shown as Hunger (stages, warnings at 80/95 that always show), `suspicion` as Rumours. `VData.ts`
+    (5 bloodlines, 5 ranks by blood age, the 25-node power tree keeping the 14 old ids, weather by climate/season with
+    polar night and the midnight sun, hunting grounds, prey/vintages, lair, court titles, standing, eras, tasks, 32 art
+    slots `VAMP_ICONS`), `Reborn.ts` (rank, Humanity 0–10, Vitality, sunlight/`sunCost`/`exposed`, frenzy with a choice,
+    torpor kinds starving/chosen/beast/staked, reshape once a century, `note` random / `milestone` always / `menu`
+    opened), `Becoming.ts` (Seduced, Seeking quest + bloodline choice, Attacked, Loved, Dying offer; last human night →
+    bite → `risen` first-hunger choice), `Night.ts` (weekly rhythm, the Hunt `Night.feed`, supplies herd/hospital,
+    `Masquerade` with named hunters and strikes, `Court` per country (Prince + 4 `SocialPerson` kind `night`, `nightRole`),
+    favours, tasks, domain, rivals, summons, `Forever` eras/antiques/lair/Vault/Golconda/Cure research), `Bonds.ts`
+    (secret, siring from Neonate, guiding childer, thralls, partner ageing 50/70/90, grief, court romance, heirs'
+    `vampireLegacy`, `NIGHT_LOVE_ACTIONS` in Love › Night, and playing on as a childe via `Generations.altHeirs`),
+    `VScreens.ts` (Lifepaths keys `vampire`, `vampire-powers`, `-masquerade`, `-court`, `-lair`, `-bloodline`). Night
+    people are not part of `Vampire.coven`. Tests: `test/vampires.ts` (264); `test/vampire.ts` updated.
   - **v0.34.0 The New Look** (`src/ui/`): `body.nl` unless Settings › Game Settings › Classic look (`GameSettings.classicLook`);
     Appearance (`GameSettings.theme` auto/light/dark → `body.dark`). Five tabs (`GROUPS` in `main.ts`: Me = Profile/Health/
     Lifepaths, Work = Work/Education, People = Love/Social, Money = Bank + the Profile sections Housing/Subscriptions/Items,

@@ -56,7 +56,11 @@ export const Reborn = {
     // ------------------------------------------------------------------ state
     st(p: any = player()): RebornState {
         const v = Vampire.state(p) as any;
-        if (v.rb == null) v.rb = Reborn.fresh();
+        if (v.rb == null) {
+            v.rb = Reborn.fresh();
+            // a vampire from before v0.35 (no new state yet): convert now, before anything reads the defaults
+            if (v.isVampire && !Reborn.converting && Reborn.convertHook) { try { Reborn.convertHook(p); } catch (e) { console.error(e); } }
+        }
         const r = v.rb as RebornState;
         // fields added later (keep old rb objects whole)
         const f = Reborn.fresh() as any;
@@ -64,6 +68,10 @@ export const Reborn = {
         return r;
     },
     peek(p: any = player()): RebornState | null { return p?.vampire?.rb ?? null; },
+    /** Set at install: converts an old vampire the first time the new state is made. */
+    convertHook: null as ((p: any) => void) | null,
+    /** True while a vampire is being made in the new way (no "You've Been Reborn"). */
+    converting: false,
     fresh(): RebornState {
         return {
             v: 1, sireId: null, sireName: "", sireAge: 0, sireLine: null, line: null, way: null, meetings: 0, seekStep: 0, nightOuts: 0, lastNight: null,
@@ -188,7 +196,7 @@ export const Reborn = {
     // ------------------------------------------------------------------ hunger
     stage(h: number): string { return h >= 95 ? "Torpor is near" : h >= 80 ? "Starving" : h >= 60 ? "Hungry" : h >= 30 ? "Peckish" : "Sated"; },
     stageText(h: number): string {
-        return h >= 95 ? "You're about to fall into torpor for years. Feed now."
+        return h >= 95 ? "Torpor is near: you're about to fall into torpor for years. Feed now."
             : h >= 80 ? "Starving: −2 happiness and −3 sanity a week, your powers weaken and frenzy is likely."
             : h >= 60 ? "Hungry: −1 happiness a week, and frenzy can strike."
             : h >= 30 ? "Peckish: nothing yet." : "Sated: you heal 3 health a week and your powers are at full strength.";

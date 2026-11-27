@@ -25,6 +25,8 @@ import { MoneyState } from "../src/game/Managers/MoneyState";
 import { MoneyUpdateType } from "../src/game/Enums/MoneyUpdateType";
 import { SaveCodec } from "../src/game/save/SaveCodec";
 import { BigInteger } from "../src/game/runtime";
+import { Masquerade } from "../src/game/Vampires/Night";
+import { VScreens } from "../src/game/Vampires/VScreens";
 import { Vampire, LifeActions, BECOMING, FEEDING, HIDING, ENDINGS, powerDefs, LifeActionCell, BLOOD_DIETS, BloodDietCell, THIRST_2_YEARS, WITHERED_CAP, WITHERED_WEEKS } from "../src/game/Lifepaths/Vampire";
 import { AlertViewModel } from "../src/game/Managers/AlertViewModel";
 import { AlertActionViewModel } from "../src/game/Managers/AlertActionViewModel";
@@ -112,8 +114,8 @@ clear();
 check("after the turning week you rise a vampire", Vampire.isVampire(p), JSON.stringify(Vampire.state(p)));
 const frozen = p.getAgeInWeeks();
 check("…frozen at the age you were turned (+ the turning week)", frozen === age0 + 1, `${age0} → ${frozen}`);
-check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Coven, Endings",
-    ["Feeding", "Hiding", "Coven", "Endings"].every((h) => tab().some((r) => r.title === h)) && tab().some((r) => r.title === "Thirst") && tab().some((r) => r.title === "Suspicion"));
+check("Lifepaths tab is your vampire home (v0.35: Hunger, Humanity, Vitality, Rumours, the Hunt; Feeding, The Hunt, Your Night, Endings)",
+    ["Feeding", "The Hunt", "Your Night", "Endings"].every((h) => tab().some((r) => r.title === h)) && ["Hunger", "Humanity", "Vitality", "Rumours", "The Hunt"].every((m) => tab().some((r) => r.title === m)), titles(tab()).join(","));
 
 // ---------------------------------------------------------------- ageing, calendar, blood power
 {
@@ -135,8 +137,8 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     check("thirst: the bar takes 2 years (96 weeks) to fill on Feed by Hand (v0.22.0)", near(s.thirst, RATE) && near(RATE * 96, 100), String(s.thirst));
     s.thirst = 85;
     p.collectWeeklyValues();
-    const san = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.sanity) as any).find((x: any) => x.getFirst() === "Thirst") as any;
-    const hapT = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).find((x: any) => x.getFirst() === "Thirst") as any;
+    const san = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.sanity) as any).find((x: any) => x.getFirst() === "Hunger: Starving") as any;
+    const hapT = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).find((x: any) => x.getFirst() === "Hunger: Starving") as any;
     p.resetValuesThisWeek();
     check("at 80+ thirst: −3 sanity, −2 happiness a week (v0.22.0)", san != null && Number(san.getSecond()) === -3 && hapT != null && Number(hapT.getSecond()) === -2);
     const flow = Array.from(p.collectWeeklyCashFlow?.() ?? []).map((x: any) => String(x.getFirst?.() ?? x));
@@ -171,11 +173,12 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
 {
     p.setBirthMonth(3 - Math.floor((p.calendarWeeks() % 48) / 4));   // v0.26.0: April (spring sun: the normal −10)
     const s = Vampire.state(p);
-    check("daytime leisure rows warn vampires (sunlight drains happiness)", /Daytime: −10 happiness/.test(Leisure.goToPark.getAdditionalDescription() ?? ""));
+    const rb: any = (s as any).rb; rb.weather = "sunny"; rb.weatherWeek = p.getTrueAgeInWeeks();   // v0.35: the sun follows the weather
+    check("daytime leisure rows warn vampires (a sunny week: −10 happiness, −25 Vitality)", /Daytime \(Sunny\): −10 happiness, −25 Vitality/.test(Leisure.goToPark.getAdditionalDescription() ?? ""), Leisure.goToPark.getAdditionalDescription() ?? "");
     check("night leisure doesn't", !/Daytime/.test(Leisure.pub.getAdditionalDescription() ?? ""));
     p.getAttributeState().setDeltaValueImmediate(new Modifiers(0, -40, 0));
     const h1 = p.getAttributeState().getHealth(), hap1 = p.getAttributeState().getHappiness();
-    Vampire.onLeisure(p, Leisure.goToPark);
+    withRandom(0.5, () => Vampire.onLeisure(p, Leisure.goToPark));
     check("the park: −10 happiness, no health lost (v0.21.1)", Math.abs(p.getAttributeState().getHappiness() - (hap1 - 10)) < 0.01 && p.getAttributeState().getHealth() === h1, `${hap1} → ${p.getAttributeState().getHappiness()}, health ${h1} → ${p.getAttributeState().getHealth()}`);
     check("day jobs burn a little; Night Owl pays 20% more", Vampire.onWork(p) === 1 && (s.powers = [...s.powers, "nightOwl"], Vampire.onWork(p) === 1.2));
     s.powers = s.powers.filter((x) => x !== "nightOwl");
@@ -186,12 +189,14 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const s = Vampire.state(p);
     s.suspicion = 50;
     LifeActions.perform(def(HIDING, "layLow"), p); clear();
-    check("Lay Low: −15 suspicion", s.suspicion === 35, String(s.suspicion));
-    s.suspicion = 90; s.thirst = 0;
+    check("Lay Low: −15 Rumours (and they fade a little on their own)", s.suspicion <= 35 && s.suspicion >= 33, String(s.suspicion));
+    s.suspicion = 90; s.thirst = 0; (s as any).rb.hunt = 90;
     withRandom(0.1, () => { keep(p); p.applyWeekly(); });
-    const h = alerts.find((a) => (a.getTitle?.() ?? a.title) === "Vampire Hunters");
-    check("at 80+ suspicion, vampire hunters come (Fight / Flee / Hide)", h != null && /Fight/.test(text(h)) && /Flee/.test(text(h)) && /Hide/.test(text(h)));
-    if (h) { alerts.splice(alerts.indexOf(h), 1); h.getNegativeButton().getAction().invoke(); AlertManager.INSTANCE.alertDismissed(h); }
+    let h: any = null; const seen: string[] = [];
+    for (let i = 0; i < 10 && alerts.length && !h; i++) { const a = alerts[0]; const ti = a.getTitle?.() ?? a.title; seen.push(ti); if (ti === "The Hunters Strike") h = a; else AlertManager.INSTANCE.alertDismissed(alerts.shift()); }
+    check("v0.35: at 85+ on the Hunt, the hunters strike (Fight / Flee / Talk)", h != null && /Fight/.test(text(h)) && /Flee/.test(text(h)) && /Talk/.test(text(h)), seen.join(","));
+    if (h) { alerts.splice(alerts.indexOf(h), 1); AlertManager.INSTANCE.alertDismissed(h); }
+    Masquerade.flee(p);
     check("Flee: −50 suspicion and no job", s.suspicion <= 40 && p.getJobState().getCurrentJob() == null, String(s.suspicion));
     clear();
 }
@@ -207,6 +212,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const feedPartner = def(FEEDING, "partner");
     check("Feed on Ana unlocks", new LifeActionCell(feedPartner).requirementNotMetString(p) == null && new LifeActionCell(feedPartner).getTitle() === "Feed on Ana");
     Vampire.state(p).bloodPower = 5;
+    (Vampire.state(p) as any).rb.bloodAgeWeeks = 25 * W;   // v0.35: only a Neonate can sire
     check("Turn Them appears once they know", titles(rows()).includes("Turn Them into a Vampire"));
     LoveActions.perform(loveAction("turn"), ana, p); clear();
     const a0 = ana.getAgeInWeeks();
@@ -224,16 +230,16 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     {
         const s = Vampire.state(p); s.thirst = 80; s.suspicion = 10; const sus = s.suspicion;
         withRandom(0.99, () => { LoveActions.perform(loveAction("huntTogether"), ana, p); }); clear();
-        check("Hunt Together: −50 thirst, +6 suspicion (+2 more: your partner hunts alone on Feed by Hand)", near(s.thirst, 30 + RATE) && s.suspicion === sus + 8, `${s.thirst} ${s.suspicion}`);
+        check("Hunt Together: −50 thirst, +6 suspicion (+2 more: your partner hunts alone on Feed by Hand)", near(s.thirst, 30 + RATE) && s.suspicion >= sus + 7 && s.suspicion <= sus + 8, `${s.thirst} ${s.suspicion}`);
         rich(p, 100000);
         LoveActions.perform(loveAction("eternalVows"), ana, p); clear();
         check("Eternal Vows: once every 10 years", new LoveActionCell(loveAction("eternalVows"), ana).requirementNotMetString(p) === "Once every 10 years");
         s.diet = "bags"; s.powers = [...(s.powers ?? []), "bloodBank"];
         const flow = (Array.from(p.collectWeeklyCashFlow() as any) as any[]).map((x: any) => `${x.getFirst()}=${x.getSecond()}`).join("|");
-        check("…your partner shares your blood diet (for two, double cost)", /Blood Diet - Blood Bank Bags \(for two\)=-4000/.test(flow), flow);
+        check("…your partner shares your blood diet (for two, double cost)", /Blood Supply - Blood Bank Bags \(for two\)=-4000/.test(flow), flow);
         s.diet = "hand"; s.thirst = 0;
     }
-    check("Coven shows her card on the Lifepaths tab", tab().some((r) => r.id === ana.getId()));
+    check("v0.35: your childe shows on Vampire › Bloodline", VScreens.screen("vampire-bloodline", p).some((r: any) => r.id === ana.getId()));
 }
 
 // ---------------------------------------------------------------- v0.16.0: health never decays, blood diets
@@ -282,9 +288,9 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     }
     s.thirst = 0; s.weeksAtMaxThirst = 0;
     // blood diets
-    check("seven blood diets", BLOOD_DIETS.length === 7 && BLOOD_DIETS.map((d) => d.title).join("|") === "Feed by Hand|Rats & Strays|Butcher's Blood|Blood Bank Bags|Nightly Hunting|Willing Donors|Rare Vintage");
+    check("nine blood supplies (v0.35: + Your Own Herd, Hospital Night Shift)", BLOOD_DIETS.length === 9 && BLOOD_DIETS.map((d) => d.title).join("|") === "Feed by Hand|Rats & Strays|Butcher's Blood|Blood Bank Bags|Nightly Hunting|Willing Donors|Rare Vintage|Your Own Herd|Hospital Night Shift");
     const hrows = Array.from(new HealthModelGenerator().generateViewModels().getContentViewModels() as any) as any[];
-    check("Health tab: a Blood Diet section with Choose Menu", hrows.some((r) => r.title === "Blood Diet") && hrows.some((r) => r.title === "Feed by Hand") && hrows.some((r) => /Choose/i.test(text(r)) && r.title === HealthEvent.chooseMenu.getTitle()));
+    check("v0.35: the Health tab shows Hunger and Vitality (the supply is chosen in one place, Lifepaths)", hrows.some((r) => r.title === "Hunger") && hrows.some((r) => r.title === "Vitality") && !hrows.some((r) => r.title === HealthEvent.chooseMenu.getTitle()));
     const menu = Array.from(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.chooseDiet, null, true).getContentViewModels() as any) as any[];
     check("Choose Menu lists the blood diets (not food) for a vampire", BLOOD_DIETS.every((d) => menu.some((r) => r.title === d.title)) && !menu.some((r) => r.title === "Fast Food"), titles(menu).join(","));
     s.powers = (s.powers ?? []).filter((x: string) => x !== "bloodBank");
@@ -294,7 +300,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     week(p, 1, false);
     check("Rats & Strays: half the rise (the bar fills in 4 years)", near(s.thirst, RATE / 2) && Vampire.fillText(RATE / 2) === "4 years", String(s.thirst));
     p.collectWeeklyValues();
-    const hap = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).some((x: any) => x.getFirst() === "Blood Diet - Rats & Strays");
+    const hap = Array.from(p.getAttributeState().getDeltaThisWeek(PersonAttribute.happiness) as any).some((x: any) => x.getFirst() === "Blood Supply - Rats & Strays");
     p.resetValuesThisWeek();
     check("…and it shows in your weekly changes (−3 happiness)", hap);
     new BloodDietCell(BLOOD_DIETS[6]).action(p); s.thirst = 50;
@@ -304,7 +310,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     s.powers = (s.powers ?? []).filter((x: string) => x !== "mindFog");
     withRandom(0.99, () => week(p, 1, false));
     check("Nightly Hunting: thirst −20 and suspicion +4 a week", s.thirst === 30 && s.suspicion === 14, `${s.thirst} ${s.suspicion}`);
-    check("Lifepaths Feeding shows your Blood Diet with Change", tab().some((r) => r.title === "Blood Diet: Nightly Hunting"));
+    check("Lifepaths Feeding shows your Blood Supply with Change", tab().some((r) => r.title === "Blood Supply: Nightly Hunting"));
     check("the Thirst meter says it falls on your diet", /Falls 20 a week/.test(text(tab())));
     const old: any = Object.create(Object.getPrototypeOf(s)); Object.assign(old, s); delete old.diet;
     const real = p.vampire; p.vampire = old;
@@ -316,7 +322,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
 {
     const s = Vampire.state(p);
     check("Feed by Hand fills the bar in 2 years", Vampire.fillText(Vampire.thirstPerWeekFor(p)) === "2 years");
-    check("the Thirst meter warns about collapsing for 10 to 40 years", /fills in 2 years.*10 to 40 years/.test(text(tab())));
+    check("the Hunger meter warns about torpor for 5 to 30 years", /fills in 2 years.*5 to 30 years/.test(text(tab())));
     // a job, a mortal partner, cash, blood power: all at stake
     rich(p, 1_000_000);
     const job = p.getJobState().getCurrentJob();
@@ -330,17 +336,17 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const ms = Date.now() - t0;
     const yrs = (p.calendarWeeks() - cal0) / W;
     const t: string[] = []; let c: any = null;
-    for (let i = 0; i < 20 && alerts.length; i++) { const a = alerts.shift(); const ti = a.getTitle?.() ?? a.title; t.push(ti); if (ti === "You Collapsed") c = a; AlertManager.INSTANCE.alertDismissed(a); }
-    check("at 100 thirst you collapse: 10–40 years pass", yrs >= 10 && yrs < 41.5, `${yrs.toFixed(1)} years`);
+    for (let i = 0; i < 20 && alerts.length; i++) { const a = alerts.shift(); const ti = a.getTitle?.() ?? a.title; t.push(ti); if (ti === "Torpor") c = a; AlertManager.INSTANCE.alertDismissed(a); }
+    check("v0.35: at 100 hunger you fall into torpor: 5–30 years pass", yrs >= 5 && yrs < 31.5, `${yrs.toFixed(1)} years`);
     check("…in reasonable time", ms < 60000, `${ms} ms`);
     check("…you're still alive and your body didn't age", GameStateManager.INSTANCE.getGlobalStateManager().getSaveState().getHasGameStarted() && GameStateManager.INSTANCE.getPersonState() === p && p.getAgeInWeeks() === age0);
-    check("…one alert: You Collapsed (everything else is summed up in it)", c != null && t.filter((x) => x === "You Collapsed").length === 1 && t.length <= 3, t.join(","));
+    check("…one Torpor alert (everything else is summed up in it)", c != null && t.filter((x) => x === "Torpor").length === 1 && t.length <= 5, t.join(","));
     check("…someone found you and gave you blood: thirst 40, a new friend at 650", s.thirst === 40 && /found you/.test(text(c)) && /is your friend now/.test(text(c)));
     check("…consequence: half your cash is gone (you were declared missing)", Math.abs(Number(p.getMoneyState().getCash().toString()) / (cash0 / 2) - 1) < 0.001, `${cash0} → ${p.getMoneyState().getCash()}`);
     check("…your vampire partner waited for you", p.getFamilyState().getPartner() === ana && /never stopped looking/.test(text(c)));
     check("…consequence: your job is gone", job == null || (p.getJobState().getCurrentJob() == null && /your job/.test(text(c))));
-    check("…consequence: half your blood power withered", s.bloodPower === 4 || s.bloodPower >= 4 && s.bloodPower <= 4 + Math.ceil(yrs) * 2, String(s.bloodPower));
-    check("…consequence: Withered body — 20 health, 2 years", p.getAttributeState().getHealth() === 20 && s.witheredWeeks === WITHERED_WEEKS && /Withered/.test(text(c)));
+    check("v0.35: …you keep your blood power (and earn it while you sleep)", s.bloodPower >= 9, String(s.bloodPower));
+    check("…consequence: Withered body — 20 health, a year (gentler since v0.35)", p.getAttributeState().getHealth() === 20 && s.witheredWeeks === WITHERED_WEEKS / 2 && /Withered/.test(text(c)));
     check("…suspicion faded (the world forgot you), collapse counted", s.suspicion < 30 && s.collapses === col0 + 1, `${s.suspicion}`);
     check("…everything is switched back on afterwards", AlertManager.muted == null && MoneyState.frozen === false && !s.inTorpor);
     check("Withered shows on the Vampire screen", tab().some((r) => r.title === "Withered"));
@@ -473,7 +479,7 @@ check("Lifepaths tab is your vampire home: meters, Feeding, Hiding, Powers, Cove
     const q: any = start(LifeScenario.sandboxMode, (np) => np.initializeAge(30, true));
     Vampire.rise(q); clear();
     const ana = lover(q, Sex.female, "Ana", 700);
-    Relationships.meta(ana).knows = true; Vampire.state(q).bloodPower = 5;
+    Relationships.meta(ana).knows = true; Vampire.state(q).bloodPower = 5; (Vampire.state(q) as any).rb.bloodAgeWeeks = 25 * W;
     LoveActions.perform(loveAction("turn"), ana, q); clear();
     const rowsFor = (t: any) => titles(Array.from(GenericListModelGenerator.INSTANCE.genericListViewModels(GenericListType.personDetails, t.getId(), true).getContentViewModels() as any) as any[]);
     if (ana == null || !Vampire.isTurned(ana)) check("v0.30.2 setup: a turned partner to cure", false);

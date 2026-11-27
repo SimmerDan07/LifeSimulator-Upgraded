@@ -55,7 +55,7 @@ export const CelebrityScreen = {
             s.legend ? "A Legend: your fans never fade." : null,
             s.cancelled ? "You're cancelled: fans barely grow until your reputation is back to 35." : null,
             s.inherited > 0 ? `Born famous: ${Celebrity.fansText(s.inherited)} fans came with your family name.` : null,
-            Vampire.isVampire(p) ? "A vampire star: you never age, and the cameras notice (fame raises suspicion). Charm gives +20% fan gains." : null,
+            Vampire.isVampire(p) ? "A vampire star: you never age, and the cameras notice (fame raises Rumours). Charm gives +20% fan gains." : null,
             s.formerName ? (s.returned ? `Once mourned as ${s.formerName}, now back from the dead.` : `Secretly ${s.formerName} (${Celebrity.fansText(s.formerFans)} fans when you "died").`) : null,
         ].filter(Boolean);
         out.add(info(Celebrity.image, TIERS[t].name, `${Celebrity.fansText(s.fans)} fans (peak ${Celebrity.fansText(s.peakFans)}).\n${job}${extras.length ? "\n" + extras.join("\n") : ""}`));

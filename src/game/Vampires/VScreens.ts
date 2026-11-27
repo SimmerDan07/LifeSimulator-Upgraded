@@ -31,7 +31,7 @@ const open = (key: string) => Utils.Companion.navigateTo$default(Utils.INSTANCE,
 const link = (image: any, title: string, body: string, key: string) =>
     new ActionCellSingleViewModel(image, title, text(body), new ButtonViewModel("Open", null, true, false, false, false, false, { invoke: () => { open(key); return null; } }), null, null);
 const say = (title: string, t: string | void, image: any = Vampire.image) => { if (t) Vampire.alert(title, t, image); };
-const yrs = (n: number) => `${n} year${n === 1 ? "" : "s"}`;
+const yrs = (n: number) => (n <= 0 ? "less than a year" : `${n} year${n === 1 ? "" : "s"}`);
 
 // ---------------------------------------------------------------- rows
 const HUNT: () => LifeActionDef[] = () => Night.grounds().map((g) => ({
@@ -115,7 +115,7 @@ export const VScreens = {
         out.push(info(img(line.image), `${rank.title} of the ${line.title}`,
             `${yrs(Reborn.bloodYears(p))} of blood${next ? ` (${next.title} at ${next.years})` : ""}. Turned at ${turnedAt} by ${r.sireName || "a stranger"}; true age ${TrueAge.text(p)}. ${s.bloodPower} blood power.`));
         if (s.cureWeeks > 0) { out.push(info(R.drawable.health_youthelixir, "The Vampiric Cure is working", `${s.cureWeeks} week${s.cureWeeks === 1 ? "" : "s"} until you're human again. Your hunger has stopped.`)); VScreens.endings(p, out); return; }
-        out.push(new MeterViewModel("Hunger", s.thirst, 100, "red", `${Reborn.stage(s.thirst)}: ${Reborn.stageText(s.thirst)} ${VScreens.trend(p)}`, `${Math.round(s.thirst)} · ${Reborn.stage(s.thirst)}`));
+        out.push(new MeterViewModel("Hunger", s.thirst, 100, "red", `${Reborn.stageText(s.thirst)} ${VScreens.trend(p)}`, `${Math.round(s.thirst)} · ${Reborn.stage(s.thirst)}`));
         const h = Reborn.humanity(p);
         out.push(new MeterViewModel("Humanity", r.humanity, 10, "gold", `${Reborn.humanityTitle(h)}. ${h >= 8 ? "Mortals like you and frenzy is rare." : h <= 3 ? "The Beast is strong: frenzy is common, mortals sense something wrong, and Beast powers are cheaper." : "Balanced."}${r.golconda ? " You've reached Golconda." : ""}`, `${h} / 10`));
         out.push(new MeterViewModel("Vitality", r.vitality, 100, "blue", r.sunburnWeeks > 0 ? `Sunburned for ${r.sunburnWeeks} more week${r.sunburnWeeks === 1 ? "" : "s"}.` : `Daylight drains it; it refills ${r.lair.includes("blackout") ? 50 : 25} a week at night${r.lair.includes("blackout") ? "" : " (Blackout Rooms double that)"}. At 0 you're sunburned.`, `${Math.round(r.vitality)}`));
@@ -131,7 +131,7 @@ export const VScreens = {
         out.push(new HeaderTitleViewModel(Night.huntLock(p) ? "The Hunt (next week)" : "The Hunt"));
         for (const c of LifeActions.cells(HUNT(), p)) out.push(c);
         out.push(new HeaderTitleViewModel("Quick Feeding"));
-        for (const c of LifeActions.cells([...FEEDING.slice(1), HERD], p)) out.push(c);
+        for (const c of LifeActions.cells([...FEEDING.slice(1).filter((d) => d.id !== "hunt"), HERD], p)) out.push(c);   // Hunt at Night is now The Hunt
         out.push(new HeaderTitleViewModel("Your Night"));
         const owned = (s.powers ?? []).length;
         out.push(link(img("icon_power_charm"), "Powers", `${owned} of ${TREE.length} learned · ${s.bloodPower} blood power`, "vampire-powers"));
@@ -261,6 +261,8 @@ export const VScreens = {
         const r = Reborn.st(p), line = Reborn.line(p);
         out.push(new HeaderTitleViewModel(line.title));
         out.push(info(img(line.image), line.feel, `Gift: ${line.gift}\nWeakness: ${line.weakness}`));
+        if (r.way === "old" && !(r as any).lineChosen) for (const c of LifeActions.cells([{ id: "chooseLine", title: "Choose Your Bloodline", image: img(line.image), instant: true,
+            lock: (pp) => Becoming.lineChoiceLock(pp), note: () => "Once: keep this bloodline or pick another.\n", run: (pp) => Becoming.lineMenu(pp) }], p)) out.push(c);
         const sire = Becoming.sire(p);
         out.push(new HeaderTitleViewModel("Your Sire"));
         if (sire) out.push(LoveScreens.card(sire));

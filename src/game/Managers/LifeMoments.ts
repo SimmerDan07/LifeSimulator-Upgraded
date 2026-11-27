@@ -376,14 +376,14 @@ export const MOMENTS: Moment[] = [
     { id: "neverAge", min: 18, max: 120, when: (p) => Vampire.isVampire(p) && Vampire.years(p) >= 8, title: "\"You Never Change\"", image: R.drawable.lifepath_vampire, make: (p) => ({
         text: `An old acquaintance stops you: "You look exactly the same as you did ${Vampire.years(p)} years ago. How?"`,
         options: [
-            ["Good genes and sunscreen", () => { if (roll(0.7)) { attr(p, 0, 2, 0); return "They laughed and asked for the brand of sunscreen."; } susp(p, 6); return "They didn't look convinced. (+6 suspicion)"; }],
-            ["Wink and walk away", () => { susp(p, 3); attr(p, 0, 4, 0); return "Mysterious. They'll be thinking about it for weeks. (+3 suspicion)"; }],
+            ["Good genes and sunscreen", () => { if (roll(0.7)) { attr(p, 0, 2, 0); return "They laughed and asked for the brand of sunscreen."; } susp(p, 6); return "They didn't look convinced. (+6 Rumours)"; }],
+            ["Wink and walk away", () => { susp(p, 3); attr(p, 0, 4, 0); return "Mysterious. They'll be thinking about it for weeks. (+3 Rumours)"; }],
             ["Avoid them from now on", () => { attr(p, 0, -2, 1); return "You take the long way home now."; }],
         ] }) },
     { id: "bloodDrive", min: 18, max: 120, when: (p) => Vampire.isVampire(p), title: "The Blood Drive", image: R.drawable.icon_vamp_bloodbank, make: (p) => ({
         text: "The hospital's blood drive is looking for volunteers to help out at the donation tent. All night.",
         options: [
-            ["Volunteer (very carefully)", () => { const s = Vampire.state(p); if (roll(0.75)) { s.thirst = Math.max(0, s.thirst - 15); attr(p, 0, 4, 2); return "Nobody noticed a few bags \"went missing\". (−15 thirst)"; } susp(p, 12); return "A nurse caught you with a bag. You said it was for a friend. (+12 suspicion)"; }],
+            ["Volunteer (very carefully)", () => { const s = Vampire.state(p); if (roll(0.75)) { s.thirst = Math.max(0, s.thirst - 15); attr(p, 0, 4, 2); return "Nobody noticed a few bags \"went missing\". (−15 hunger)"; } susp(p, 12); return "A nurse caught you with a bag. You said it was for a friend. (+12 Rumours)"; }],
             ["Stay far away", () => { attr(p, 0, 0, 2); return "Temptation avoided."; }],
         ] }) },
 ];

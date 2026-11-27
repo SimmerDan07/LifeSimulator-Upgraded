@@ -22,6 +22,7 @@ import { CAREERS, DEGREES, CAREER_CATEGORIES } from "../src/game/Careers/CareerD
 import { Careers, ATHLETE_RETIRE_AGE } from "../src/game/Careers/Careers";
 import { Seasons } from "../src/game/Managers/Seasons";
 import { SocialMedia, POSTS, POSTS_PER_WEEK, ACCOUNT } from "../src/game/Social/SocialMedia";
+import { Reborn } from "../src/game/Vampires/Reborn";
 import { Vampire, POWERS, BLOOD_DIETS, LifeActions, WITHERED_WEEKS } from "../src/game/Lifepaths/Vampire";
 import { LifeMoments, MOMENTS } from "../src/game/Managers/LifeMoments";
 import { Hobbies } from "../src/game/Managers/Hobbies";
@@ -299,14 +300,16 @@ function ACCOUNT_ROW(id: string): any { return ACCOUNT.find((d) => d.id === id)!
     check("Shadow Step: fleeing hunters keeps your job; Lay Low is stronger", p.getJobState().getCurrentJob() === Job.nurse && s.suspicion === 10, `${s.suspicion}`);
     check("Glamour: you show up in photos", (give("glamour"), Vampire.photogenic(p)));
     const v = rows(new LifepathsModelGenerator()); void v;
-    const powerRows = titles(screen("vampire"));
-    check("the Powers section lists all 14", POWERS.every((pw) => powerRows.includes(pw.title)), powerRows.join(" | ").slice(0, 400));
+    const powerRows = titles(screen("vampire-powers"));   // v0.35: the power tree has its own page
+    check("the Powers page lists all 14 old powers", POWERS.every((pw) => powerRows.some((t: string) => t.startsWith(pw.title))), powerRows.join(" | ").slice(0, 400));
     // night and outdoor jobs
     s.powers = [];
     check("bartenders work nights (no sun)", Vampire.onWork(p, Job.bartender) === 1);
     const h0 = p.getAttributeState().getHappiness(); setMonth(p, 3);
-    Vampire.onWork(p, Job.lifeguard);
-    check("outdoor day jobs burn twice as much", Math.abs(p.getAttributeState().getHappiness() - (h0 - 4)) < 0.01, `${h0} → ${p.getAttributeState().getHappiness()}`);
+    { const r = Reborn.st(p); r.weather = "sunny"; r.weatherWeek = p.getTrueAgeInWeeks(); }   // v0.35: the sun follows the weather
+    const mr = Math.random; Math.random = () => 0.5;
+    try { Vampire.onWork(p, Job.lifeguard); } finally { Math.random = mr; }
+    check("outdoor day jobs burn twice as much (a sunny spring day shift: −4)", Math.abs(p.getAttributeState().getHappiness() - (h0 - 4)) < 0.01, `${h0} → ${p.getAttributeState().getHappiness()}`);
     p.getJobState().switchJob(Job.nurse);
     check("nurses count as a medical job (Blood Bank Bags)", Vampire.hasMedicalJob(p));
 }

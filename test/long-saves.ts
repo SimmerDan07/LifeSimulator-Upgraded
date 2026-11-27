@@ -1,6 +1,7 @@
 // v0.18.0: built for very long saves — appearance (one look for life, inherited in families), compact past lives
 // with a paged Family Line and cemetery, paged relative lists, and save size staying small over many generations.
 import { WORK_ICONS } from "../src/game/Work/WorkData";
+import { VAMP_ICONS } from "../src/game/Vampires/VData";
 import fs from "fs";
 import { ART_SLOTS } from "../src/game/data/ArtSlots";
 import { UIBridge, MainGameFragment } from "../src/game/ui/bridge";
@@ -198,7 +199,7 @@ check("6 skin tones and 5 hair colors", SKIN_NAMES.length === 6 && HAIR_NAMES.le
 // ---------------------------------------------------------------- art slots (icons you can draw)
 {
     const imgs = fs.readdirSync("assets/images").map((f: string) => f.replace(/\.(svg|png)$/, ""));
-    check(`${ART_SLOTS.length} icon slots, each with a stand-in that exists`, ART_SLOTS.length === 331 + 49 + 16 + 92 + WORK_ICONS.length && ART_SLOTS.every((s) => imgs.includes(s.fallback)), ART_SLOTS.filter((s) => !imgs.includes(s.fallback)).map((s) => s.name).join(","));
+    check(`${ART_SLOTS.length} icon slots, each with a stand-in that exists`, ART_SLOTS.length === 331 + 49 + 16 + 92 + WORK_ICONS.length + VAMP_ICONS.length && ART_SLOTS.every((s) => imgs.includes(s.fallback)), ART_SLOTS.filter((s) => !imgs.includes(s.fallback)).map((s) => s.name).join(","));
     check("…and none drawn yet clash with existing files", ART_SLOTS.every((s) => !imgs.includes(s.name) || true));
 }
 

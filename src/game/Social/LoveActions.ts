@@ -256,7 +256,7 @@ export const LOVE_ACTIONS: LoveActionDef[] = [
     // ---------------------------------------------------------------- Eternal Bond (v0.17.0): you and your partner are both vampires
     { id: "huntTogether", title: "Hunt Together", image: R.drawable.icon_vamp_hunt, who: ["partner"], section: "time", bond: 40, mods: [0, 6, 0],
         show: (t, p) => alive(t) && Vampire.bonded(p),
-        note: (_t) => `−50 thirst, +6 suspicion${Vampire.has("mistStep") ? "" : ", 10% chance of police trouble"}.\n`,
+        note: (_t) => `−50 hunger, +6 Rumours${Vampire.has("mistStep") ? "" : ", 10% chance of police trouble"}.\n`,
         run: (_t, p) => Vampire.huntTogether(p) },
     { id: "nightDance", title: "Dance Through the Night", image: R.drawable.icon_bond_dance, who: ["partner"], section: "time", cost: 100, bond: 30, mods: [0, 7, 3],
         show: (t, p) => alive(t) && Vampire.bonded(p) },

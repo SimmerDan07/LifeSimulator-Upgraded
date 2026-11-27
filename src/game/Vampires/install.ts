@@ -6,7 +6,8 @@ import { Generations } from "../Managers/Generations";
 import { Reborn, img } from "./Reborn";
 import { Becoming, setCourtRef } from "./Becoming";
 import { Night, Court, addSupplies, supplyRate } from "./Night";
-import { Bonds, NIGHT_LOVE_ACTIONS } from "./Bonds";
+import { Bonds, NIGHT_LOVE_ACTIONS, setGenerationsRef } from "./Bonds";
+import { lineOf } from "./VData";
 import { WEATHER } from "./VData";
 
 let installed = false;
@@ -28,7 +29,8 @@ export function installVampires() {
     V.hooks.exposed = (p: any, outdoor: boolean, shift: boolean) => Reborn.exposed(p, outdoor, shift);
     V.hooks.sunNote = (p: any) => { const [h, v] = Reborn.sunCost(p); const w = WEATHER[Reborn.weather(p)].title; return h || v ? `Daytime (${w}): −${h} happiness, −${v} Vitality for a vampire\n` : `Daytime (${w}): safe for a vampire this week\n`; };
     V.hooks.torpor = (p: any, kind: any) => Reborn.torpor(p, kind);
-    V.hooks.risen = (p: any) => Becoming.risen(p);
+    V.hooks.risen = (p: any) => { Reborn.converting = true; try { Reborn.st(p); } finally { Reborn.converting = false; } Becoming.risen(p); };
+    Reborn.convertHook = (p: any) => Becoming.convert(p);
     V.hooks.human = (p: any) => Becoming.maybeDyingOffer(p);
     V.maybeStranger = (p: any, event: any) => Becoming.nightOut(p, event);
     V.tell = (p: any, t: any) => Bonds.tell(p, t);
@@ -50,4 +52,12 @@ export function installVampires() {
         SUBSCRIPTIONS.push({ id: "spf999", group: "Lifepaths", title: "SPF-999 Sunscreen", image: img("icon_vamp_weather"), weekly: 60, mods: [0, 0, 0], minAge: 0,
             show: (p: any) => Vampire.isVampire(p), blurb: "Industrial-strength sunscreen, delivered: the sun hurts a vampire 30% less." } as any);
     Generations.heirHooks.push((parent: any, heir: any) => Bonds.heir(parent, heir));
+    // play on as your childe when your vampire life ends
+    setGenerationsRef(Generations);
+    Generations.altHeirs.push({
+        title: "Your Childer",
+        list: (parent: any) => Bonds.heirs(parent),
+        sub: (x: any, parent: any) => { const y = Bonds.childeYears(parent, x); return `${x.getAgeInYears()} forever · ${lineOf(Reborn.peek(parent)?.line).title} · ${y} year${y === 1 ? "" : "s"} of blood · keeps the bloodline, the court and the Vault`; },
+        play: (x: any, parent: any) => Bonds.continueAsChilde(parent, x),
+    });
 }

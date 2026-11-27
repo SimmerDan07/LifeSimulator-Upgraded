@@ -202,29 +202,36 @@ import * as M198 from "./Utils/Constants";
 import * as M199 from "./Utils/ExtensionsKt";
 import * as M200 from "./Utils/Utils";
 import * as M201 from "./Utils/ValueRange";
-import * as M202 from "./Work/Benefits";
-import * as M203 from "./Work/CareerPath";
-import * as M204 from "./Work/Company";
-import * as M205 from "./Work/Hiring";
-import * as M206 from "./Work/Hustles";
-import * as M207 from "./Work/SelfCare";
-import * as M208 from "./Work/Work";
-import * as M209 from "./Work/WorkData";
-import * as M210 from "./Work/WorkLove";
-import * as M211 from "./Work/WorkMoments";
-import * as M212 from "./Work/WorkScreens";
-import * as M213 from "./Work/WorkSubs";
-import * as M214 from "./Work/Workplace";
-import * as M215 from "./Work/install";
-import * as M216 from "./World/Activities";
-import * as M217 from "./World/ActivityData";
-import * as M218 from "./World/World";
-import * as M219 from "./World/WorldData";
-import * as M220 from "./Youth/Youth";
-import * as M221 from "./Youth/YouthData";
-import * as M222 from "./Youth/YouthMoments";
-import * as M223 from "./Youth/YouthScreens";
-import * as M224 from "./Youth/install";
+import * as M202 from "./Vampires/Becoming";
+import * as M203 from "./Vampires/Bonds";
+import * as M204 from "./Vampires/Night";
+import * as M205 from "./Vampires/Reborn";
+import * as M206 from "./Vampires/VData";
+import * as M207 from "./Vampires/VScreens";
+import * as M208 from "./Vampires/install";
+import * as M209 from "./Work/Benefits";
+import * as M210 from "./Work/CareerPath";
+import * as M211 from "./Work/Company";
+import * as M212 from "./Work/Hiring";
+import * as M213 from "./Work/Hustles";
+import * as M214 from "./Work/SelfCare";
+import * as M215 from "./Work/Work";
+import * as M216 from "./Work/WorkData";
+import * as M217 from "./Work/WorkLove";
+import * as M218 from "./Work/WorkMoments";
+import * as M219 from "./Work/WorkScreens";
+import * as M220 from "./Work/WorkSubs";
+import * as M221 from "./Work/Workplace";
+import * as M222 from "./Work/install";
+import * as M223 from "./World/Activities";
+import * as M224 from "./World/ActivityData";
+import * as M225 from "./World/World";
+import * as M226 from "./World/WorldData";
+import * as M227 from "./Youth/Youth";
+import * as M228 from "./Youth/YouthData";
+import * as M229 from "./Youth/YouthMoments";
+import * as M230 from "./Youth/YouthScreens";
+import * as M231 from "./Youth/install";
 /** Built on first use (not at import time) so import cycles can't leave entries undefined. */
 export function allClasses(): Record<string, any> {
     return Object.assign({},
@@ -454,5 +461,12 @@ export function allClasses(): Record<string, any> {
         M222,
         M223,
         M224,
+        M225,
+        M226,
+        M227,
+        M228,
+        M229,
+        M230,
+        M231,
     );
 }

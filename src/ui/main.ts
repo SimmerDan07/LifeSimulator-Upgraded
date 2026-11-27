@@ -709,7 +709,7 @@ function statsSheet() {
     };
     const body = document.createElement("div");
     body.className = "sheet-body";
-    body.innerHTML = `<h2 class="sheet-title">How You're Doing</h2><div class="group">${stat("\uf004", "#d65645", "Health", m.getAttr_health_progress())}${stat("\uf118", "#f1c40f", "Happiness", m.getAttr_happiness_progress())}${stat("\uf5dc", "#e685c1", "Sanity", m.getAttr_sanity_progress())}${vamp ? stat("\uf043", "#b3262e", "Thirst", (p as any).vampire.thirst) : ""}</div>`;
+    body.innerHTML = `<h2 class="sheet-title">How You're Doing</h2><div class="group">${stat("\uf004", "#d65645", "Health", m.getAttr_health_progress())}${stat("\uf118", "#f1c40f", "Happiness", m.getAttr_happiness_progress())}${stat("\uf5dc", "#e685c1", "Sanity", m.getAttr_sanity_progress())}${vamp ? stat("\uf043", "#b3262e", "Hunger", (p as any).vampire.thirst) : ""}</div>`;
     const btns = document.createElement("div");
     btns.className = "sheet-buttons";
     let close = () => {};

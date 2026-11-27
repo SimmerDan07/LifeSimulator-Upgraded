@@ -46,6 +46,12 @@ export class Generations {
         return parent.getFamilyState().getAliveChildren().filter((c: Person) => !c.getNotYetBorn() && c.getAgeInYears() >= Generations.minHeirAge());
     }
 
+    /** v0.35.0: others who can carry on instead of a child (a vampire's childer). Each group adds a section. */
+    static altHeirs: { title: string; list: (parent: any) => any[]; sub: (x: any, parent: any) => string; play: (x: any, parent: any) => void }[] = [];
+    static anyHeirs(parent: any): boolean { return Generations.eligibleHeirs(parent).length > 0 || Generations.altHeirs.some((g) => { try { return g.list(parent).length > 0; } catch { return false; } }); }
+    /** The death pop-up's button: "Continue as your child" (or "…your childe" when only childer can). */
+    static heirButtonTitle(parent: any): string { return Generations.eligibleHeirs(parent).length > 0 ? "Continue as your child" : "Continue as your childe"; }
+
     /** Estate passed on: cash + savings minus the outstanding loan (debts don't pass to the heir). */
     static estate(parent: Player): BigInteger {
         const m = parent.getMoneyState();
@@ -80,6 +86,18 @@ export class Generations {
                 new ButtonViewModel("Play as " + child.getFirstName(), null, true, false, false, true, false,
                     { invoke: () => Generations.continueAs(child) }, 122, null), null, null, 48, null));
         }
+        for (const g of Generations.altHeirs) {
+            let list: any[] = [];
+            try { list = g.list(parent); } catch { list = []; }
+            if (!list.length) continue;
+            content.add(new HeaderTitleViewModel(g.title));
+            for (const x of list) {
+                const sub = new TextLabelViewModel(g.sub(x, parent), null, false, false, null, null, 62, null);
+                content.add(new ActionCellSingleViewModel(Appearance.head(x), x.getFullName(), sub,
+                    new ButtonViewModel("Play as " + x.getFirstName(), null, true, false, false, true, false,
+                        { invoke: () => g.play(x, parent) }, 122, null), null, null, 48, null));
+            }
+        }
         const footer = new ArrayList<BaseViewModel>();
         footer.add(new SingleButtonViewModel(new ButtonViewModel("Start a new life instead", null, false, false, false, false, false,
             { invoke: () => Utils.INSTANCE.triggerNewGameStart() }, 126, null)));
@@ -89,7 +107,7 @@ export class Generations {
     /** v0.27.0: things that pass from a parent to their heir (set by other modules, e.g. Crime). */
     static heirHooks: ((parent: any, heir: any) => void)[] = [];
     /** Hand the game over to `child`. Call after the parent's death has been recorded. */
-    static continueAs(child: Person, opts: { handover?: { keep: number } } = {}): void {
+    static continueAs(child: Person, opts: { handover?: { keep: number }; relation?: string } = {}): void {
         const gsm = GameStateManager.INSTANCE.getGlobalStateManager();
         const parent = GameStateManager.INSTANCE.getPersonState();
         // v0.28.0: Switch Life (a living handover) or a will (after a death)
@@ -227,7 +245,7 @@ export class Generations {
                 ? `${parent.getFirstName()} handed everything down and retired${kept ? `, keeping ${ExtensionsKt.numberDisplayString(BigInteger.valueOf(kept), true)} to live on` : ""}. ` +
                   `You are now ${heir.getFullName()}, ${age}, with ${ExtensionsKt.numberDisplayString(estate, true)} and everything your parent owned${props}. ` +
                   `${parent.getFirstName()} is still around: find them on your Love tab.`
-                : `You are now ${heir.getFullName()}, ${age}, child of ${parent.getFullName()}. ` +
+                : `You are now ${heir.getFullName()}, ${age}, ${opts.relation ?? "child"} of ${parent.getFullName()}. ` +
                   `You inherited ${ExtensionsKt.numberDisplayString(estate, true)} and everything your parent owned${props}.` +
                   (willLines.length ? `\n\n${willLines.join("\n")}` : ""),
             "will", null, null, null, null, null, null, 504, null), false, 2, null);

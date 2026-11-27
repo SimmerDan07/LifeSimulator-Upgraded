@@ -68,7 +68,7 @@ export const NEW_SUBSCRIPTIONS: SubscriptionDef[] = [
     // love
     { id: "datingApp", group: "Love", title: "Dating App Premium", image: img("love_tinder_date"), weekly: 8, mods: [0, 0, 0], minAge: 18, show: (p) => partner(p) == null, blurb: "Better matches. Now and then someone special wants to meet." },
     // lifepaths
-    { id: "bloodBank", group: "Lifepaths", title: "Blood Bank Delivery", image: img("lifepath_vampire"), weekly: 250, mods: [0, 0, 0], minAge: 0, show: (p) => Vampire.isVampire(p), blurb: "Bagged blood at your door: your thirst eases every week, with no hunting and no suspicion." },
+    { id: "bloodBank", group: "Lifepaths", title: "Blood Bank Delivery", image: img("lifepath_vampire"), weekly: 250, mods: [0, 0, 0], minAge: 0, show: (p) => Vampire.isVampire(p), blurb: "Bagged blood at your door: your hunger eases every week, with no hunting and no Rumours." },
     { id: "fanClub", group: "Lifepaths", title: "Fan Club Platform", image: img("lifepath_celebrity"), weekly: 20, mods: [0, 1, 0], minAge: 13, show: (p) => Celebrity.fans(p) >= 10_000, blurb: "Your fans grow every week, and the merch pays a little." },
     { id: "security", group: "Lifepaths", title: "Private Security", image: img("police_badge"), weekly: 500, mods: [0, 0, 2], minAge: 18, show: (p) => Celebrity.fans(p) >= 100_000 || Number(p.getMoneyState().getCash().toString()) >= 5_000_000, blurb: "Nobody gets near you that you don't want near you." },
     { id: "lawyer", group: "Lifepaths", title: "Lawyer on Retainer", image: img("work_lawyer"), weekly: 300, mods: [0, 0, 1], minAge: 18, blurb: "If you're ever sentenced, it's 30% shorter." },

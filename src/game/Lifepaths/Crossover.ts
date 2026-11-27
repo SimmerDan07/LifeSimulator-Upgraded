@@ -28,7 +28,7 @@ const collapseFans = new WeakMap<any, number>();
 export const SUPERFAN: LifeActionDef = {
     id: "superfan", title: "Feed on a Superfan", image: R.drawable.icon_celeb_meetgreet, actionTitle: () => "Feed",
     show: (p) => Celebrity.tier(p) >= 2,
-    note: () => "−40 thirst, +5 suspicion. They're thrilled to meet you… but 15% go to the tabloids.\n",
+    note: () => "−40 hunger, +5 Rumours. They're thrilled to meet you… but 15% go to the tabloids.\n",
     run: (p) => {
         Vampire.feed(p, 40, 5);
         if (roll(0.15)) {
@@ -50,7 +50,7 @@ export const MIDNIGHT_SHOW: LifeActionDef = {
 export const RETURN_FROM_DEAD: LifeActionDef = {
     id: "returnFromDead", title: "Return from the Dead", image: R.drawable.grave, cost: 250000,
     show: (p) => (Celebrity.peek(p)?.formerFans ?? 0) >= 100000 && !Celebrity.peek(p)?.returned,
-    note: () => { const s = Celebrity.peek(player()); return `Reveal that you're really ${s?.formerName ?? "the star everyone mourned"}. Win back about 40% of your ${fansText(s?.formerFans ?? 0)} old fans. Vampire suspicion +30.\n`; },
+    note: () => { const s = Celebrity.peek(player()); return `Reveal that you're really ${s?.formerName ?? "the star everyone mourned"}. Win back about 40% of your ${fansText(s?.formerFans ?? 0)} old fans. Vampire Rumours +30.\n`; },
     confirm: () => "Stage the comeback of the century? Everyone will know you didn't really die (and they'll wonder why you haven't aged).",
     run: (p) => {
         const s = Celebrity.state(p);

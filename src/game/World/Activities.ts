@@ -216,7 +216,7 @@ const EFFECTS: Record<string, (p: any, a: ActivityDef) => void> = {
         attr(p, 3, 0, 0);   // undo the mortal −3 health (you didn't actually give any)
         s.thirst = Math.max(0, s.thirst - 15);
         s.suspicion = Math.min(100, s.suspicion + 5);
-        result("A Very Thirsty Volunteer", "You didn't donate. You helped yourself to a bag in the back. (−15 thirst, +5 suspicion)", (R.drawable as any)[a.image]);
+        result("A Very Thirsty Volunteer", "You didn't donate. You helped yourself to a bag in the back. (−15 hunger, +5 Rumours)", (R.drawable as any)[a.image]);
     },
     tutor: (p) => {
         earn(p, 50);
