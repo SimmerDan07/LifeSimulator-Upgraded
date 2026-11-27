@@ -132,7 +132,7 @@ LifeMoments.enabled = false;
 {
     const p = start(25, (np) => World.setBirthCountry(np, (Country as any).brazil)); keep(p); rich(p);
     const t = titles(rows(new VacationModelGenerator()));
-    check("Leisure tab: Local Favourites, Things to Do, Move Abroad", t.includes("Local Favourites: Brazil") && t.includes("Things to Do") && t.includes("Move Abroad") && ACTIVITY_CATEGORIES.every((c) => t.includes(c.title)), t.join(" | ").slice(0, 400));
+    check("Leisure tab: Only Here, Things to Do, Move Abroad", t.includes("Only Here: Brazil") && t.includes("Things to Do") && t.includes("Move Abroad") && ACTIVITY_CATEGORIES.every((c) => t.includes(c.title)), t.join(" | ").slice(0, 400));
     check("Move Abroad has four regions", ["The Americas", "Europe", "Asia & the Pacific", "Middle East & Africa"].every((r) => t.includes(r)));
     const eu = titles(screen("world:europe"));
     check("…a region lists its countries", eu.some((x) => /Germany/.test(x)) && eu.some((x) => /Iceland/.test(x)));

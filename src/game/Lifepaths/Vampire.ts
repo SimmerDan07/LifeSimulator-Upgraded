@@ -543,8 +543,10 @@ export const Vampire = {
     },
     isDaytime(action: any): boolean { return action != null && (DAYTIME.has(action.name()) || !!action.act?.()?.outdoor); },
     /** v0.21.1: sunlight drains a vampire's happiness (it no longer touches health). */
+    /** v0.36.0: set by the Remaster while a vampire does something "At Night". */
+    atNight: null as (() => boolean) | null,
     onLeisure(p: any, action: any) {
-        if (!Vampire.isVampire(p) || !Vampire.isDaytime(action)) return;
+        if (!Vampire.isVampire(p) || !Vampire.isDaytime(action) || Vampire.atNight?.()) return;   // v0.36.0: "At Night" in Leisure
         if (Vampire.hooks.exposed) { Vampire.hooks.exposed(p, false, false); return; }   // v0.35.0: weather, Vitality
         attr(p, 0, -Vampire.sunDamage(p), 0);
     },

@@ -32,6 +32,7 @@ import { Crime } from "../Crime/Crime";
 import { CrimeScreen } from "../Crime/CrimeScreen";
 import { YouthScreens } from "../Youth/YouthScreens";
 import { VScreens } from "../Vampires/VScreens";
+import { RScreens } from "../Remaster/RScreens";
 
 const text = (s: string) => new TextLabelViewModel(s, null, false, false, null, null);
 const thirstTrend = (n: number) => (n > 0 ? `On your diet the bar fills in ${Vampire.fillText(n)}. When it's full you collapse, and 10 to 40 years can pass before someone finds you.` : `Falls ${-n} a week on your diet.`);
@@ -133,8 +134,8 @@ export class LifepathsModelGenerator {
         if (key != null && key.startsWith("activities:")) {
             // v0.27.0 Things to Do: one screen per group (opened from the Leisure tab)
             const cat = key.slice("activities:".length);
-            header.add(new NavigationBarViewModel(Activities.categoryTitle(cat), false, 2, null));
-            for (const c of Activities.screenCells(cat, p)) out.add(c);
+            header.add(new NavigationBarViewModel(cat === "local" ? "Only Here" : Activities.categoryTitle(cat), false, 2, null));
+            for (const c of RScreens.category(cat, p)) out.add(c);   // v0.36.0: with the original activities and three ways to do each
             return new GenericListFragmentViewModel(out, header, null);
         }
         if (key != null && key.startsWith("world:")) {
@@ -157,6 +158,11 @@ export class LifepathsModelGenerator {
             let footer: ArrayList<BaseViewModel> = null;
             if (p.getJobState().getCurrentJob() != null) { footer = new ArrayList<BaseViewModel>(); footer.add(new WorkModelGenerator().getWorkButtonsViewModel()); }
             return new GenericListFragmentViewModel(out, header, footer);
+        }
+        if (key != null && key.startsWith("rm-")) {   // v0.36.0 The Remaster
+            header.add(new NavigationBarViewModel(RScreens.title(key), false, 2, null));
+            for (const c of RScreens.screen(key, p)) out.add(c);
+            return new GenericListFragmentViewModel(out, header, null);
         }
         if (key === "vampire" || (key != null && key.startsWith("vampire-"))) {   // v0.35.0 Vampires Reborn
             header.add(new NavigationBarViewModel(VScreens.title(key), false, 2, null));

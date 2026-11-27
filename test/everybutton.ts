@@ -49,6 +49,11 @@ import { Job } from "../src/game/Enums/Job";
 import { Youth } from "../src/game/Youth/Youth";
 import { Reborn } from "../src/game/Vampires/Reborn";
 import { Night } from "../src/game/Vampires/Night";
+import { Bank } from "../src/game/Remaster/Bank";
+import { Things } from "../src/game/Remaster/Things";
+import { Body } from "../src/game/Remaster/Body";
+import { THING_CATS } from "../src/game/Remaster/ThingsData";
+import { LOAN_OFFERS } from "../src/game/Remaster/BankData";
 
 
 let seed = 777;
@@ -125,7 +130,8 @@ function allScreens(): { name: string; models: any }[] {
     const out: { name: string; models: any }[] = [];
     for (const [name, g] of Object.entries(gens)) out.push({ name, models: g.generateViewModels() });
     const keys = ["youth-activities", "youth-yearbook", "work-apps", "work-resume", "work-certs", "work-hustles", "work-start-company", "work-retirement", "vampire", "vampire-powers", "vampire-masquerade", "vampire-court", "vampire-lair", "vampire-bloodline", "celebrity", "celebrity-news", "celebrity-works", "celebrity-milestones", "crime", "crime-murder", "news", "health-history", "legacy", "languages",
-        ...["outdoors", "sports", "culture", "nightlife", "wellness", "fun", "food", "giving"].map((a) => "activities:" + a),
+        ...["outdoors", "sports", "culture", "nightlife", "wellness", "fun", "food", "giving", "local"].map((a) => "activities:" + a),
+        "rm-market", "rm-loans", "rm-goals", "rm-kids", "rm-worth", "rm-things", "rm-store", "rm-trips", "rm-feats", ...THING_CATS.map((c) => "rm-store:" + c.id),
         ...["americas", "europe", "asia", "africa"].map((r) => "world:" + r),
         ...CAREER_CATEGORIES.map((c) => "careers:" + c.id)];
     for (const k of keys) { try { out.push({ name: k, models: lp.screen(k) }); } catch (e: any) { report("ERROR", "screen " + k + ": " + (e?.message ?? e), k); } }
@@ -241,6 +247,10 @@ const SCENARIOS: Record<string, () => void> = {
     elder: () => start(40, (p) => { rich(p, 5_000_000); Vampire.rise(p); const s = Vampire.state(p); s.bloodPower = 30; s.suspicion = 60; s.powers = ["mistStep", "shadowStep", "charm", "glamour", "hypnoticGaze", "sunWard"]; const r = Reborn.st(p); r.bloodAgeWeeks = 320 * W; r.standing = 65; r.owed = 2; r.hunt = 70; r.lair = ["blackout", "crypt"]; r.vault = 50000; Night.gatherHerd(p); }),
     hunted: () => start(28, (p) => { rich(p, 100000); Vampire.rise(p); const r = Reborn.st(p); r.hunt = 88; r.humanity = 2; Vampire.state(p).suspicion = 96; Vampire.state(p).thirst = 85; }),
     seeker: () => start(25, (p) => { rich(p, 100000); Vampire.state(p).discovered = true; Reborn.st(p).way = "seeking"; }),
+    // v0.36.0 The Remaster
+    tycoon: () => start(36, (p) => { rich(p, 2_000_000); lover(p, "Iris"); const k = new Person(Relationship.child, Sex.male, p.getLastName(), 6 * W); k.setFirstName("Max"); p.getFamilyState().getFamilyMembers().add(k);
+        Bank.buy(p, "index", 50_000); Bank.buy(p, "crypto", 5_000); Bank.addGoal(p, "house"); Bank.fundFor(p, k, 2_000); Bank.take(p, LOAN_OFFERS.find((o) => o.id === "p5")!);
+        Things.buy(p, "compact", true); Things.buy(p, "espresso"); Things.buy(p, "painting"); Body.setRoutine(p, "running"); Body.startSmoking(p); }),
     // v0.28.0
     patriarch: () => start(66, (p) => { rich(p, 3_000_000); lover(p, "Rose"); for (const [n, a] of [["Ava", 38], ["Ben", 35], ["Cal", 16]] as [string, number][]) { const k = new Person(Relationship.child, Sex.female, p.getLastName(), a * W); k.setFirstName(n); k.setRelationshipProgress(700); p.getFamilyState().getFamilyMembers().add(k); } Legacy.addHeirloom(p, "pocketWatch", "Grandpa"); Legacy.writeWill(p, "equal", 10); }),
     sickly: () => start(68, (p) => { rich(p, 400000); Illness.catch(p, "heartDisease", "fuzz"); const c = Illness.catch(p, "cancer", "fuzz")!; c.stage = 2; c.detected = true; Illness.catch(p, "flu", "fuzz"); }),

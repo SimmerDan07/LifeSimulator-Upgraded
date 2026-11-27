@@ -95,7 +95,11 @@ export class Trait extends JEnum {
                 throw new NoWhenBranchMatchedException();
         }
     }
-    getTitle(): string {
+    /** v0.36.0 The Remaster: kinder names for the harsh traits, and what each one does. */
+    static titleHook: ((t: Trait) => string | null) | null = null;
+    static doesHook: ((t: Trait) => string) | null = null;
+    getTitle(): string { return Trait.titleHook?.(this) ?? this.getTitleBase(); }
+    getTitleBase(): string {
         switch (this) {
             case Trait.cunning:
                 return Utils.INSTANCE.getString(R.string.TraitTitle_cunning);
@@ -308,6 +312,8 @@ export class Trait extends JEnum {
         if (modifiers != null) {
             ExtensionsKt.appendNormal$default(ExtensionsKt.appendAttributesString$default(spannableStringBuilder, modifiers, null, null, null, 14, null), "/" + Utils.INSTANCE.getString(R.string.Common_Week), null, null, null, 14, null);
         }
+        const does = Trait.doesHook?.(this);
+        if (does) spannableStringBuilder.append("\n" + does);
         return spannableStringBuilder;
     }
 }

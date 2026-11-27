@@ -8,6 +8,7 @@ import { HEIRLOOMS } from "../Legacy/LegacyData";
 import { ACTIVITIES, CROWDS, UPBRINGING, SUBJECTS, PART_JOBS, YOUTH_ICONS } from "../Youth/YouthData";
 import { WORK_ICONS } from "../Work/WorkData";
 import { VAMP_ICONS } from "../Vampires/VData";
+import { RM_ICONS } from "../Remaster/RIcons";
 export interface ArtSlot { name: string; fallback: string; where: string; row: string }
 
 export const ART_SLOTS: ArtSlot[] = [
@@ -142,5 +143,6 @@ export const ART_SLOTS: ArtSlot[] = [
     ...YOUTH_ICONS,
     ...WORK_ICONS,
     ...VAMP_ICONS,
+    ...RM_ICONS,
 ];
 export const ART_FALLBACK: Record<string, string> = Object.fromEntries(ART_SLOTS.map((s) => [s.name, s.fallback]));

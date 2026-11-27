@@ -22,6 +22,7 @@ import { SaveCodec } from "../save/SaveCodec";
 import { Work } from "../Work/Work";
 import { installWork } from "../Work/install";
 import { installVampires } from "../Vampires/install";
+import { installRemaster } from "../Remaster/install";
 import { installYouth } from "../Youth/install";
 
 export class GameStateManager {
@@ -39,6 +40,7 @@ export class GameStateManager {
         installYouth();        // v0.32.0: Childhood & Teen Years (moments, heirs)
         installWork();         // v0.33.0: The Career Overhaul (hiring, workplace, hustles, companies, benefits)
         installVampires();     // v0.35.0: Vampires Reborn
+        installRemaster();     // v0.36.0: The Remaster
         this.globalStateManager = this.loadData();
         const slot = this.globalStateManager.getSaveState().currentSlot();
         if (slot.getPersonState() == null) {
@@ -83,10 +85,13 @@ export class GameStateManager {
         const np: any = this.newGamePlayerState;
         if (np != null && !Appearance.valid(np.appearance)) Appearance.set(np, Appearance.random(np.getSex()));
     }
+    /** v0.36.0: run when a brand-new life starts (not an heir). */
+    static newLifeHooks: ((p: any) => void)[] = [];
     startNewGame(player: Player): void {
         Schooling.fillForAge(player);  // schooling that fits the starting age (preschool…high school)
         World.onNewLife(player);       // v0.27.0: native language (birth country)
         Work.state(player);            // v0.33.0: a new life starts with the new work system (no "upgrade" note)
+        for (const h of GameStateManager.newLifeHooks) { try { h(player); } catch (e) { console.error(e); } }   // v0.36.0: head starts
         if (!Appearance.valid((player as any).appearance)) Appearance.set(player, Appearance.random(player.getSex()));
         player.applyPerkStateEffects();
         player.applyNameEasternEgg();

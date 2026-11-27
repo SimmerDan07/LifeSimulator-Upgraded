@@ -72,6 +72,8 @@ export class SettingsManager {
         void UIBridge.backUp(name, text).then((r) => {
             if (r === "cancelled") return;
             if (r === "failed") this.info("Back Up Your Save", "The backup couldn't be made on this device.");
+            else if (r === "downloads") this.info("Backed Up", `Your save (every save slot) is in your phone's Download folder, in "Life Simulator", as "${name}". It stays there even if you uninstall the game.\n\nTo carry on the same lives on another device (or the Windows game), copy that file over, then open Settings › Load a Backup and pick it.`);
+            else if (r === "shared") this.info("Back Up Your Save", `Pick where to keep "${name}" (Drive, email, …). On another device, open Settings › Load a Backup and pick that file to carry on the same lives.`);
             else this.info("Backed Up", `Your save (every save slot) is in the file "${name}".\n\nKeep it somewhere safe. On another device, open Settings › Load a Backup and pick this file to carry on the same lives.`);
         });
     }
@@ -118,7 +120,8 @@ export class SettingsManager {
                 Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.badgeList, null, false, 6, null);
                 break;
             case SettingRow.lifeGoal:
-                Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.achivementList, null, false, 6, null);
+                // v0.36.0: the achievements gallery (new and classic)
+                Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.lifepath, "rm-feats", false, 4, null);
                 break;
             case SettingRow.saveSlot:
                 Utils.Companion.navigateTo$default(Utils.INSTANCE, GenericListType.saveSlots, null, false, 6, null);

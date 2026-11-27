@@ -20,6 +20,8 @@ import { Achievement } from "../Enums/Achievement";
 import { AchievementBadge } from "../Enums/AchievementBadge";
 import { ActionCellMultipleOptionsViewModel } from "../Models/ActionCellMultipleOptionsViewModel";
 import { ActionCellSingleViewModel } from "../Models/ActionCellSingleViewModel";
+import { RScreens } from "../Remaster/RScreens";
+import { Diet } from "../Enums/Diet";
 import { Vampire } from "../Lifepaths/Vampire";
 import { ActionProgressViewModel } from "../Models/ActionProgressViewModel";
 import { AlertManager } from "../Managers/AlertManager";
@@ -243,7 +245,16 @@ export class GenericListModelGenerator {
                     for (const c of Vampire.dietCells(personState)) arrayList.add(c);
                     break;
                 }
-                for (const diet of personState.getCountry().getDietOptions()) {
+                // v0.36.0: grouped (Everyday, Cheap & Quick, Only Here)
+                const dietGroups = ["Everyday", "Cheap & Quick", "Only Here"];
+                const allDiets: any[] = personState.getCountry().getDietOptions();
+                const homeCook = (Diet as any).homeCooking;
+                if (homeCook && !allDiets.includes(homeCook)) allDiets.push(homeCook);
+                const sortedDiets = dietGroups.flatMap((g) => allDiets.filter((d) => RScreens.dietGroup(d) === g));
+                let lastGroup = "";
+                for (const diet of sortedDiets) {
+                    const grp = RScreens.dietGroup(diet);
+                    if (grp !== lastGroup) { lastGroup = grp; arrayList.add(new HeaderTitleViewModel(grp === "Only Here" ? `Only Here: ${personState.getCountry().getTitle()}` : grp)); }
                     let initWithActionDescriptor$default: ActionCellSingleViewModel = ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, diet, null, 2, null);
                     if (personState.getDiet() === diet) {
                         initWithActionDescriptor$default.getActionButton().setEnabled(false);
@@ -527,6 +538,7 @@ export class GenericListModelGenerator {
                     }
                     arrayList.add(new ActionCellSingleViewModel(Integer.valueOf(type3.getImageId()), type3.getTitle(), new TextLabelViewModel(description, null, false, false, null, null, 62, null), hidden2, hidden, null, 32, null));
                 }
+                for (const c of RScreens.headStartCells(newGamePlayerState2)) arrayList.add(c);   // v0.36.0: head starts from achievements
                 arrayList3.add(new SingleButtonViewModel(new ButtonViewModel(Utils.INSTANCE.getString(R.string.Perk_StartGameButton), null, false, false, false, false, false, {
                     invoke: () => {
                     GameStateManager.INSTANCE.startNewGame(newGamePlayerState2);

@@ -275,7 +275,7 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `Vampire.tickCures(p)` (Player weekly, after OneNight) counts down and then sets `meta.vampire = false`,
     `meta.cured = true` (Turn is locked for them: one vampire life). Tests at the end of test/vampire.ts.
   - **v0.31.0 Backups**: Settings › Back Up Your Save / Load a Backup (`SettingsManager.backUpSave / loadBackup`,
-    `UIBridge.backUp / pickFile / replaceSave`; share sheet or download; not on Android's WebView). Saves on `pagehide`
+    `UIBridge.backUp / pickFile / replaceSave`; share sheet or download; Android since v0.36.0). Saves on `pagehide`
     too. (v0.31.0 also added an iPhone web app; it was removed in v0.35.1: no `web/`, `build-web`, `gh-pages` workflow
     or IndexedDB storage any more. A plain browser keeps the save in localStorage, for development and UI checks.)
   - **v0.31.1 Music stops in the background**: `SoundManager.setAway(bool)` pauses the soundtrack and mutes effects;
@@ -285,6 +285,37 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `--left` = rail + sl used by #hud/#tabs/#main/#overlay/#toasts; content, list body/foot, footer and the rail pad
     by `--sb`; modals capped at `100dvh`; landscape stats 2 × 2; narrow `--hud` 108px; text-size-adjust 100%,
     inputs ≥16px, `overscroll-behavior: contain`. All 0 where there are no insets (Windows, Android full screen).
+  - **v0.36.0 The Remaster** (`src/game/Remaster/`, installed by `installRemaster()` after `installVampires`): the
+    original tabs reworked. Per-life state `p.rm` (`Rm.st(p)`: `fun`, `bank`, `body`, `things`, `traits`, `feats`);
+    across lives `AchievementState.rm` (`done`, `lives`). Weekly calls in Player: `Remaster.collectWeeklyValues`
+    (bills/income with keys), `Remaster.afterWeek`, `Remaster.onLeisure`, `Remaster.onNewYear`. Screens are Lifepaths
+    keys `rm-*` → `RScreens.title/screen`; `activities:<cat>` (and `activities:local`, "Only Here") → `RScreens.category`.
+    - Leisure (`Fun.ts`): every activity has Cheap / Normal / Splurge (and Night Out) tiers (`Leisure.tierHook` wraps
+      `getCost/getModifiers`), a companion (partner, kids 4+, family, friends: +15 relationship), favourites (8 times),
+      and Plan a Trip (`rm-trips`: where × how long × budget; passport for abroad; countries visited) replacing the
+      original vacations. Vampires only get night activities (`Vampire.atNight`).
+    - Bank (`Bank.ts`, `BankData.ts`): a credit score from 18 (300–850, bands set loan and mortgage rates via
+      `setMortgageRateHook`), personal and student loans with weekly payments; a missed payment = $25 fee and −15
+      credit, a final notice at 4, the car repossessed at 6 (`ref` loans), collections at 8 (never a death). The market
+      (`rm-market`): 30 fictional companies in 8 sectors, index fund, bonds, gold and crypto, weekly prices from an
+      economy cycle (boom / steady / slump / recession) with company news; old shares became index-fund units. Auto-
+      invest, three savings goals, a Kids' Fund (paid at 18), net worth by year (`rm-worth`), scratch cards.
+    - Things (`Things.ts`, `ThingsData.ts`): The Store (`rm-store`, 7 sections, 55 things incl. 16 cars; the original
+      possessions are listed in their sections, never twice) with depreciation, upkeep, capped weekly effects,
+      collectibles that revalue yearly, car finance (10% down), selling, gifting and rare "Car Trouble" (random-tagged).
+    - Health (`Body.ts`): a family doctor, fitness 0–100 from a weekly routine (walks … athlete; gym needs the
+      subscription or a Home Gym), smoking and drinking habits with ways to quit, fitness lowering illness risk
+      (`Illness.fitHook/riskMult`). The Health tab is grouped: Conditions, Doctor, Fitness, Food, Habits, Self-Care.
+    - Traits (`Traits.ts`): what each trait does is shown (`Trait.doesHook`); harsh names are kinder (ids kept:
+      sickly → Delicate Health, buttUgly → Unconventional Looks, …); traits now affect pay, hiring, prices, luck and
+      more; some grow (therapy softens one, fitness gives Confident, travel Adventurous, …).
+    - Achievements (`Feats.ts`, `rm-feats`, Settings › Life Goals): 64 in 12 groups, kept across lives, each with a
+      milestone; ten unlock optional head starts chosen on the perk screen (`Feats.applyStart` via
+      `GameStateManager.newLifeHooks`; heirs keep them).
+    - Android: Back Up Your Save writes to Download/Life Simulator (`SaveFiles.backUp`, MediaStore; share sheet before
+      Android 10); Load a Backup uses the WebView file picker. Once a day the app checks GitHub's latest release and
+      offers the new APK (`checkForUpdate`, `SaveFiles.openUrl`; "Later" skips that version).
+    `test/remaster.ts` covers all of it.
   - **v0.35.1**: the iPhone web app was retired (see v0.31.0).
   - **v0.35.0 Vampires Reborn** (`src/game/Vampires/`, installed by `installVampires()` after `installWork`): new state on
     `p.vampire.rb` (`RebornState`, made lazily; a vampire with no `rb` is converted once by `Reborn.convertHook` →

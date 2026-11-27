@@ -24,6 +24,7 @@ import { LeftRightCellViewModel } from "../Models/LeftRightCellViewModel";
 import { MainGameTab } from "../Enums/MainGameTab";
 import { Player } from "../Managers/Player";
 import { Possession } from "../Enums/Possession";
+import { RScreens } from "../Remaster/RScreens";
 import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
 import { Subscriptions } from "../Managers/Subscriptions";
@@ -106,6 +107,8 @@ export class ProfileModelGenerator implements IViewModelGenerator {
         return out;
     }
     getItemsViewModels(): ArrayList<BaseViewModel> {
+        // v0.36.0 The Remaster: your things, the Store and the big toys (the original rows live in the Store now)
+        { const out = new ArrayList<BaseViewModel>(); for (const c of RScreens.itemsSection(GameStateManager.INSTANCE.getPersonState())) out.add(c); return out; }
         let z: boolean;
         let str: string;
         let arrayList: ArrayList = new ArrayList();

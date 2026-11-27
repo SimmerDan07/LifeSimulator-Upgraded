@@ -164,7 +164,15 @@ export class Leisure extends JEnum implements ActionDescriptor {
     static activityLock: (l: Leisure, p: any) => string | null = () => null;
     static activityNote: (l: Leisure) => string | null = () => null;
     static activityCost: (l: Leisure, p: any) => number = (l) => l.act()?.cost ?? 0;
+    /** v0.36.0 The Remaster: on a budget / normal / splurge (set while you do it). */
+    static tierHook: ((l: Leisure) => { cost: number; mods: number } | null) | null = null;
     getCost(): BigInteger {
+        const base = this.getCostBase();
+        const t = Leisure.tierHook?.(this);
+        if (!t || t.cost === 1) return base;
+        return BigInteger.valueOf(Math.round(Number(base.toString()) * t.cost));
+    }
+    getCostBase(): BigInteger {
         let i: number = 800;
         switch (this) {
             case Leisure.take_week_off:
@@ -272,6 +280,13 @@ export class Leisure extends JEnum implements ActionDescriptor {
         }
     }
     getModifiers(): Modifiers {
+        const m = this.getModifiersBase();
+        const t = Leisure.tierHook?.(this);
+        if (!t || t.mods === 1 || m == null) return m;
+        const k = (v: number) => (v > 0 ? v * t.mods : v);
+        return new Modifiers(k(m.getHealth()), k(m.getHappiness()), k(m.getSanity()));
+    }
+    getModifiersBase(): Modifiers {
         let modifiers: Modifiers;
         let modifiers2: Modifiers = new Modifiers(0.0, 0.0, 0.0);
         switch (this) {

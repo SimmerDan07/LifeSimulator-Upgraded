@@ -19,9 +19,9 @@ export interface UIImpl {
     /** v0.18.0: where saves are kept (null in the browser), and open that folder. */
     saveFolder?(): string | null;
     openSaveFolder?(): boolean;
-    /** v0.31.0: back up the save to a file / load one (Windows). */
+    /** v0.31.0: back up the save to a file / load one (Windows; Android since v0.36.0). */
     canBackUp?(): boolean;
-    backUp?(name: string, text: string): Promise<"shared" | "downloaded" | "cancelled" | "failed">;
+    backUp?(name: string, text: string): Promise<"shared" | "downloaded" | "downloads" | "cancelled" | "failed">;
     pickFile?(): Promise<string | null>;
     replaceSave?(name: string, text: string): Promise<void>;
 }

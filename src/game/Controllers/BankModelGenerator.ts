@@ -14,11 +14,13 @@ import { Subscriptions } from "../Managers/Subscriptions";
 import { IViewModelGenerator } from "./IViewModelGenerator";
 import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
+import { RScreens } from "../Remaster/RScreens";
 
 export class BankModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
-        arrayList.addAll(this.getBankActionViewModels());
+        // v0.36.0 The Remaster: accounts, loans, investing, goals, the lottery
+        for (const c of RScreens.bankTab(GameStateManager.INSTANCE.getPersonState())) arrayList.add(c);
         arrayList.addAll(this.getPhilanthrophyViewModels());
         return new GenericListFragmentViewModel(arrayList);
     }

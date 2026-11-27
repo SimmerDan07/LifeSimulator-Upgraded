@@ -6,7 +6,9 @@ import { UIBridge, MainGameFragment, GenericListFragment } from "../game/ui/brid
 import { GameStateManager } from "../game/Managers/GameStateManager";
 import { AlertManager } from "../game/Managers/AlertManager";
 import { AlertType } from "../game/Managers/AlertType";
-import type { AlertViewModel } from "../game/Managers/AlertViewModel";
+import { AlertViewModel } from "../game/Managers/AlertViewModel";
+import { AlertActionViewModel } from "../game/Managers/AlertActionViewModel";
+import pkg from "../../package.json";
 import { SoundManager } from "../game/Managers/SoundManager";
 import { SoundEffect } from "../game/Managers/SoundEffect";
 import { MainGameTab } from "../game/Enums/MainGameTab";
@@ -38,7 +40,7 @@ import { WEATHER } from "../game/Vampires/VData";
 import { drawCell, markCutRows, setSheetHost, NL_ICONS, type Drawn, type SheetOpts } from "./rows";
 
 declare global {
-    interface Window { lifesimFS?: { read(name: string): string | null; write(name: string, text: string): void; dir(): string; openDir?(): boolean }; }
+    interface Window { lifesimFS?: { read(name: string): string | null; write(name: string, text: string): void; dir(): string; openDir?(): boolean; backUp?(name: string, text: string): string; openUrl?(url: string): boolean }; }
 }
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -62,7 +64,12 @@ const storage = {
 
 // ------------------------------------------------------------------ backups (v0.31.0)
 /** Hand a backup to the player: the share sheet where there is one, else a download. */
-async function backUpFile(name: string, text: string): Promise<"shared" | "downloaded" | "cancelled" | "failed"> {
+async function backUpFile(name: string, text: string): Promise<"shared" | "downloaded" | "downloads" | "cancelled" | "failed"> {
+    // v0.36.0 Android: the app saves it to the phone's Download folder (or opens the share sheet on old phones)
+    if (window.lifesimFS?.backUp) {
+        try { const r = window.lifesimFS.backUp(name, text); return r === "downloads" || r === "shared" ? r : "failed"; }
+        catch (e) { console.error(e); return "failed"; }
+    }
     try {
         const file = new File([text], name, { type: "text/plain" });
         const nav: any = navigator;
@@ -812,8 +819,8 @@ function boot() {
         writeFile: (n, t) => storage.write(n, t),
         saveFolder: () => (window.lifesimFS ? window.lifesimFS.dir() : null),
         openSaveFolder: () => (window.lifesimFS?.openDir ? window.lifesimFS.openDir() : false),
-        // Android's WebView can neither share nor download a file, so backups are for Windows
-        canBackUp: () => !window.lifesimFS || !!window.lifesimFS.openDir,
+        // Windows: a download; Android (v0.36.0): the app's own backUp (Download folder / share sheet)
+        canBackUp: () => !window.lifesimFS || !!window.lifesimFS.openDir || !!window.lifesimFS.backUp,
         backUp: backUpFile,
         pickFile: pickBackupFile,
         replaceSave: async (name, text) => { frozen = true; storage.write(name, text, true); location.reload(); },
@@ -949,6 +956,46 @@ function boot() {
     }
     render();
     document.body.classList.add("ready");
+    setTimeout(() => void checkForUpdate(), 5000);
+}
+
+// ------------------------------------------------------------------ new version notice (v0.36.0, Android)
+/** "1.2.3" > "1.2.0"? */
+export function newerVersion(a: string, b: string): boolean {
+    const pa = a.split(".").map((n) => parseInt(n, 10) || 0), pb = b.split(".").map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) > (pb[i] ?? 0);
+    }
+    return false;
+}
+/**
+ * The Android app is installed by hand from GitHub, so it can't update itself: once a day it asks GitHub for the
+ * newest APK and, if there's a newer version than this one, offers to open the download page. "Later" hides that
+ * version for good (the next one is offered again). Windows builds come as a 7z, so this is Android only.
+ */
+async function checkForUpdate(): Promise<void> {
+    const fs = window.lifesimFS;
+    if (!fs?.openUrl || fs.openDir) return;
+    const ls = (() => { try { return window.localStorage; } catch { return null; } })();
+    const today = new Date().toISOString().slice(0, 10);
+    if (ls?.getItem("lifesim.updateChecked") === today) return;
+    try {
+        const res = await fetch("https://api.github.com/repos/SimmerDan07/LifeSimulator-Upgraded/releases/latest", { headers: { Accept: "application/vnd.github+json" } });
+        if (!res.ok) return;
+        const rel = await res.json();
+        ls?.setItem("lifesim.updateChecked", today);
+        const m = /v?(\d+\.\d+\.\d+)/.exec(String(rel?.tag_name ?? ""));
+        if (!m || !newerVersion(m[1], pkg.version) || ls?.getItem("lifesim.updateSkipped") === m[1]) return;
+        const url = String(rel.html_url ?? "https://github.com/SimmerDan07/LifeSimulator-Upgraded/releases/latest");
+        const vm: any = new AlertViewModel("New Version Available",
+            `Life Simulator v${m[1]} is out (you have v${pkg.version}).\n\nDownload the new .apk and open it to install. It installs over this one and keeps your saves.`,
+            "menu_share", null, null,
+            new AlertActionViewModel("Get It", { invoke: () => { fs.openUrl!(url); } }),
+            new AlertActionViewModel("Later", { invoke: () => { ls?.setItem("lifesim.updateSkipped", m[1]); } }),
+            null, null, 408, null);
+        vm.confirm = true; vm.essential = true;
+        AlertManager.showAlert$default(AlertManager.INSTANCE, vm, false, 2, null);
+    } catch { /* offline: try again next time */ }
 }
 
 void button; void ButtonViewModel; void richToHtml;

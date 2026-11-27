@@ -6,6 +6,7 @@ import { Crime } from "../Crime/Crime";
 import { SpouseIncome } from "../Social/SpouseIncome";
 import { Illness } from "../Health/Illness";
 import { World } from "../World/World";
+import { Remaster } from "../Remaster/Remaster";
 import { Activities } from "../World/Activities";
 import { ArrayList, Arrays, ArraysKt, BigInteger, CollectionsKt, Double, Integer, Intrinsics, JMath, Layout, MapsKt, Pair, R, Random, SpannableStringBuilder, StringCompanionObject, StringsKt, TuplesKt, TypeCastException, TypeIntrinsics, UUID, Unit } from "../runtime";
 import { Retirement } from "./Retirement";
@@ -521,6 +522,7 @@ export class Player {
             World.afterMove(this, fromCountry, travelCountry);   // v0.27.0
         }
         Activities.onLeisure(this, action);   // v0.27.0
+        Remaster.onLeisure(this, action);     // v0.36.0: company, favourites, splurges
         // v0.29.4: surprises while you do something are random events ("No pop-ups for random events" covers them)
         AlertManager.randomly(() => {
             Illness.onLeisure(this, action);      // v0.28.0: smoking, drinking, risky fun
@@ -912,6 +914,7 @@ export class Player {
             Vampire.tickCures(this);       // v0.30.2: the Vampiric Cure you bought someone
             Youth.afterWeek(this);         // v0.32.0: school, pocket money, part-time jobs, growing up; the kids you raise
             Work.afterWeek(this);          // v0.33.0: your employer, reviews, burnout, job offers
+            Remaster.afterWeek(this);      // v0.36.0: the market, your things, fitness, traits, achievements
             if (Vampire.isInTorpor(this) === false && mainGameFragment != null) MainGameFragment.updateUI$default(mainGameFragment, null, 1, null);
         }
     }
@@ -1048,6 +1051,7 @@ export class Player {
         }
     }
     newYearReached(): void {
+        Remaster.onNewYear(this);
         Retirement.onNewYear(this);
         // Upgraded: you're no longer kicked out at 18. You can keep living with your parents and move out whenever
         // you like (Profile → Real Estate). Their allowance still stops at 18.
@@ -1084,6 +1088,7 @@ export class Player {
         SocialMedia.collectWeeklyValues(this);   // v0.26.0
         Vampire.collectWeeklyValues(this);
         Celebrity.collectWeeklyValues(this);
+        Remaster.collectWeeklyValues(this);    // v0.36.0: loans, upkeep, fitness, habits, traits
         this.attributeState.setDeltaValue(PersonAttribute.health, Utils.INSTANCE.getString(R.string.identity_name_age), this.getHealthStatus().getHealthModifier());
         let effectiveInterestRate: number = this.moneyState.getEffectiveInterestRate();
         let weeksPerYear: number = Constants.Time.INSTANCE.getWeeksPerYear();

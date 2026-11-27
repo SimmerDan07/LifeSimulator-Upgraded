@@ -23,12 +23,12 @@ import { Player } from "../Managers/Player";
 import { SingleLabelCellViewModel } from "../Models/SingleLabelCellViewModel";
 import { TextLabelViewModel } from "../Models/TextLabelViewModel";
 import { Utils } from "../Utils/Utils";
+import { RScreens } from "../Remaster/RScreens";
 
 export class HealthModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
         let arrayList: ArrayList = new ArrayList();
-        arrayList.addAll(this.getHealthViewModels());
-        arrayList.addAll(this.getDietViewModels());
+        arrayList.addAll(this.getHealthViewModels());   // (Food is inside, after Fitness)
         return new GenericListFragmentViewModel(arrayList);
     }
     getHealthViewModels(): ArrayList<BaseViewModel> {
@@ -40,8 +40,27 @@ export class HealthModelGenerator implements IViewModelGenerator {
         let leftRightCellViewModel: LeftRightCellViewModel = new LeftRightCellViewModel("HealthStatusModel", new TextLabelViewModel("", null, false, false, null, ExtensionsKt.appendNormal$default(ExtensionsKt.appendBold$default(new SpannableStringBuilder(), Utils.INSTANCE.getString(R.string.Health_Header_Health) + ": ", null, null, null, 14, null), healthStatus.getTitle(), Integer.valueOf(personState.getHealthStatus().getColorId()), null, null, 12, null), 30, null), new TextLabelViewModel("", null, false, false, null, ExtensionsKt.appendNormal$default(ExtensionsKt.appendAttributesString$default(new SpannableStringBuilder(), new Modifiers(healthStatus.getHealthModifier(), 0.0, 0.0), null, null, PersonAttribute.health, 6, null), "/" + Utils.INSTANCE.getString(R.string.Common_Week), null, null, null, 14, null), 30, null), null, 8, null);
         arrayList.add(singleLabelCellViewModel);
         arrayList.add(leftRightCellViewModel);
-        for (const c of Illness.cells(personState)) arrayList.add(c);   // v0.28.0 illnesses
-        for (const c of WorkScreens.selfCareCells(personState)) arrayList.add(c);   // v0.33.0 self-care
+        // v0.36.0 The Remaster: Conditions, then Doctor (your family doctor, checkups, flu shots, dentist, eyes…),
+        // Fitness, Habits and Self-Care. Each row lives in one place (the checkup moved out of Conditions, and the
+        // care visits moved out of Self-Care).
+        const doctorTitles = ["Get a Checkup", "Get a Flu Shot"];
+        const illness: any[] = Illness.cells(personState);
+        const fromIllness = illness.filter((c: any) => doctorTitles.includes(c.title));
+        for (const c of illness) if (!fromIllness.includes(c)) arrayList.add(c);
+        const care: any[] = WorkScreens.selfCareCells(personState);
+        const careRows: any[] = [];
+        const selfCare: any[] = [];
+        let inCare = false;
+        for (const c of care) {
+            if (c instanceof HeaderTitleViewModel) inCare = (c as any).title === "Care";
+            if (inCare) { if (!(c instanceof HeaderTitleViewModel)) careRows.push(c); } else selfCare.push(c);
+        }
+        for (const c of RScreens.doctorCells(personState, fromIllness, careRows)) arrayList.add(c);
+        if (Vampire.isVampire(personState) || personState.getAgeInYears() < 3) { for (const c of fromIllness) arrayList.add(c); for (const c of careRows) arrayList.add(c); }
+        for (const c of RScreens.fitnessCells(personState)) arrayList.add(c);
+        arrayList.addAll(this.getDietViewModels());
+        for (const c of RScreens.habitCells(personState)) arrayList.add(c);
+        for (const c of selfCare) arrayList.add(c);   // v0.33.0 self-care (sleep, quick care, goals)
         arrayList.add(new HeaderTitleViewModel("Treatments"));
         for (const healthEvent of HealthEvent.INSTANCE.eventsForPlayer(personState)) {
             arrayList.add(ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, healthEvent, null, 2, null));
@@ -61,7 +80,7 @@ export class HealthModelGenerator implements IViewModelGenerator {
             if (vs.rb) arrayList.add(new MeterViewModel("Vitality", vs.rb.vitality ?? 100, 100, "blue", "Daylight drains it; it refills at night.", `${Math.round(vs.rb.vitality ?? 100)}`));
             return arrayList;
         }
-        arrayList.add(new HeaderTitleViewModel(Utils.INSTANCE.getString(R.string.Common_Diet)));
+        arrayList.add(new HeaderTitleViewModel("Food"));
         let initWithActionDescriptor$default: ActionCellSingleViewModel = ActionCellSingleViewModel.Companion.initWithActionDescriptor$default(ActionCellSingleViewModel.INSTANCE, personState.getDiet(), null, 2, null);
         initWithActionDescriptor$default.getActionButton().setHidden(true);
         arrayList.add(initWithActionDescriptor$default);

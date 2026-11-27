@@ -16,6 +16,7 @@ import { Seasons } from "../Managers/Seasons";
 import { Activities } from "../World/Activities";
 import { World } from "../World/World";
 import { YouthScreens } from "../Youth/YouthScreens";
+import { RScreens } from "../Remaster/RScreens";
 
 export class VacationModelGenerator implements IViewModelGenerator {
     generateViewModels(): GenericListFragmentViewModel {
@@ -30,9 +31,8 @@ export class VacationModelGenerator implements IViewModelGenerator {
         }
         arrayList.addAll(this.getPlaytimeViewModels());
         for (const c of YouthScreens.leisure(p)) arrayList.add(c);   // v0.32.0: Growing Up
-        arrayList.addAll(this.getLeisureViewModels());
-        for (const c of Activities.localCells(p)) arrayList.add(c);   // v0.27.0
-        if (p.getAgeInYears() >= 4) for (const c of Activities.categoryCells(p)) arrayList.add(c);
+        // v0.36.0 The Remaster: going with, the categories (the original activities folded in), trips, favourites
+        for (const c of RScreens.leisureCells(p)) arrayList.add(c);
         // v0.26.0: two activities that only happen this season
         if (p.getAgeInYears() >= 3) for (const c of Seasons.cells()) arrayList.add(c);
         arrayList.addAll(this.getHobbyViewModels());

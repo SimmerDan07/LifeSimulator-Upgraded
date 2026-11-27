@@ -125,6 +125,9 @@ export const UPKEEP: Record<string, { label: string; yearly: number; decay: numb
     premium: { label: "Premium", yearly: 0.01, decay: 0.05, problems: 0.35, autoFixWeeks: 1, autoFixMajorWeeks: 2 },
 };
 
+/** v0.36.0 The Remaster: the Bank prices mortgages by credit score. */
+export let mortgageRateHook: (() => number) | null = null;
+export function setMortgageRateHook(f: (() => number) | null) { mortgageRateHook = f; }
 export const RE = {
     weeksPerYear: 48,
     /** Base condition loss per week before upkeep/type multipliers (~5.4/year with no upkeep, ~0.7 with standard upkeep). */
@@ -139,7 +142,8 @@ export const RE = {
     sellingFees: 0.05,
     /** Mortgages. */
     downPayment: 0.2,
-    mortgageRate: 0.055,
+    /** v0.36.0: set by the Bank from your credit score (5.5% without one). */
+    get mortgageRate(): number { try { return mortgageRateHook?.() ?? 0.055; } catch { return 0.055; } },
     mortgageYears: 30,
     maxDebtToIncome: 0.45,
     /** Market listings refresh this often. */

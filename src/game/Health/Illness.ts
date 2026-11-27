@@ -86,6 +86,10 @@ export const Illness = {
     },
     def(id: string): IllnessDef { return ILLNESS_BY_ID[id]; },
     /** Vampires are dead: nothing to catch. */
+    /** v0.36.0: being fit (fitness 50+) protects you like a gym membership. */
+    fitHook: null as ((p: any) => boolean) | null,
+    riskMult: null as ((p: any) => number) | null,
+    onCheckup: null as ((p: any) => void) | null,
     immune(p: any = player()): boolean { return Vampire.isVampire(p); },
     funded(id: string, p: any = player()): boolean { const a = (CompletableAction as any)[id]; if (a == null) return false; try { return p.getCompletableActionState().isCompleted(a); } catch { return false; } },
     list(p: any = player()): Ill[] { return Illness.peek(p)?.list ?? []; },
@@ -147,7 +151,7 @@ export const Illness = {
                 case "smokerOnly": base = s.smokes > 50 ? 0.0006 : 0; break;
                 case "junkFood": if (SICK_DIETS.includes(diet)) m *= n || 2; else if (GOOD_DIETS.includes(diet)) m *= 0.7; break;
                 case "scavenge": if (diet === "scavenge") m *= 3; break;
-                case "fit": if (Subscriptions.has("gym", p)) m *= 0.6; if (Hobbies.skill("running", p) >= 20) m *= 0.7; break;
+                case "fit": if (Subscriptions.has("gym", p) || Illness.fitHook?.(p)) m *= 0.6; if (Hobbies.skill("running", p) >= 20) m *= 0.7; break;
                 case "stress": if (attrs.getSanity() < 40) m *= 2; if (s.overwork > 6) m *= 1.5; break;
                 case "sad": if (attrs.getHappiness() < 40) m *= n || 2; break;
                 case "lonely": if (Relationships.friends(p).length === 0 && p.getFamilyState().getPartner() == null) m *= 1.5; break;
@@ -170,6 +174,7 @@ export const Illness = {
             }
         }
         if (s.familyHistory.includes(d.id)) m *= 2;
+        m *= Illness.riskMult?.(p) ?? 1;   // v0.36.0: Strong Immune System, Delicate Health
         // your philanthropy pays off (Bank tab): Disease Eradication and Cancer Research
         if (Illness.funded("diseaseEradicationPolio", p) && (d.id === "measles" || d.id === "tuberculosis" || d.id === "chickenpox")) m *= 0.2;
         if (Illness.funded("diseaseEradicationMalaria", p) && (d.id === "malaria" || d.id === "dengue")) m *= 0.1;
@@ -350,6 +355,7 @@ export const Illness = {
     checkup(p: any = player()): string {
         const c = Illness.checkupPrice(p);
         if (c > cash(p)) return "You can't afford a checkup right now.";
+        try { Illness.onCheckup?.(p); } catch { /* */ }
         if (c) MoneyState.updateMoney$default(p.getMoneyState(), BigInteger.valueOf(-c), MoneyUpdateType.directSpend, "Checkup", null, 8, null);
         const s = Illness.state(p);
         s.checkupWeek = now(p);
