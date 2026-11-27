@@ -180,8 +180,9 @@ export const CARE_MOMENTS: Moment[] = [
             ["Treat yourself ($80)", () => { if (cash(p) < 80) return "Your card said no. Window shopping it is."; pay(p, 80); attr(p, 0, 4, 1); return "It looks even better at home."; }],
             ["Walk on by", () => { attr(p, 0, 0, 1); return "Future you thanks present you."; }],
         ] }) }),
-    C({ id: "sc_resolution", title: "New Year's Resolution", image: "skill_selfimprovement", min: 12, max: 120, seasons: ["winter"], make: (p) => ({
-        text: "It's a new year. What's your resolution?",
+    C({ id: "sc_resolution", title: "A Fresh Start", image: "skill_selfimprovement", min: 12, max: 120, seasons: ["winter"], make: (p) => ({
+        // v0.36.1: was also called "New Year's Resolution", the same question as the New Year holiday
+        text: "The dark winter weeks feel like a good time for a fresh start. What will you work on?",
         options: [
             ["Sleep better", () => { SelfCare.setSleep("healthy", p); SelfCare.startGoal("sleep", p); return "Lights out by eleven. You set a sleep goal (Health › Self-Care)."; }],
             ["Eat better", () => { SelfCare.startGoal("meals", p); return "You set a goal to cook 8 healthy meals."; }],

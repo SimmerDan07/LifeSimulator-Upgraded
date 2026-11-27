@@ -293,6 +293,8 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     becomes a "Mortgage Shortfall" loan) and moves you out of it if it was your home (parents' house, else a shared
     room). The Bank tab's Loans section lists mortgages. Spend Time with Everyone stops when health, happiness or
     sanity falls below 20 (`FamilyExtras.stopBelow`).
+    Previews (`collectWeeklyCashFlow`, `collectWeeklyAttributeDeltas`, Weekly Modifiers) also run `collectWeeklyValues`:
+    state changes there only happen inside `Remaster.realWeek` (`Week.real`, set by `applyWeeklyInner`).
   - **v0.36.0 The Remaster** (`src/game/Remaster/`, installed by `installRemaster()` after `installVampires`): the
     original tabs reworked. Per-life state `p.rm` (`Rm.st(p)`: `fun`, `bank`, `body`, `things`, `traits`, `feats`);
     across lives `AchievementState.rm` (`done`, `lives`). Weekly calls in Player: `Remaster.collectWeeklyValues`

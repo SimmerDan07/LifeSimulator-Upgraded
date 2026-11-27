@@ -26,6 +26,7 @@ import { News } from "../src/game/Managers/News";
 import { FamilyExtras } from "../src/game/Managers/FamilyExtras";
 import { Relationships } from "../src/game/Social/Relationships";
 import { Illness } from "../src/game/Health/Illness";
+import { Body } from "../src/game/Remaster/Body";
 import { Crime } from "../src/game/Crime/Crime";
 import { LifepathsModelGenerator } from "../src/game/Controllers/LifepathsModelGenerator";
 import { GenericListModelGenerator } from "../src/game/Controllers/GenericListModelGenerator";
@@ -76,7 +77,8 @@ const zero = (p: any, which: "health" | "happiness" | "sanity") => {
     if (which === "health") a.setHealth(0); else if (which === "happiness") a.setHappiness(0); else a.setSanity(0);
 };
 const live = (p: any, weeks: number, which: "health" | "happiness" | "sanity") => {
-    for (let i = 0; i < weeks && started(); i++) { zero(p, which); if (Vampire.isVampire(p)) Vampire.state(p).thirst = 0; week(p); }
+    // v0.36.0: a fit body adds a little health each week; this test needs the stat to stay at zero
+    for (let i = 0; i < weeks && started(); i++) { zero(p, which); try { Body.st(p).fit = 0; } catch { /* */ } if (Vampire.isVampire(p)) Vampire.state(p).thirst = 0; week(p); }
 };
 for (const which of ["health", "happiness", "sanity"] as const) {
     const p = start(40); shown.length = 0; seen.length = 0;
