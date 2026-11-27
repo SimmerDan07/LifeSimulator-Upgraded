@@ -45,57 +45,23 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySe
 const S = (k: string) => Utils.INSTANCE.getString(k);
 
 // ------------------------------------------------------------------ storage
-// Windows and Android: real files (window.lifesimFS). A browser / iPhone home-screen app (v0.31.0): IndexedDB,
-// which has room for very long saves (localStorage stops at about 5 MB). Everything is read into memory before
-// the game starts, so the game's reads stay instant; every write goes to IndexedDB in the background.
-const webFiles = new Map<string, string>();
-let idb: IDBDatabase | null = null;
-let idbWrites: Promise<void> = Promise.resolve();
-let frozen = false;   // a backup was just loaded: nothing may overwrite it while the page reloads
-const idbReq = <T>(r: IDBRequest<T>) => new Promise<T>((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
-async function openWebStorage(): Promise<void> {
-    if (window.lifesimFS || typeof indexedDB === "undefined") return;
-    try {
-        idb = await new Promise<IDBDatabase>((res, rej) => {
-            const r = indexedDB.open("lifesim", 1);
-            r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains("files")) r.result.createObjectStore("files"); };
-            r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); r.onblocked = () => rej(new Error("blocked"));
-        });
-        const st = idb.transaction("files", "readonly").objectStore("files");
-        const [keys, vals] = await Promise.all([idbReq(st.getAllKeys()), idbReq(st.getAll())]);
-        keys.forEach((k, i) => { if (typeof vals[i] === "string") webFiles.set(String(k), vals[i]); });
-        // ask the browser to never clear it (home-screen apps on iPhone keep their data anyway)
-        try { void navigator.storage?.persist?.(); } catch { /* not supported */ }
-    } catch (e) { console.warn("IndexedDB unavailable; using localStorage", e); idb = null; }
-}
+// Windows and Android: real files (window.lifesimFS). In a plain browser (development and the UI checks) the save
+// lives in localStorage. (The iPhone web app, v0.31–v0.35.0, was retired in v0.35.1.)
+let frozen = false;   // a backup was just loaded: nothing may overwrite it while the window reloads
 const storage = {
     read(name: string): string | null {
         if (window.lifesimFS) return window.lifesimFS.read(name);
-        if (idb && webFiles.has(name)) return webFiles.get(name)!;
-        try { return localStorage.getItem("lifesim:" + name); } catch { return null; }   // older browser saves
+        try { return localStorage.getItem("lifesim:" + name); } catch { return null; }
     },
     write(name: string, text: string, force = false) {
         if (frozen && !force) return;
         if (window.lifesimFS) return window.lifesimFS.write(name, text);
-        if (idb) {
-            webFiles.set(name, text);
-            const db = idb;
-            idbWrites = idbWrites.then(() => new Promise<void>((res) => {
-                const tx = db.transaction("files", "readwrite");
-                tx.objectStore("files").put(text, name);
-                tx.oncomplete = () => res();
-                tx.onerror = tx.onabort = () => { try { localStorage.setItem("lifesim:" + name, text); } catch { /* full */ } res(); };
-            }));
-            return;
-        }
         try { localStorage.setItem("lifesim:" + name, text); } catch (e) { console.error("save failed", e); }
     },
-    /** Waits until every save has reached the disk. */
-    flush(): Promise<void> { return idbWrites; },
 };
 
 // ------------------------------------------------------------------ backups (v0.31.0)
-/** Hand a backup to the player: the share sheet where there is one (iPhone: Save to Files, AirDrop…), else a download. */
+/** Hand a backup to the player: the share sheet where there is one, else a download. */
 async function backUpFile(name: string, text: string): Promise<"shared" | "downloaded" | "cancelled" | "failed"> {
     try {
         const file = new File([text], name, { type: "text/plain" });
@@ -846,11 +812,11 @@ function boot() {
         writeFile: (n, t) => storage.write(n, t),
         saveFolder: () => (window.lifesimFS ? window.lifesimFS.dir() : null),
         openSaveFolder: () => (window.lifesimFS?.openDir ? window.lifesimFS.openDir() : false),
-        // Android's WebView can neither share nor download a file, so backups are for Windows, browsers and iPhone
+        // Android's WebView can neither share nor download a file, so backups are for Windows
         canBackUp: () => !window.lifesimFS || !!window.lifesimFS.openDir,
         backUp: backUpFile,
         pickFile: pickBackupFile,
-        replaceSave: async (name, text) => { frozen = true; storage.write(name, text, true); await storage.flush(); location.reload(); },
+        replaceSave: async (name, text) => { frozen = true; storage.write(name, text, true); location.reload(); },
     });
     setAfterAction(refresh);
 
@@ -894,7 +860,7 @@ function boot() {
         lastY = y;
     };
     document.addEventListener("scroll", onScroll, { capture: true, passive: true });
-    // swipe in from the left edge to go back (the iPhone home-screen app has no back gesture of its own)
+    // swipe in from the left edge to go back (touch screens)
     {
         let x0 = -1, y0 = 0, dx = 0, scr: HTMLElement | null = null;
         const ov = $("#overlay");
@@ -948,13 +914,12 @@ function boot() {
         SoundManager.INSTANCE.setAway(hidden);   // v0.31.1: no music while you're out of the game
         if (hidden) saveNow();
     });
-    window.addEventListener("pagehide", () => { SoundManager.INSTANCE.setAway(true); saveNow(); });   // iPhone: swiping the app away
+    window.addEventListener("pagehide", () => { SoundManager.INSTANCE.setAway(true); saveNow(); });
     window.addEventListener("pageshow", () => SoundManager.INSTANCE.setAway(document.visibilityState === "hidden"));
     (window as any).__lifesimAway = (isAway: boolean) => SoundManager.INSTANCE.setAway(!!isAway);   // Android: MainActivity pause/resume
     // Android app (android/): the system back button calls __lifesimBack (true = handled here, false = leave the
     // app), and the app calls __lifesimSave when it goes to the background.
     (window as any).__lifesimSave = saveNow;
-    (window as any).__lifesimFlush = () => storage.flush();   // v0.31.3: the iPhone app waits for this before updating itself
     (window as any).__lifesimBack = (): boolean => {
         const sheets = document.querySelectorAll<HTMLElement>("#modals .modal-backdrop");
         const topSheet = sheets[sheets.length - 1];
@@ -987,4 +952,4 @@ function boot() {
 }
 
 void button; void ButtonViewModel; void richToHtml;
-openWebStorage().then(boot, boot);
+boot();

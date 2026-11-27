@@ -210,7 +210,7 @@ LifeMoments.enabled = false;
     check("a murder kills them and opens a case", !friend.getIsAlive() && Crime.state(p).open.some((c) => c.murder) && Crime.state(p).stats.kills === 1);
     Crime.state(p).open.forEach((c) => (c.week -= 10 * 48));
     Crime.state(p).heat = 0;
-    keep(p); seq([0.99, 0.99, 0.99, 0.99, 0.99], () => p.applyWeekly()); drain();
+    keep(p); { const mr = Math.random; Math.random = () => 0.99; try { p.applyWeekly(); } finally { Math.random = mr; } } drain();   // no lucky break for the police this week
     check("…10 years later it's still open (murders don't go cold after 5 years)", Crime.state(p).open.some((c) => c.murder));
     check("…and the Crime screen says when it will be closed", /closed unsolved in 10 years/.test(text(screen("crime"))), (text(screen("crime")).match(/including murder[^)]*\)/) ?? [""])[0]);
     Crime.state(p).open.forEach((c) => (c.week -= 10 * 48));

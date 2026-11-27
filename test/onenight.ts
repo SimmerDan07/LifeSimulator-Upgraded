@@ -92,14 +92,21 @@ const weeks = (p: any, n: number) => { for (let i = 0; i < n; i++) { keep(p); p.
 // you're a woman: you can get pregnant
 {
     const p = life(26, Sex.female);
-    const s = OneNight.stranger(p);
+    let s = OneNight.stranger(p);
     const txt = withRandom(0.0, () => OneNight.night(p, s, false));
     dismissAll();
     const child: any = p.getFamilyState().getPregnantChild();
     check("a woman can get pregnant from a one-night stand", child != null && Babies.pregnant(p) && /positive pregnancy test/.test(txt), txt);
     check("…and the father is on record", child?.otherParent?.name === `${s.first} ${s.last}` && child?.otherParent?.oneNight === true);
     weeks(p, 42);
-    const born = Relationships.family(Relationship.child, p).find((k: any) => k.otherParent?.oneNight);
+    let born = Relationships.family(Relationship.child, p).find((k: any) => k.otherParent?.oneNight);
+    // a miscarriage is the game's own ~9% chance at birth: try again rather than fail at random
+    for (let t = 0; t < 4 && !born; t++) {
+        s = OneNight.stranger(p);
+        withRandom(0.0, () => OneNight.night(p, s, false)); dismissAll();
+        weeks(p, 42);
+        born = Relationships.family(Relationship.child, p).find((k: any) => k.otherParent?.oneNight);
+    }
     check("…the baby is born and joins your family", born != null && !born.getNotYetBorn());
     const rows = JSON.stringify(LoveScreens.aboutRows(born));
     check("…their details show the father (a one-night stand)", /one-night stand/.test(rows) && rows.includes(s.first));
@@ -151,7 +158,7 @@ const weeks = (p: any, n: number) => { for (let i = 0; i < n; i++) { keep(p); p.
     p.getFamilyState().date(x); p.setRomanticRelationshipStatus(RomanticRelationshipStatus.married);
     OneNight.open(p);
     check("with a partner, it warns you it's cheating", /This would be cheating/.test(modals()[0]?.getMessage() ?? ""));
-    dismissAll();
+    while (shown.length) AlertManager.INSTANCE.alertDismissed(shown.shift());   // close it without going ahead (a real night here could end the marriage first)
     // found out (dice 0.1 < 0.35), no baby (0.1 > 0.15? no: 0.1 < 0.15 makes a baby) — use protection so 0.1 > 2%
     const txt = withRandom(0.1, () => OneNight.night(p, OneNight.stranger(p), true)); dismissAll();
     check("…if they find out, it hurts (−40, upset) or they leave", /found out/.test(txt) && (x.getRelationshipProgress() <= 860 || p.getFamilyState().getPartner() == null), txt);

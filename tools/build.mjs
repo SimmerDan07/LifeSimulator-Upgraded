@@ -21,7 +21,7 @@ fs.writeFileSync(path.join(root, "src/ui/images.json"), JSON.stringify(imgs));
 await build({
     entryPoints: [path.join(root, "src/ui/main.ts")],
     bundle: true, outfile: path.join(dist, "renderer.js"), format: "iife", platform: "browser",
-    target: ["chrome120", "safari15"], sourcemap: true, loader: { ".txt": "text", ".ttf": "file" }, logLevel: "warning",
+    target: ["chrome120"], sourcemap: true, loader: { ".txt": "text", ".ttf": "file" }, logLevel: "warning",
     external: ["assets/*"],
 });
 fs.copyFileSync(path.join(root, "src/ui/index.html"), path.join(dist, "index.html"));

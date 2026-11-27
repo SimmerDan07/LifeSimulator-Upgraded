@@ -327,5 +327,5 @@ body.nl .toast-error { background: var(--red); color: #fff; }
     body.nl .modal { max-height: calc(100dvh - 16px); padding: 10px 18px 12px; }
     body.nl .modal-img, .sheet-img { width: 52px; height: 52px; }
 }
-/* the iPhone keeps text boxes at 16px so it never zooms in */
+/* phones keep text boxes at 16px so they never zoom in */
 body.nl.android input, body.nl.android textarea { font-size: max(16px, 1em); }

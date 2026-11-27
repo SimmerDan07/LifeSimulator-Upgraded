@@ -4,4 +4,3 @@ dist-test/
 release/
 src/ui/images.json
 dist-android/
-dist-web/

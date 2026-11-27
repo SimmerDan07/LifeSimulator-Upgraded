@@ -16,6 +16,7 @@ import { Modifiers } from "../src/game/Managers/Modifiers";
 import { MoneyState } from "../src/game/Managers/MoneyState";
 import { MoneyUpdateType } from "../src/game/Enums/MoneyUpdateType";
 import { BigInteger } from "../src/game/runtime";
+import { Workplace } from "../src/game/Work/Workplace";
 let fixture: string | null = fs.readFileSync("test/fixtures/save-v0.3-landlord.txt", "utf8");
 const alerts: any[] = [];
 UIBridge.install({ broadcast() {}, reloadGenericList() {}, navigateTo() {}, backToMainGame() {}, showAlert(vm) { alerts.push(vm); }, readFile: () => fixture, writeFile() {} });
@@ -56,6 +57,7 @@ GameStateManager.INSTANCE.startNewGameFlow(LifeScenario.highSchoolDropout);
 GameStateManager.INSTANCE.startNewGame(GameStateManager.INSTANCE.getNewGamePlayerState()!); clear();
 { const y = GameStateManager.INSTANCE.getPersonState(); (globalThis as any).__y = y; }
 const y: any = (globalThis as any).__y;
+Workplace.layoffChance = 0;   // no random layoff mid-test
 y.getJobState().switchJob(Job.retail);
 const cash0 = y.getMoneyState().getCash().doubleValue();
 let weeks = 0;

@@ -274,25 +274,18 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `Vampire.curePrice`, instant, confirm) → `Vampire.cureOther` sets `meta.cureWeeks = Vampire.cureWeeks`;
     `Vampire.tickCures(p)` (Player weekly, after OneNight) counts down and then sets `meta.vampire = false`,
     `meta.cured = true` (Turn is locked for them: one vampire life). Tests at the end of test/vampire.ts.
-  - **v0.31.0 iPhone (web app)**: `npm run web` (tools/build-web.mjs) → `dist-web/` (no Electron files, iOS meta tags,
-    `manifest.webmanifest`, icons from `web/`, `pwa.js` registers `sw.js` = `web/sw.template.js` with every file
-    listed for an offline copy, cache per version). `.github/workflows/web.yml` force-pushes it to `gh-pages`
-    (GitHub Pages: https://simmerdan07.github.io/LifeSimulator-Upgraded/). Storage without `window.lifesimFS`:
-    IndexedDB (`lifesim` / `files`), read into memory before `boot()`, writes queued (`storage.flush()`), old
-    localStorage saves still read. Settings › Back Up Your Save / Load a Backup (`SettingsManager.backUpSave /
-    loadBackup`, `UIBridge.backUp / pickFile / replaceSave`; share sheet or download; not on Android's WebView).
-    Saves on `pagehide` too. Bundle target adds `safari15`.
+  - **v0.31.0 Backups**: Settings › Back Up Your Save / Load a Backup (`SettingsManager.backUpSave / loadBackup`,
+    `UIBridge.backUp / pickFile / replaceSave`; share sheet or download; not on Android's WebView). Saves on `pagehide`
+    too. (v0.31.0 also added an iPhone web app; it was removed in v0.35.1: no `web/`, `build-web`, `gh-pages` workflow
+    or IndexedDB storage any more. A plain browser keeps the save in localStorage, for development and UI checks.)
   - **v0.31.1 Music stops in the background**: `SoundManager.setAway(bool)` pauses the soundtrack and mutes effects;
     main.ts calls it on `visibilitychange`, `pagehide`/`pageshow`, and `window.__lifesimAway` from Android's
     `MainActivity.onPause/onResume`. Resuming retries on the next tap if the phone blocks autoplay.
-  - **v0.31.2 iPhone fit**: style.css `--st/--sb/--sl/--sr` (`env(safe-area-inset-*)`), `--top` = hud + st and
+  - **v0.31.2 Safe areas**: style.css `--st/--sb/--sl/--sr` (`env(safe-area-inset-*)`), `--top` = hud + st and
     `--left` = rail + sl used by #hud/#tabs/#main/#overlay/#toasts; content, list body/foot, footer and the rail pad
     by `--sb`; modals capped at `100dvh`; landscape stats 2 × 2; narrow `--hud` 108px; text-size-adjust 100%,
     inputs ≥16px, `overscroll-behavior: contain`. All 0 where there are no insets (Windows, Android full screen).
-  - **v0.31.3 iPhone auto-update**: `web/pwa.js` (version stamped by build-web) registers `sw.js` with
-    `updateViaCache: "none"`, calls `reg.update()` on becoming visible and every 20 min; on `controllerchange`
-    (not the first install) it waits until no modal/list screen is open, saves (`__lifesimSave`), waits for
-    `__lifesimFlush` (IndexedDB), reloads, and shows "Updated to vX" once (`localStorage lifesim:appVersion`).
+  - **v0.35.1**: the iPhone web app was retired (see v0.31.0).
   - **v0.35.0 Vampires Reborn** (`src/game/Vampires/`, installed by `installVampires()` after `installWork`): new state on
     `p.vampire.rb` (`RebornState`, made lazily; a vampire with no `rb` is converted once by `Reborn.convertHook` →
     `Becoming.convert`: bloodline from powers (changeable once on the Bloodline screen), blood age from `vampireWeeks`,

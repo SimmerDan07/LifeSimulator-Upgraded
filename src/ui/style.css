@@ -18,7 +18,7 @@
     --radius: 12px;
     --rail: 92px;
     --hud: 84px;
-    /* v0.31.2: the iPhone's notch / Dynamic Island, home bar and rounded corners (0 everywhere else) */
+    /* v0.31.2: safe areas for screens with a notch, home bar or rounded corners (0 everywhere else) */
     --st: env(safe-area-inset-top, 0px);
     --sb: env(safe-area-inset-bottom, 0px);
     --sl: env(safe-area-inset-left, 0px);
@@ -387,5 +387,5 @@ body.vampire #hud .stat.thirst { display: grid; }
 /* touch: no hover-only feedback, no text selection while tapping */
 body.android { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 body.android input, body.android textarea { -webkit-user-select: text; user-select: text; }
-/* iPhone zooms the page into any text box with text under 16px; keep it still */
+/* phones zoom the page into any text box with text under 16px; keep it still */
 body.android input, body.android textarea, body.android select { font-size: max(16px, 1em); }

@@ -44,7 +44,7 @@ export class SettingsManager {
             arrayList.add(new SettingsRowViewModel("Save Folder", R.drawable.menu_saves, true, true, {
                 invoke: () => SettingsManager.INSTANCE.showSaveFolder(),
             }));
-            // v0.31.0: back up your save to a file, and load one (move a life between PC, browser and iPhone)
+            // v0.31.0: back up your save to a file, and load one (move a life between computers)
             if (UIBridge.canBackUp()) {
                 arrayList.add(new SettingsRowViewModel("Back Up Your Save", R.drawable.menu_share, true, true, {
                     invoke: () => SettingsManager.INSTANCE.backUpSave(),
