@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cgreece"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cgreece)">
+  <rect x="0.00" y="66.21" width="384.00" height="28.45" fill="#0D5EAF"/>
+  <rect x="0.00" y="94.16" width="384.00" height="28.45" fill="#FFFFFF"/>
+  <rect x="0.00" y="122.12" width="384.00" height="28.45" fill="#0D5EAF"/>
+  <rect x="0.00" y="150.07" width="384.00" height="28.45" fill="#FFFFFF"/>
+  <rect x="0.00" y="178.02" width="384.00" height="28.45" fill="#0D5EAF"/>
+  <rect x="0.00" y="205.98" width="384.00" height="28.45" fill="#FFFFFF"/>
+  <rect x="0.00" y="233.93" width="384.00" height="28.45" fill="#0D5EAF"/>
+  <rect x="0.00" y="261.89" width="384.00" height="28.45" fill="#FFFFFF"/>
+  <rect x="0.00" y="289.84" width="384.00" height="28.45" fill="#0D5EAF"/>
+  <rect x="0.00" y="66.21" width="139.77" height="139.77" fill="#0D5EAF"/>
+  <rect x="55.91" y="66.21" width="27.95" height="139.77" fill="#FFFFFF"/>
+  <rect x="0.00" y="122.11" width="139.77" height="27.95" fill="#FFFFFF"/>
+
+ </g>
+</svg>

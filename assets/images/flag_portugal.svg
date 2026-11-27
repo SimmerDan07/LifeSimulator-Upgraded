@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cportugal"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cportugal)">
+  <rect x="0.00" y="66.21" width="153.60" height="251.59" fill="#006600"/>
+  <rect x="153.60" y="66.21" width="230.40" height="251.59" fill="#FF0000"/>
+  <circle cx="153.60" cy="192.00" r="52.00" fill="none" stroke="#FFCC00" stroke-width="12"/>
+  <rect x="127.60000000000002" y="160.0" width="52" height="60" rx="18" fill="#FFFFFF" stroke="#FF0000" stroke-width="8"/>
+
+ </g>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 370" width="370" height="370">
+ <!-- Rare vintage: a crystal glass of blood beside an old bottle (vampire blood diet). -->
+ <path d="M246 40 H286 V108 Q318 128 318 168 V330 Q318 350 298 350 H234 Q214 350 214 330 V168 Q214 128 246 108 Z" fill="#3b2230"/>
+ <path d="M266 40 H286 V108 Q318 128 318 168 V330 Q318 350 298 350 H266 Z" fill="#2a1822"/>
+ <rect x="242" y="26" width="48" height="26" rx="6" fill="#c9a24a"/>
+ <rect x="226" y="200" width="80" height="86" rx="6" fill="#f3e6c4"/>
+ <rect x="240" y="222" width="52" height="8" rx="3" fill="#8c2a35"/>
+ <rect x="244" y="240" width="44" height="6" rx="3" fill="#b89a6a"/>
+ <rect x="248" y="254" width="36" height="6" rx="3" fill="#b89a6a"/>
+ <path d="M52 92 H196 Q200 190 124 214 Q48 190 52 92 Z" fill="#e9f1f5" opacity="0.9"/>
+ <path d="M58 128 H190 Q184 188 124 206 Q64 188 58 128 Z" fill="#b3202e"/>
+ <path d="M124 128 H190 Q184 188 124 206 Z" fill="#8f1621"/>
+ <path d="M52 92 H196 Q200 190 124 214 Q48 190 52 92 Z" fill="none" stroke="#9fb1bc" stroke-width="7"/>
+ <rect x="118" y="212" width="12" height="104" fill="#c9d6dd"/>
+ <ellipse cx="124" cy="326" rx="58" ry="14" fill="#c9d6dd"/>
+ <path d="M70 104 Q74 150 96 176" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.8"/>
+</svg>

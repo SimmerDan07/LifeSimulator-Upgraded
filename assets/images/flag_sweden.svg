@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="csweden"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#csweden)">
+  <rect x="0.00" y="66.21" width="384.00" height="251.59" fill="#006AA7"/>
+  <rect x="113.08" y="66.21" width="50.32" height="251.59" fill="#FECC00"/>
+  <rect x="0.00" y="166.84" width="384.00" height="50.32" fill="#FECC00"/>
+
+ </g>
+</svg>

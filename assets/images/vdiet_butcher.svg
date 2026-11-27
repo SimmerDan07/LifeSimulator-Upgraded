@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 370" width="370" height="370">
+ <!-- Butcher's blood: a glass jar of animal blood with a cleaver (vampire blood diet). -->
+ <rect x="96" y="54" width="148" height="34" rx="8" fill="#9aa6ae"/>
+ <path d="M90 92 H250 Q266 92 266 108 V318 Q266 344 240 344 H100 Q74 344 74 318 V108 Q74 92 90 92 Z" fill="#e6eef2"/>
+ <path d="M80 150 H260 V318 Q260 338 240 338 H100 Q80 338 80 318 Z" fill="#9e2430"/>
+ <path d="M170 150 H260 V318 Q260 338 240 338 H170 Z" fill="#821b26"/>
+ <path d="M90 92 H250 Q266 92 266 108 V318 Q266 344 240 344 H100 Q74 344 74 318 V108 Q74 92 90 92 Z" fill="none" stroke="#7d8a94" stroke-width="8"/>
+ <rect x="106" y="196" width="128" height="62" rx="8" fill="#f6ead0"/>
+ <path d="M126 236 Q140 212 160 220 Q176 206 196 216 Q218 214 216 236 Z" fill="#e79aa3"/>
+ <circle cx="208" cy="226" r="4" fill="#5b2a31"/>
+ <path d="M96 168 Q92 240 104 312" stroke="#d24a55" stroke-width="9" fill="none" stroke-linecap="round" opacity="0.7"/>
+ <g transform="rotate(-28 300 200)">
+  <rect x="268" y="96" width="66" height="96" rx="6" fill="#cfd8de"/>
+  <rect x="268" y="96" width="66" height="14" fill="#aeb9c1"/>
+  <circle cx="314" cy="126" r="8" fill="#ffffff"/>
+  <rect x="290" y="190" width="22" height="70" rx="6" fill="#6b4630"/>
+ </g>
+</svg>

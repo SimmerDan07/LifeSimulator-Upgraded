@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="csouthkorea"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#csouthkorea)">
+  <rect x="0.00" y="66.21" width="384.00" height="251.59" fill="#FFFFFF"/>
+  <g transform="rotate(33.7 192.0 192.0)">
+  <path d="M130.0,192.0 A62,62 0 0 1 254.0,192.0 Z" fill="#CD2E3A"/>
+  <path d="M130.0,192.0 A62,62 0 0 0 254.0,192.0 Z" fill="#0047A0"/>
+  <circle cx="161.0" cy="192.0" r="31" fill="#CD2E3A"/>
+  <circle cx="223.0" cy="192.0" r="31" fill="#0047A0"/>
+  </g>
+  <g transform="rotate(33.7 70 116.207)">  <rect x="46.00" y="98.21" width="48.00" height="8.00" fill="#000000"/>
+  <rect x="46.00" y="111.21" width="48.00" height="8.00" fill="#000000"/>
+  <rect x="46.00" y="124.21" width="48.00" height="8.00" fill="#000000"/>
+</g>
+  <g transform="rotate(33.7 314.0 267.793)">  <rect x="290.00" y="249.79" width="48.00" height="8.00" fill="#000000"/>
+  <rect x="290.00" y="262.79" width="48.00" height="8.00" fill="#000000"/>
+  <rect x="290.00" y="275.79" width="48.00" height="8.00" fill="#000000"/>
+</g>
+  <g transform="rotate(-33.7 314.0 116.207)">  <rect x="290.00" y="98.21" width="48.00" height="8.00" fill="#000000"/>
+  <rect x="290.00" y="111.21" width="48.00" height="8.00" fill="#000000"/>
+  <rect x="290.00" y="124.21" width="48.00" height="8.00" fill="#000000"/>
+</g>
+  <g transform="rotate(-33.7 70 267.793)">  <rect x="46.00" y="249.79" width="48.00" height="8.00" fill="#000000"/>
+  <rect x="46.00" y="262.79" width="48.00" height="8.00" fill="#000000"/>
+  <rect x="46.00" y="275.79" width="48.00" height="8.00" fill="#000000"/>
+</g>
+
+ </g>
+</svg>

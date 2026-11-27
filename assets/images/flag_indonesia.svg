@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cindonesia"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cindonesia)">
+  <rect x="0.00" y="66.21" width="384.00" height="126.29" fill="#CE1126"/>
+  <rect x="0.00" y="192.00" width="384.00" height="126.29" fill="#FFFFFF"/>
+
+ </g>
+</svg>

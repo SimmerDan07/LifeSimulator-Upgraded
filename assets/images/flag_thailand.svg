@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cthailand"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cthailand)">
+  <rect x="0.00" y="66.21" width="384.00" height="42.43" fill="#A51931"/>
+  <rect x="0.00" y="108.14" width="384.00" height="42.43" fill="#F4F5F8"/>
+  <rect x="0.00" y="150.07" width="384.00" height="84.36" fill="#2D2A4A"/>
+  <rect x="0.00" y="233.93" width="384.00" height="42.43" fill="#F4F5F8"/>
+  <rect x="0.00" y="275.86" width="384.00" height="42.43" fill="#A51931"/>
+
+ </g>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cireland"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cireland)">
+  <rect x="0.00" y="66.21" width="128.50" height="251.59" fill="#169B62"/>
+  <rect x="128.00" y="66.21" width="128.50" height="251.59" fill="#FFFFFF"/>
+  <rect x="256.00" y="66.21" width="128.50" height="251.59" fill="#FF883E"/>
+
+ </g>
+</svg>

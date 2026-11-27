@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="ckenya"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#ckenya)">
+  <rect x="0.00" y="66.21" width="384.00" height="75.98" fill="#000000"/>
+  <rect x="0.00" y="141.68" width="384.00" height="13.08" fill="#FFFFFF"/>
+  <rect x="0.00" y="154.26" width="384.00" height="75.98" fill="#BB0000"/>
+  <rect x="0.00" y="229.74" width="384.00" height="13.08" fill="#FFFFFF"/>
+  <rect x="0.00" y="242.32" width="384.00" height="75.98" fill="#006600"/>
+  <ellipse cx="192.0" cy="192.0" rx="30" ry="74" fill="#BB0000" stroke="#000000" stroke-width="6"/>
+  <ellipse cx="192.0" cy="192.0" rx="10" ry="40" fill="#FFFFFF"/>
+
+ </g>
+</svg>

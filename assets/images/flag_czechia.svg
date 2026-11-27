@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+ <defs><clipPath id="cczechia"><rect x="0" y="66.207" width="384.0" height="251.586" rx="6.6"/></clipPath></defs>
+ <g clip-path="url(#cczechia)">
+  <rect x="0.00" y="66.21" width="384.00" height="126.29" fill="#FFFFFF"/>
+  <rect x="0.00" y="192.00" width="384.00" height="126.29" fill="#D7141A"/>
+  <polygon points="0.00,66.21 192.00,192.00 0.00,317.79" fill="#11457E"/>
+
+ </g>
+</svg>
