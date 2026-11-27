@@ -122,10 +122,10 @@ for (const [kind, first] of [["friend", "Maya"], ["friend", "Leo"], ["cousin", "
     const sp = SocialPerson.make(kind, Sex.female, kind === "friend" ? "Stone" : p.getLastName(), 25 * W);
     sp.firstName = first; sp.relationshipProgress = 300; social.add(sp);
 }
-const exes = SocialPerson.make("ex", Sex.male, "Gray", 30 * W); exes.firstName = "Rex"; social.add(exes);
+const exes = SocialPerson.make("ex", Sex.male, "Gray", 30 * W); exes.firstName = "Quillan"; social.add(exes);
 const everyone = FamilyExtras.everyone();
 check("everyone = partner, parents, siblings, extended family, friends and pets (not exes)",
-    ["Maya", "Leo", "Ava", "Sam"].every((n) => everyone.some((x) => x.getFirstName() === n)) && !everyone.some((x) => x.getFirstName() === "Rex") && everyone.includes(p.getFamilyState().getPartner()),
+    ["Maya", "Leo", "Ava", "Sam"].every((n) => everyone.some((x) => x.getFirstName() === n)) && !everyone.some((x) => x.getFirstName() === "Quillan") && everyone.includes(p.getFamilyState().getPartner()),
     everyone.map((x) => x.getFirstName()).join(", "));
 check("v0.24.0: everyone's true age shows (even when it's the same as their age)", everyone.filter((x) => x.getPetType?.() == null).every((x) => new RegExp(`^${x.getAgeInYears()} \\(true age \\d+\\)$`).test(FamilyExtras.ageText(x))), everyone.slice(0, 3).map((x) => FamilyExtras.ageText(x)).join(" | "));
 check("…and on the Love tab cards", rows(new LoveModelGenerator()).filter((r) => /Age: \d+/.test(text(r))).every((r) => /true age/.test(text(r))));
@@ -145,11 +145,22 @@ let summary: any = null;
 for (let i = 0; i < 40 && alerts.length; i++) { const a = alerts.shift(); if (a.getTitle() === "Time Well Spent") summary = a; AlertManager.INSTANCE.alertDismissed(a); }
 // someone can die of old age during the weeks (they're skipped), so allow a couple fewer
 const alive = (x: any) => x.getIsAlive?.() !== false;
-check("one week with each person: N relationships = N weeks", n >= everyone.length - 2 && n <= everyone.length && n >= 6 && p.getAgeInWeeks() === w0 + n, `${n} people, ${p.getAgeInWeeks() - w0} weeks`);
+const stoppedEarly = /stopped early to look after yourself/.test(summary?.getMessage?.() ?? "");
+check("one week with each person: N relationships = N weeks (or it stops early when you're in danger)", stoppedEarly || n >= everyone.length - 2 && n <= everyone.length && n >= 6 && p.getAgeInWeeks() === w0 + n, `${n} people, ${p.getAgeInWeeks() - w0} weeks`);
 check("everyone +400 closer (up to the 1000 max), even in a bad mood", everyone.every((x, i) => !alive(x) || x.getRelationshipProgress() === Math.min(1000, rel0[i] + 400) || n < everyone.length),
     everyone.map((x, i) => `${x.getFirstName()} ${rel0[i]}→${x.getRelationshipProgress()}`).join(", "));
 check("a 'Time Well Spent' summary", summary != null && summary.getMessage().includes(`${n} weeks`));
 check("exes don't get a week", social.list("ex")[0].getRelationshipProgress() === exes.getRelationshipProgress());
+// v0.36.1: it stops early when you're in danger, so a warning isn't left waiting for weeks
+{
+    keepAlive(p); p.getAttributeState().setDeltaValueImmediate(new Modifiers(-90, 0, 0)); clear();
+    const w1 = p.getAgeInWeeks();
+    const n2 = FamilyExtras.spendTimeWithEveryone();
+    let sum2: any = null;
+    for (let i = 0; i < 40 && alerts.length; i++) { const a = alerts.shift(); if (a.getTitle() === "Time Well Spent") sum2 = a; AlertManager.INSTANCE.alertDismissed(a); }
+    check("v0.36.1: low health stops Spend Time with Everyone early (and says why)", n2 >= 1 && n2 < FamilyExtras.everyone().length && p.getAgeInWeeks() === w1 + n2 && /look after yourself: your health is low/.test(sum2?.getMessage?.() ?? ""), `${n2} weeks · ${sum2?.getMessage?.()}`);
+    keepAlive(p);
+}
 const back: any = (SaveCodec as any).decode((SaveCodec as any).encode(p));
 check("save keeps the counters", back.getFamilyState().getPartner().togetherSinceWeek === p.getFamilyState().getPartner().togetherSinceWeek && back.getFamilyState().getPartner().marriedSinceWeek != null);
 // a partner with an older true age (from an older save) still shows it on the Love tab
@@ -166,7 +177,10 @@ check("children under 18 can't get the elixir", !FamilyExtras.canGetElixir(kid))
     k.ageInWeeks = 18 * W - 1; k.trueAgeInWeeks = k.ageInWeeks;
     k.getHousingState().moveHere(Housing.parentsHouse);
     keepAlive(k); k.applyWeekly();
-    const msg = alerts.map((a) => a.getMessage?.() ?? "").join(" | ");
+    // alerts show one at a time: a random event (a new sibling) can be in front of the note
+    const seen18: string[] = [];
+    for (let i = 0; i < 30 && alerts.length; i++) { const a = alerts.shift(); seen18.push(a.getMessage?.() ?? ""); AlertManager.INSTANCE.alertDismissed(a); }
+    const msg = seen18.join(" | ");
     clear();
     check("turning 18: still living with parents", k.getAgeInYears() === 18 && k.getHousingState().currentHousing().getType() === Housing.parentsHouse, k.getHousingState().currentHousing().getType().name());
     check("…a friendly 18th-birthday note instead of being kicked out", /keep living with your parents/.test(msg), msg.slice(0, 120));

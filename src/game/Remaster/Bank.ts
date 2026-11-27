@@ -1,11 +1,12 @@
 // v0.36.0 The Remaster: the Bank. Accounts (the original savings and credit line, plus a kids' fund), loans with
 // real terms and a credit score, a small stock market of named companies that rides an economy cycle, funds,
 // savings goals, the money story (net worth over the years) and the lottery. Nothing here can kill anyone.
-import { Rm, player, now, age, WPY, roll, pick, clamp, money, num, cash, savings, pay, earn, bill, Say, img, rnd } from "./Core";
+import { Week, Rm, player, now, age, WPY, roll, pick, clamp, money, num, cash, savings, pay, earn, bill, Say, img, rnd } from "./Core";
 import { SECTORS, COMPANIES, FUNDS, PHASES, LOAN_OFFERS, CREDIT_BANDS, GOALS, SCRATCH, type Phase, type LoanKind, type LoanOffer } from "./BankData";
 import { Perk } from "../Enums/Perk";
 import { Trait } from "../Enums/Trait";
 import { Traits } from "./Traits";
+import { MoneyState } from "../Managers/MoneyState";
 
 export interface Loan { id: string; kind: LoanKind; title: string; original: number; balance: number; rate: number; payment: number; weeksLeft: number; missed: number; run: number; ref?: string; since: number }
 export interface Goal { id: string; since: number; reached?: number }
@@ -137,11 +138,11 @@ export const Bank = {
     collectPayments(p: any) {
         const b = Bank.peek(p);
         if (!b || !b.loans.length) return;
-        let available = cash(p);
         for (const l of [...b.loans]) {
             const due = Math.min(l.payment, l.balance * (1 + l.rate / WPY()));
-            if (available >= due) {
-                available -= due;
+            // a preview (Cash Flow, the weekly arrows) only shows the bill
+            if (!Week.real) { if (Bank.canPay(p, due, true)) bill(p, due, l.title); continue; }
+            if (Bank.canPay(p, due)) {
                 bill(p, due, l.title);
                 l.balance = Math.max(0, l.balance * (1 + l.rate / WPY()) - due);
                 l.weeksLeft--; l.run = 0;
@@ -157,6 +158,59 @@ export const Bank = {
                 Bank.miss(p, b, l);
             }
         }
+    },
+    /** What this week's loan and mortgage payments have already used (mortgages are settled first, then loans). */
+    promised: { who: null as any, week: -1, amount: 0, real: 0 },
+    /** Can a payment be made from cash (and savings, when Pay Bills from Savings is on) after what's promised? */
+    canPay(p: any, amount: number, preview = false): boolean {
+        const w = now(p);
+        if (Bank.promised.who !== p || Bank.promised.week !== w || Bank.promised.real !== Week.real) Bank.promised = { who: p, week: w, amount: 0, real: Week.real };
+        let available = cash(p) - Bank.promised.amount;
+        try { if (MoneyState.billsFromSavings?.(p.getMoneyState())) available += Math.max(0, savings(p)); } catch { /* */ }
+        if (available + 0.005 < amount) return false;
+        if (!preview) Bank.promised.amount += amount;
+        return true;
+    },
+    /**
+     * v0.36.1 Mortgages follow the same rules as loans: paid on time = credit; a missed payment = a $25 fee, −15 credit
+     * and the interest added on; a final notice after 4 in a row; after 8 the bank forecloses (sells it at 80%;
+     * anything over the mortgage is yours, a shortfall becomes a loan). Never a death.
+     */
+    mortgageDue(p: any, prop: any): boolean {
+        const m = prop.mortgage;
+        if (!m) return true;
+        if (!Week.real) return Bank.canPay(p, m.payment, true);   // a preview: no misses counted
+        if (Bank.canPay(p, m.payment)) {
+            m.run = 0;
+            const b = Bank.peek(p);
+            if (b) { b.onTime++; if (b.onTime % 4 === 0) Bank.addCredit(p, 1); }
+            return true;
+        }
+        const b = Bank.st(p);
+        m.run = (m.run ?? 0) + 1; m.missed = (m.missed ?? 0) + 1; b.misses++;
+        m.balance += 25;
+        Bank.addCredit(p, -15);
+        const name = prop.displayName?.() ?? "your home";
+        if (m.run === 1) Say.note("Missed Mortgage Payment", `You didn't have the ${money(m.payment)} for the mortgage on ${name}. A $25 late fee, the interest is added on, and your credit score dropped.`, img("icon_rm_loan"));
+        else if (m.run === 4) Say.milestone("Final Notice", `You've missed four mortgage payments in a row on ${name}. Miss four more and the bank forecloses: it takes the property and sells it.`, img("icon_rm_loan"));
+        if (m.run >= 8) Bank.foreclose(p, prop.id);
+        return false;
+    },
+    foreclose(p: any, id: string) {
+        const pf = p.getRealEstate?.();
+        const r = pf?.foreclose?.(p, id);
+        if (!r) return;
+        Bank.addCredit(p, -100);
+        Rm.mark(p, "foreclosed");
+        let text = `The bank foreclosed on ${r.name} and sold it.`;
+        if (r.leftover >= 1) text += ` After the mortgage was paid, ${money(r.leftover)} was left over for you.`;
+        if (r.shortfall >= 1) {
+            const l = Bank.addLoan(p, "personal", "Mortgage Shortfall", Math.round(r.shortfall), 5);
+            text += ` The sale didn't cover the mortgage: the ${money(r.shortfall)} still owed is now a loan (${money(l.payment)} a week).`;
+        }
+        if (r.wasHome) text += r.movedTo ? ` You've moved to ${r.movedTo}; find a new place under Real Estate.` : " Find a new place to live under Real Estate.";
+        text += " Your credit score fell a long way.";
+        Say.milestone("Foreclosed", text, img("icon_rm_loan"));
     },
     miss(p: any, b: BankState, l: Loan) {
         l.missed++; l.run++; b.misses++;
@@ -266,6 +320,7 @@ export const Bank = {
     },
     /** Set it and forget it: a weekly amount into a fund. */
     autoInvest(p: any) {
+        if (!Week.real) return;   // previews don't buy anything
         const b = Bank.peek(p);
         if (!b || !(b.auto > 0)) return;
         if (cash(p) - b.auto < 0) return;

@@ -86,6 +86,15 @@ export const RScreens = {
                 out.push(row("icon_rm_loan", l.title, `${money(l.balance)} left · ${money(l.payment)} a week at ${(l.rate * 100).toFixed(1)}% · ${Math.ceil(l.weeksLeft / WPY())} year${Math.ceil(l.weeksLeft / WPY()) === 1 ? "" : "s"} to go${l.run ? ` · ${l.run} missed in a row` : ""}`,
                     B(`Pay Off ${money(l.balance)}`, cash(p) >= l.balance, () => say("Paid Off", Bank.payOff(p, l.id), "icon_rm_loan"), cash(p) < l.balance)));
             }
+            // mortgages are managed in Real Estate: one summary row here so all your debts are in one place
+            try {
+                const morts = (p.getRealEstate?.()?.all?.() ?? []).filter((x: any) => x.mortgage);
+                if (morts.length) {
+                    const bal = morts.reduce((t: number, x: any) => t + x.mortgage.balance, 0), wk = morts.reduce((t: number, x: any) => t + x.mortgage.payment, 0);
+                    const behind = Math.max(...morts.map((x: any) => x.mortgage.run ?? 0));
+                    out.push(row("bank_loan", morts.length === 1 ? `Mortgage: ${morts[0].displayName()}` : `${morts.length} Mortgages`, `${money(bal)} left · ${money(wk)} a week${behind ? ` · ${behind} missed in a row (the bank forecloses at 8)` : ""}. Pay off or sell in Real Estate.`));
+                }
+            } catch { /* */ }
             out.push(link("bank_loan", "Borrow", "Personal and student loans with fixed weekly payments. Car loans are offered when you buy a car; mortgages in Real Estate.", "rm-loans"));
         }
         // investing

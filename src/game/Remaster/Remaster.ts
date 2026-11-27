@@ -5,10 +5,13 @@ import { Body } from "./Body";
 import { Fun } from "./Fun";
 import { Traits } from "./Traits";
 import { Feats } from "./Feats";
+import { Week } from "./Core";
 
 const safe = (f: () => void) => { try { f(); } catch (e) { console.error(e); } };
 export const Remaster = {
     enabled: true,
+    /** Player.applyWeeklyInner runs the real week's collection inside this (see Core Week). */
+    realWeek<T>(fn: () => T): T { Week.real++; try { return fn(); } finally { Week.real--; } },
     collectWeeklyValues(p: any) {
         if (!Remaster.enabled) return;
         safe(() => Bank.collectWeeklyValues(p));

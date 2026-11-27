@@ -180,7 +180,14 @@ export const FamilyExtras = {
         const promo = job === job0 && st != null && st.getLevel() > level0 ? ` You were promoted to ${st.getJobTitle()}!` : "";
         return `\nYou still went to work: ${FamilyExtras.weeksText(worked)} of shifts${earned > 0 ? `, ${ExtensionsKt.numberDisplayString(BigInteger.valueOf(Math.round(earned)), true)} better off` : ""}.${promo}`;
     },
-    /** One week with each person, in order. Stops early if you die or end up in jail. Returns the weeks spent. */
+    /** v0.36.1: Spend Time with Everyone stops when health, happiness or sanity falls below this. */
+    stopBelow: 20,
+    lowStat(p: any): string {
+        const at = p.getAttributeState();
+        const v: [string, number][] = [["health", Number(at.getHealth())], ["happiness", Number(at.getHappiness())], ["sanity", Number(at.getSanity())]];
+        return v.sort((a, b) => a[1] - b[1])[0][0];
+    },
+    /** One week with each person, in order. Stops early if you die, end up in jail or are in danger. Returns the weeks spent. */
     spendTimeWithEveryone(): number {
         const p: any = GameStateManager.INSTANCE.getPersonState();
         const people = FamilyExtras.everyone();
@@ -194,7 +201,7 @@ export const FamilyExtras = {
         const job0 = p.getJobState().getCurrentJob();
         const level0 = job0 != null ? p.getJobState().getState(job0).getLevel() : 0;
         const cash0 = Number(p.getMoneyState().getCash().add(p.getMoneyState().getSavings()).toString());
-        let worked = 0;
+        let worked = 0, stopped = false;
         AlertManager.inWeek++;
         try {
             for (const x of people) {
@@ -212,15 +219,22 @@ export const FamilyExtras = {
                 else p.applyWeekly();
                 weeks++;
                 names.push(x.getFirstName());
+                // v0.36.1: stop if you're in danger (an illness or a bad stretch), so you can deal with it in time
+                // instead of the weeks running on while the warnings wait in the queue
+                try {
+                    const at = p.getAttributeState();
+                    const low = Math.min(Number(at.getHealth()), Number(at.getHappiness()), Number(at.getSanity()));
+                    if (low < FamilyExtras.stopBelow && weeks < people.length && !p?.vampire?.isVampire) { stopped = true; break; }
+                } catch { /* ignore */ }
             }
         } finally {
             Relationships.together = null;
             AlertManager.inWeek--;
         }
-        if ((weeks > 1 || worked > 0) && playing()) {
-            const list = names.length > 6 ? `${names.slice(0, 5).join(", ")} and ${names.length - 5} more` : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+        if ((weeks > 1 || worked > 0 || (stopped && weeks > 0)) && playing()) {
+            const list = names.length > 6 ? `${names.slice(0, 5).join(", ")} and ${names.length - 5} more` : names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
             AlertManager.showAlert$default(AlertManager.INSTANCE, new AlertViewModel("Time Well Spent",
-                `You spent ${FamilyExtras.weeksText(weeks)} with ${list}${weeks < people.length ? ` (${people.length - weeks} had to wait for another time)` : ""}. Everyone is +${FamilyExtras.togetherBond} closer to you.${FamilyExtras.workLine(p, job0, level0, cash0, worked)}`,
+                `You spent ${FamilyExtras.weeksText(weeks)} with ${list}${weeks < people.length ? ` (${people.length - weeks} had to wait for another time)` : ""}${stopped ? `. You stopped early to look after yourself: your ${FamilyExtras.lowStat(p)} is low` : ""}. ${weeks < people.length ? (weeks === 1 ? "They're" : "Each of them is") : "Everyone is"} +${FamilyExtras.togetherBond} closer to you.${FamilyExtras.workLine(p, job0, level0, cash0, worked)}`,
                 R.drawable.family, null, null, null, null, null, null, 504, null), false, 2, null);
         }
         refresh();

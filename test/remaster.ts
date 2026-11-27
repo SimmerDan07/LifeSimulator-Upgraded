@@ -104,6 +104,9 @@ check("every new art slot has a real stand-in", RM_ICONS.every((s) => imgs.inclu
     const l = b.loans[0];
     check("taking a personal loan: cash now, a weekly payment", /lent you/.test(t) && cash(p) === c0 + 5000 && l && l.payment > 40 && l.payment < 70, `${l?.payment}`);
     const bal0 = l.balance;
+    // v0.36.1: previews (Cash Flow, the HUD's weekly arrows) show the payment but don't make it
+    let flow = ""; for (let i = 0; i < 3; i++) { flow = JSON.stringify(Array.from(p.collectWeeklyCashFlow() as any)); p.collectWeeklyAttributeDeltas(); }
+    check("previews show the loan payment but don't pay it", l.balance === bal0 && l.weeksLeft === 2 * W && flow.includes("Personal Loan"), flow.slice(0, 200));
     week(p);
     check("a week: the payment comes out, the balance falls", l.balance < bal0 && l.weeksLeft === 2 * W - 1);
     for (let i = 0; i < 4; i++) week(p);
@@ -428,6 +431,39 @@ check("every new art slot has a real stand-in", RM_ICONS.every((s) => imgs.inclu
     check("achievements are saved (across lives)", !!back.getAchievementState?.().rm?.done?.million || !!back.achievementState?.rm?.done?.million);
     const pe: any = SaveCodec.decode(SaveCodec.encode(n));
     check("a life's remaster state saves and loads", pe.rm?.bank?.v === 1 || pe.rm?.v === 1);
+}
+
+// ================================================================ v0.36.1 mortgages: missed payments and foreclosure
+{
+    const p = start(); rich(p, 2_000_000);
+    const b = Bank.st(p); b.credit = 720;
+    const pf = p.getRealEstate();
+    pf.refreshListings(p);
+    const l = pf.listings.find((x: any) => x.info().category === "Residential" && !x.isBlock?.() && x.askingPrice < 1_500_000) ?? pf.listings[0];
+    const err = pf.buyListing(p, l.id, true);
+    const prop = pf.get(l.id) ?? pf.all()[pf.all().length - 1];
+    check("buy a home with a mortgage", err == null && !!prop?.mortgage, String(err));
+    check("…moving in", pf.moveInto(p, prop.id) == null && pf.residence() === prop);
+    week(p, 2);
+    check("on time: no missed payments, the balance falls", (prop.mortgage.run ?? 0) === 0 && prop.mortgage.balance < prop.mortgage.original);
+    check("the Bank tab lists the mortgage with your other debts", text(RScreens.bankTab(p)).includes("Mortgage: "));
+    const bal = prop.mortgage.balance, cr = b.credit!;
+    setCash(p, 0); for (let i = 0; i < 5; i++) { p.collectWeeklyCashFlow(); p.collectWeeklyAttributeDeltas(); }
+    check("v0.36.1: previews never count a missed mortgage payment", (prop.mortgage.run ?? 0) === 0 && b.credit === cr && !drain().length);
+    keep(p); setCash(p, 0); p.applyWeekly();
+    const s1 = drain();
+    check("no cash: the payment is missed (fee + interest added, credit down)", prop.mortgage.run === 1 && prop.mortgage.balance > bal + 25 && b.credit! <= cr - 14 && s1.some((a) => a.title === "Missed Mortgage Payment"), s1.map((a) => a.title).join("|"));
+    rich(p, 50_000); week(p);
+    check("paying again resets the run", prop.mortgage.run === 0);
+    const seen: { title: string; msg: string }[] = [];
+    for (let i = 0; i < 8; i++) { keep(p); setCash(p, 0); p.applyWeekly(); seen.push(...drain()); }
+    const fc = seen.find((a) => a.title === "Foreclosed");
+    check("eight missed in a row: a final notice, then the bank forecloses", seen.some((a) => a.title === "Final Notice") && !!fc && !pf.all().includes(prop), seen.map((a) => a.title).join("|"));
+    check("…you move out (parents' house or a shared room), nobody hurt", pf.residence() !== prop && /moved to/.test(fc?.msg ?? "") && p.getIsAlive?.() !== false, fc?.msg);
+    check("…credit falls a long way and the sale is on record", b.credit! < cr - 100 && (pf.sold ?? []).some((x: any) => x.name === prop.displayName()));
+    check("…a shortfall (if any) becomes a loan", !/still owed/.test(fc?.msg ?? "") || b.loans.some((x) => x.title === "Mortgage Shortfall"));
+    let crash = ""; try { week(p, 5); } catch (e: any) { crash = String(e); }
+    check("life goes on after a foreclosure", !crash, crash);
 }
 
 // ================================================================ a long life (smoke)

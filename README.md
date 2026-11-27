@@ -285,6 +285,14 @@ All content is unlocked. Switches live in `src/game/Unlocks.ts`:
     `--left` = rail + sl used by #hud/#tabs/#main/#overlay/#toasts; content, list body/foot, footer and the rail pad
     by `--sb`; modals capped at `100dvh`; landscape stats 2 × 2; narrow `--hud` 108px; text-size-adjust 100%,
     inputs ≥16px, `overscroll-behavior: contain`. All 0 where there are no insets (Windows, Android full screen).
+  - **v0.36.1**: mortgages follow the loan rules. `RealEstatePortfolio.mortgageDue` (set by the Remaster to
+    `Bank.mortgageDue`) decides each week whether a payment can be made (`Bank.canPay`: cash, plus savings when
+    Pay Bills from Savings is on, after the week's other loan payments); a missed one isn't charged (`skipped`: the
+    interest is added to the balance), costs $25 and −15 credit; a final notice at 4 in a row (`mortgage.run`); at 8
+    `RealEstatePortfolio.foreclose` sells it at 80% of value, pays the mortgage, gives you the rest (a shortfall
+    becomes a "Mortgage Shortfall" loan) and moves you out of it if it was your home (parents' house, else a shared
+    room). The Bank tab's Loans section lists mortgages. Spend Time with Everyone stops when health, happiness or
+    sanity falls below 20 (`FamilyExtras.stopBelow`).
   - **v0.36.0 The Remaster** (`src/game/Remaster/`, installed by `installRemaster()` after `installVampires`): the
     original tabs reworked. Per-life state `p.rm` (`Rm.st(p)`: `fun`, `bank`, `body`, `things`, `traits`, `feats`);
     across lives `AchievementState.rm` (`done`, `lives`). Weekly calls in Player: `Remaster.collectWeeklyValues`

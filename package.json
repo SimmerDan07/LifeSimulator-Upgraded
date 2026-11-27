@@ -1,6 +1,6 @@
 {
   "name": "lifesim-upgraded",
-  "version": "0.36.0",
+  "version": "0.36.1",
   "description": "Life Simulator, ported to Windows from the Android original",
   "main": "dist/main.js",
   "private": true,

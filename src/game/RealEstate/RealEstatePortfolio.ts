@@ -374,7 +374,12 @@ export class RealEstatePortfolio {
             tax += this.weeklyTax(p);
             upkeep += this.weeklyUpkeep(p);
             util += this.weeklyUtilities(p);
-            mort += p.mortgage?.payment ?? 0;
+            // v0.36.1: a payment you can't cover is missed instead of taken (late fees, credit, foreclosure: the Bank)
+            if (p.mortgage) {
+                const paid = RealEstatePortfolio.mortgageDue ? RealEstatePortfolio.mortgageDue(player, p) : true;
+                p.mortgage.skipped = !paid;
+                if (paid) mort += p.mortgage.payment;
+            }
             const rent = this.weeklyRent(p);
             if (rent > 0) {
                 const r = (rentByType[p.type] ??= { amount: 0, units: 0 });
@@ -444,7 +449,9 @@ export class RealEstatePortfolio {
             if (p.mortgage) {
                 const m = p.mortgage;
                 const interest = m.balance * m.rate / RE.weeksPerYear;
-                m.balance = Math.max(0, m.balance - Math.max(0, m.payment - interest));
+                if (m.skipped) m.balance += interest;   // a missed payment: the interest is added on
+                else m.balance = Math.max(0, m.balance - Math.max(0, m.payment - interest));
+                m.skipped = false;
                 if (m.balance < 1) {
                     p.mortgage = null;
                     p.log(this.clock(), "Mortgage paid off");
@@ -647,6 +654,39 @@ export class RealEstatePortfolio {
     }
 
     // ------------------------------------------------------------------ mortgages
+    /** v0.36.1 (the Bank): can this week's payment on `p` be made? false = missed (not charged). */
+    static mortgageDue: ((player: any, p: OwnedProperty) => boolean) | null = null;
+    /** Forced sale share of the value when the bank forecloses. */
+    static readonly FORECLOSURE_SHARE = 0.8;
+    /**
+     * v0.36.1 Foreclosure: the bank takes the property and sells it at 80% of its value; the mortgage is paid from
+     * that and anything left over is yours. Returns what happened (shortfall > 0 if the sale didn't cover it).
+     * If it was your home you move to your parents' house (if a parent is alive) or a shared room.
+     */
+    foreclose(player: any, id: string): { name: string; leftover: number; shortfall: number; wasHome: boolean; movedTo: string | null } | null {
+        const p = this.get(id);
+        if (!p) return null;
+        const sale = this.value(p) * RealEstatePortfolio.FORECLOSURE_SHARE;
+        const owed = p.mortgage?.balance ?? 0;
+        const wasHome = p.use === "residence";
+        const name = p.displayName();
+        this.archiveSale(player, p, sale, p.units);
+        this.properties = this.all().filter((x) => x !== p);
+        const leftover = Math.max(0, sale - owed);
+        if (leftover >= 1) this.receive(player, leftover);
+        this.bumpOwned(player, p.type, -p.units);
+        let movedTo: string | null = null;
+        if (wasHome && !player?.getCrimeState?.()?.getIsInJail?.()) {
+            const options: Housing[] = [];
+            try { if (player.getFamilyState().getParentsStillLiving()) options.push(Housing.parentsHouse); } catch { /* */ }
+            options.push(Housing.shared_room, Housing.homeless);
+            for (const h of options) {
+                if (this.moveToBasic(player, h) == null) { movedTo = h === Housing.parentsHouse ? "your parents' house" : h === Housing.shared_room ? "a shared room" : "a park bench"; break; }
+            }
+        }
+        this.reconcile(player);
+        return { name, leftover, shortfall: Math.max(0, owed - sale), wasHome, movedTo };
+    }
     static mortgagePayment(loan: number, rate: number): number {
         const r = rate / RE.weeksPerYear, n = RE.mortgageYears * RE.weeksPerYear;
         return loan * r / (1 - Math.pow(1 + r, -n));

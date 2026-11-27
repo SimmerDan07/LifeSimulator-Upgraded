@@ -69,3 +69,10 @@ export const Rm = {
 
 export const isVampire = (p: any): boolean => { try { return !!p?.vampire?.isVampire; } catch { return false; } };
 export const inJail = (p: any): boolean => { try { return p.getCrimeState().getIsInJail(); } catch { return false; } };
+
+/**
+ * v0.36.1: Player.collectWeeklyValues also runs for previews (the HUD's weekly arrows, Cash Flow, Weekly Modifiers).
+ * `Week.real > 0` only while a real week is being collected: anything that changes state (loan payments, missed
+ * payments, auto-invest) happens only then; previews just show the bills.
+ */
+export const Week = { real: 0 };

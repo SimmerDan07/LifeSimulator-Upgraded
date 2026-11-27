@@ -16,6 +16,7 @@ import { World } from "../World/World";
 import { Activities } from "../World/Activities";
 import { Bonds } from "../Vampires/Bonds";
 import { setMortgageRateHook } from "../RealEstate/RealEstateConfig";
+import { RealEstatePortfolio } from "../RealEstate/RealEstatePortfolio";
 import { player, age, Rm, Say, img, WPY } from "./Core";
 import { Bank } from "./Bank";
 import { Things, setRelationshipsRef } from "./Things";
@@ -58,6 +59,7 @@ export function installRemaster() {
     // money and things
     setMortgageRateHook(() => { const p = player(); return p && age(p) >= 18 ? Bank.mortgageRate(p) : 0.055; });
     Bank.repossess = (p: any, ref: string) => Things.repossess(p, ref);
+    RealEstatePortfolio.mortgageDue = (pl: any, prop: any) => { try { return Bank.mortgageDue(pl, prop); } catch (e) { console.error(e); return true; } };
     Bank.thingsWorth = (p: any) => Things.worth(p);
     Bank.luckHook = (p: any) => (Feats.has(p, "luckyStar") ? 2 : 1);
     RScreens.subsMoneyCells = () => Subscriptions.moneyCells() as any[];

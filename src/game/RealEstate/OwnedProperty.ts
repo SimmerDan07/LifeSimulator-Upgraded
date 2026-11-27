@@ -6,7 +6,9 @@ export type PropertyUse = "residence" | "rental" | "vacant" | "family";
 
 export interface HistoryEntry { clock: number; text: string }
 export interface Problem { type: string; weeks: number }
-export interface Mortgage { original: number; balance: number; rate: number; payment: number }
+export interface Mortgage { original: number; balance: number; rate: number; payment: number;
+    /** v0.36.1: missed payments in a row (foreclosure at RE_FORECLOSE_AT), and whether this week's was missed */
+    run?: number; missed?: number; skipped?: boolean }
 export interface Tenant { name: string; weeksLeft: number }
 
 export class OwnedProperty {

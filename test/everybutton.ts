@@ -251,6 +251,10 @@ const SCENARIOS: Record<string, () => void> = {
     tycoon: () => start(36, (p) => { rich(p, 2_000_000); lover(p, "Iris"); const k = new Person(Relationship.child, Sex.male, p.getLastName(), 6 * W); k.setFirstName("Max"); p.getFamilyState().getFamilyMembers().add(k);
         Bank.buy(p, "index", 50_000); Bank.buy(p, "crypto", 5_000); Bank.addGoal(p, "house"); Bank.fundFor(p, k, 2_000); Bank.take(p, LOAN_OFFERS.find((o) => o.id === "p5")!);
         Things.buy(p, "compact", true); Things.buy(p, "espresso"); Things.buy(p, "painting"); Body.setRoutine(p, "running"); Body.startSmoking(p); }),
+    // v0.36.1 behind on the mortgage
+    behind: () => start(40, (p) => { rich(p, 3_000_000); Bank.st(p).credit = 700; const pf = p.getRealEstate(); pf.refreshListings(p);
+        const l = pf.listings.find((x: any) => x.info().category === "Residential" && !x.isBlock?.()) ?? pf.listings[0]; pf.buyListing(p, l.id, true); pf.moveInto(p, l.id);
+        const h = pf.get(l.id); if (h?.mortgage) h.mortgage.run = 5; p.getMoneyState().cash = BigInteger.valueOf(0); }),
     // v0.28.0
     patriarch: () => start(66, (p) => { rich(p, 3_000_000); lover(p, "Rose"); for (const [n, a] of [["Ava", 38], ["Ben", 35], ["Cal", 16]] as [string, number][]) { const k = new Person(Relationship.child, Sex.female, p.getLastName(), a * W); k.setFirstName(n); k.setRelationshipProgress(700); p.getFamilyState().getFamilyMembers().add(k); } Legacy.addHeirloom(p, "pocketWatch", "Grandpa"); Legacy.writeWill(p, "equal", 10); }),
     sickly: () => start(68, (p) => { rich(p, 400000); Illness.catch(p, "heartDisease", "fuzz"); const c = Illness.catch(p, "cancer", "fuzz")!; c.stage = 2; c.detected = true; Illness.catch(p, "flu", "fuzz"); }),

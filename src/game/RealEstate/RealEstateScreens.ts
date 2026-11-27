@@ -366,6 +366,7 @@ export const RealEstateScreens = {
             content.add(cell(img(p), "Mortgage", [
                 ["Balance", money(m.balance)], ["Original loan", money(m.original)],
                 ["Rate", `${(m.rate * 100).toFixed(1)}% per year`], ["Payment", `${money(m.payment)}/week`],
+                ...((m.run ?? 0) > 0 ? [["Behind", `${m.run} missed in a row (the bank forecloses at 8)`, R.color.flatRed] as any] : []),
             ], [button(`Pay off (${money(m.balance)})`, cash >= m.balance, () => RealEstateScreens.run("Mortgage", pf.payOffMortgage(pl, p.id), img(p)))]));
         }
 
@@ -479,7 +480,7 @@ export const RealEstateScreens = {
                 button(`Buy (${money(l.askingPrice)})`, adult && cash >= l.askingPrice, () => RealEstateScreens.confirm("Buy Property",
                     `Buy ${l.name} for ${money(l.askingPrice)} cash?`, img(l), "Buy", () => RealEstateScreens.afterBuy(l.id, pf.buyListing(pl, l.id, false), l))),
                 button(`Mortgage (${money(down)} down)`, adult && refusal == null, () => RealEstateScreens.confirm("Mortgage",
-                    `Put ${money(down)} down and borrow ${money(l.askingPrice - down)} at ${(RE.mortgageRate * 100).toFixed(1)}%? Payments are ${money(pay)} per week for ${RE.mortgageYears} years (paid automatically; you can pay it off early).`,
+                    `Put ${money(down)} down and borrow ${money(l.askingPrice - down)} at ${(RE.mortgageRate * 100).toFixed(1)}%? Payments are ${money(pay)} per week for ${RE.mortgageYears} years (paid automatically; you can pay it off early). If you can't cover a payment it's missed: 8 in a row and the bank forecloses.`,
                     img(l), "Buy with mortgage", () => RealEstateScreens.afterBuy(l.id, pf.buyListing(pl, l.id, true), l))),
             ], null));
             if (refusal && cash >= down) content.add(label("Refusal" + l.id, [["", refusal, R.color.flatGrey]]));

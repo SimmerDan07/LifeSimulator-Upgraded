@@ -881,7 +881,7 @@ export class Player {
         try { this.applyWeeklyInner(); } finally { AlertManager.inWeek--; }
     }
     applyWeeklyInner(): void {
-        this.collectWeeklyValues();
+        Remaster.realWeek(() => this.collectWeeklyValues());   // v0.36.1: previews don't pay loans or count misses
         this.applyWeeklyValues();
         // a vampire's body doesn't age: only the true age and the calendar move on
         if (Vampire.frozen(this)) Vampire.tickFrozen(this);
