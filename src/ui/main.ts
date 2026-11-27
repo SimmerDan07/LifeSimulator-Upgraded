@@ -125,7 +125,7 @@ const GROUPS: { id: string; label: string; icon: string; subs: Sub[] }[] = [
     { id: "fun", label: "Fun", icon: "tab_leisure", subs: [{ tab: MainGameTab.Leisure, label: "Fun" }] },
 ];
 /** Profile sections that live on the Money tab in the new look (shown once, never on both). */
-const moneySections = () => [S("section_header_housing"), "Subscriptions", S("SectionHeader_Items")];
+const moneySections = () => [S("section_header_housing"), "Subscriptions", S("SectionHeader_Items"), "Your Things"];
 
 function gameSettings(): any { try { return GameStateManager.INSTANCE.getGlobalStateManager().getGameSettings(); } catch { return null; } }
 /** The new look, unless the player switched Classic look on in Settings. */

@@ -84,7 +84,7 @@ export const RScreens = {
             out.push(bankActionRow(p, BankAction.takeLoan, "Credit Line"));
             for (const l of b!.loans) {
                 out.push(row("icon_rm_loan", l.title, `${money(l.balance)} left · ${money(l.payment)} a week at ${(l.rate * 100).toFixed(1)}% · ${Math.ceil(l.weeksLeft / WPY())} year${Math.ceil(l.weeksLeft / WPY()) === 1 ? "" : "s"} to go${l.run ? ` · ${l.run} missed in a row` : ""}`,
-                    B(`Pay Off ${short(Math.ceil(l.balance))}`, cash(p) >= l.balance, () => say("Paid Off", Bank.payOff(p, l.id), "icon_rm_loan"), cash(p) < l.balance)));
+                    B(`Pay Off ${money(l.balance)}`, cash(p) >= l.balance, () => say("Paid Off", Bank.payOff(p, l.id), "icon_rm_loan"), cash(p) < l.balance)));
             }
             out.push(link("bank_loan", "Borrow", "Personal and student loans with fixed weekly payments. Car loans are offered when you buy a car; mortgages in Real Estate.", "rm-loans"));
         }
@@ -135,9 +135,13 @@ export const RScreens = {
         out.push(H("Funds"));
         for (const f of FUNDS) out.push(assetRow(f.id, f.title, f.id === "crypto" ? "icon_rm_crypto" : "icon_rm_fund", `${f.blurb} Risk: ${f.risk}.`));
         const canPick = p.getCompletableActionState().isCompleted(CompletableAction.personalFinance);
+        if (!canPick) {
+            out.push(H("Single Companies"));
+            out.push(row("icon_rm_stock", "Pick Your Own Stocks", `${COMPANIES.length} companies in ${SECTORS.length} sectors (${SECTORS.map((s) => s.title).join(", ")}): bigger swings, bigger growth. Needs the Personal Finance course (Education) first. Funds are open to everyone.`));
+            return out;
+        }
         for (const s of SECTORS) {
             out.push(H(s.title));
-            if (!canPick) { out.push(row("bank_withdrawal", "Pick Your Own Stocks", `${s.blurb} Needs the Personal Finance course (Education) before you can buy single companies. Funds are open to everyone.`)); continue; }
             for (const c of COMPANIES.filter((x) => x.sector === s.id)) out.push(assetRow(c.id, c.name, "icon_rm_stock", c.blurb));
         }
         return out;
@@ -226,7 +230,9 @@ export const RScreens = {
     /** The original items you own (for the list of your things). */
     originalOwned(p: any): any[] {
         const out: any[] = [];
-        try { for (const s of p.getItemState().getStates()) if (s.getOwned() && s.getType() !== Possession.car && s.getType().isAvaliable()) out.push(s); } catch { /* */ }
+        // an original item that comes with a Thing you own (the Gaming PC is your game console) isn't listed twice
+        const given = new Set(Things.owned(p).map((o) => Things.def(o.id)?.possession).filter((x) => x != null).map((x) => (Possession as any)[x!]));
+        try { for (const s of p.getItemState().getStates()) if (s.getOwned() && s.getType() !== Possession.car && !given.has(s.getType()) && s.getType().isAvaliable()) out.push(s); } catch { /* */ }
         return out;
     },
     /** One original item row (buy / upgrade), as the Profile used to show it. */

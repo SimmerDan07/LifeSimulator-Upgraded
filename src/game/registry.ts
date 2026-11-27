@@ -185,53 +185,66 @@ import * as M181 from "./RealEstate/OwnedProperty";
 import * as M182 from "./RealEstate/RealEstateConfig";
 import * as M183 from "./RealEstate/RealEstatePortfolio";
 import * as M184 from "./RealEstate/RealEstateScreens";
-import * as M185 from "./Social/Appearance";
-import * as M186 from "./Social/Babies";
-import * as M187 from "./Social/ExtendedFamily";
-import * as M188 from "./Social/FamilyTree";
-import * as M189 from "./Social/LoveActions";
-import * as M190 from "./Social/LoveScreens";
-import * as M191 from "./Social/OneNight";
-import * as M192 from "./Social/Relationships";
-import * as M193 from "./Social/SocialCircle";
-import * as M194 from "./Social/SocialMedia";
-import * as M195 from "./Social/SocialPerson";
-import * as M196 from "./Social/SpouseIncome";
-import * as M197 from "./Unlocks";
-import * as M198 from "./Utils/Constants";
-import * as M199 from "./Utils/ExtensionsKt";
-import * as M200 from "./Utils/Utils";
-import * as M201 from "./Utils/ValueRange";
-import * as M202 from "./Vampires/Becoming";
-import * as M203 from "./Vampires/Bonds";
-import * as M204 from "./Vampires/Night";
-import * as M205 from "./Vampires/Reborn";
-import * as M206 from "./Vampires/VData";
-import * as M207 from "./Vampires/VScreens";
-import * as M208 from "./Vampires/install";
-import * as M209 from "./Work/Benefits";
-import * as M210 from "./Work/CareerPath";
-import * as M211 from "./Work/Company";
-import * as M212 from "./Work/Hiring";
-import * as M213 from "./Work/Hustles";
-import * as M214 from "./Work/SelfCare";
-import * as M215 from "./Work/Work";
-import * as M216 from "./Work/WorkData";
-import * as M217 from "./Work/WorkLove";
-import * as M218 from "./Work/WorkMoments";
-import * as M219 from "./Work/WorkScreens";
-import * as M220 from "./Work/WorkSubs";
-import * as M221 from "./Work/Workplace";
-import * as M222 from "./Work/install";
-import * as M223 from "./World/Activities";
-import * as M224 from "./World/ActivityData";
-import * as M225 from "./World/World";
-import * as M226 from "./World/WorldData";
-import * as M227 from "./Youth/Youth";
-import * as M228 from "./Youth/YouthData";
-import * as M229 from "./Youth/YouthMoments";
-import * as M230 from "./Youth/YouthScreens";
-import * as M231 from "./Youth/install";
+import * as M185 from "./Remaster/Bank";
+import * as M186 from "./Remaster/BankData";
+import * as M187 from "./Remaster/Body";
+import * as M188 from "./Remaster/Core";
+import * as M189 from "./Remaster/Feats";
+import * as M190 from "./Remaster/Fun";
+import * as M191 from "./Remaster/RIcons";
+import * as M192 from "./Remaster/RScreens";
+import * as M193 from "./Remaster/Remaster";
+import * as M194 from "./Remaster/Things";
+import * as M195 from "./Remaster/ThingsData";
+import * as M196 from "./Remaster/Traits";
+import * as M197 from "./Remaster/install";
+import * as M198 from "./Social/Appearance";
+import * as M199 from "./Social/Babies";
+import * as M200 from "./Social/ExtendedFamily";
+import * as M201 from "./Social/FamilyTree";
+import * as M202 from "./Social/LoveActions";
+import * as M203 from "./Social/LoveScreens";
+import * as M204 from "./Social/OneNight";
+import * as M205 from "./Social/Relationships";
+import * as M206 from "./Social/SocialCircle";
+import * as M207 from "./Social/SocialMedia";
+import * as M208 from "./Social/SocialPerson";
+import * as M209 from "./Social/SpouseIncome";
+import * as M210 from "./Unlocks";
+import * as M211 from "./Utils/Constants";
+import * as M212 from "./Utils/ExtensionsKt";
+import * as M213 from "./Utils/Utils";
+import * as M214 from "./Utils/ValueRange";
+import * as M215 from "./Vampires/Becoming";
+import * as M216 from "./Vampires/Bonds";
+import * as M217 from "./Vampires/Night";
+import * as M218 from "./Vampires/Reborn";
+import * as M219 from "./Vampires/VData";
+import * as M220 from "./Vampires/VScreens";
+import * as M221 from "./Vampires/install";
+import * as M222 from "./Work/Benefits";
+import * as M223 from "./Work/CareerPath";
+import * as M224 from "./Work/Company";
+import * as M225 from "./Work/Hiring";
+import * as M226 from "./Work/Hustles";
+import * as M227 from "./Work/SelfCare";
+import * as M228 from "./Work/Work";
+import * as M229 from "./Work/WorkData";
+import * as M230 from "./Work/WorkLove";
+import * as M231 from "./Work/WorkMoments";
+import * as M232 from "./Work/WorkScreens";
+import * as M233 from "./Work/WorkSubs";
+import * as M234 from "./Work/Workplace";
+import * as M235 from "./Work/install";
+import * as M236 from "./World/Activities";
+import * as M237 from "./World/ActivityData";
+import * as M238 from "./World/World";
+import * as M239 from "./World/WorldData";
+import * as M240 from "./Youth/Youth";
+import * as M241 from "./Youth/YouthData";
+import * as M242 from "./Youth/YouthMoments";
+import * as M243 from "./Youth/YouthScreens";
+import * as M244 from "./Youth/install";
 /** Built on first use (not at import time) so import cycles can't leave entries undefined. */
 export function allClasses(): Record<string, any> {
     return Object.assign({},
@@ -468,5 +481,18 @@ export function allClasses(): Record<string, any> {
         M229,
         M230,
         M231,
+        M232,
+        M233,
+        M234,
+        M235,
+        M236,
+        M237,
+        M238,
+        M239,
+        M240,
+        M241,
+        M242,
+        M243,
+        M244,
     );
 }

@@ -92,7 +92,7 @@ export const Things = {
         const is = p.getItemState();
         for (const o of Things.owned(p)) {
             const d = Things.def(o.id);
-            if (d?.possession) { const pos = (Possession as any)[d.possession]; const s = is.getState(pos); if (!s.getOwned()) { s.setOwned(true); if (s.getLevel() < 1) s.setLevel(1); } }
+            if (d?.possession) { const pos = (Possession as any)[d.possession]; const s = is.getState(pos); if (!s.getOwned()) { s.setOwned(true); if (s.getLevel() < 1) s.setLevel(1); const g: any = Things.st(p); (g.granted ??= {})[d.possession] = true; } }
         }
         const car = is.getState(Possession.car);
         const best = Things.bestCar(p);
@@ -110,7 +110,9 @@ export const Things = {
             const d = Things.def(o.id);
             if (d?.possession && !t.owned.some((x) => Things.def(x.id)?.possession === d.possession)) {
                 const s = p.getItemState().getState((Possession as any)[d.possession]);
-                if (d.possession !== "passport") { s.setOwned(false); }
+                // only take back what came with the Thing (an original you bought yourself stays yours)
+                const g: any = t;
+                if (d.possession !== "passport" && g.granted?.[d.possession]) { s.setOwned(false); delete g.granted[d.possession]; }
             }
         }
         Things.sync(p);
